@@ -63,4 +63,12 @@ test -f "$fdi_image" || wget -O "$fdi_image" \
 test -d "$tftpboot_fdi_dir"/fdi-image || \
   tar --overwrite -C"$tftpboot_fdi_dir" -xf "$fdi_image"
 
+# TODO: hopefully hammer works out-of-the-box as a CLI bridge to the
+# API. (See
+# /usr/share/foreman-installer/modules/foreman/manifests/cli.pp) Use
+# it (preferably through Puppet) to configure the basics of Foreman:
+# LDAP server, openstack-sti@ as admin group, and all the tweaks
+# needed to get CentOS to install when selected (binding between
+# provisioning templates, OS, host groups and environnements)
+
 echo "All done."
