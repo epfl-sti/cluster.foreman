@@ -35,6 +35,9 @@ which foreman-installer || {
 : ${OPENSTACK_STIIT_CLUSTER_DOMAIN=epfl.ch}
 : ${OPENSTACK_STIIT_MASTER_FQDN="${OPENSTACK_STIIT_MASTER_HOSTNAME}.${OPENSTACK_STIIT_CLUSTER_DOMAIN}"}
 
+# TODO: instead of this, have the user edit a canned
+# /etc/foreman/foreman-installer-answers.yaml and then run
+# foreman-installer -y without any flags.
 test -z "${OPENSTACK_STIIT_SKIP_FOREMAN_INSTALLER}" && foreman-installer \
   --enable-foreman-plugin-discovery \
   --foreman-plugin-discovery-install-images=true \
