@@ -75,10 +75,12 @@ test -d "$tftpboot_fdi_dir"/fdi-image || \
 # Puppet magic built in foreman-installer.
 #
 # TODO: use it (preferably through Puppet) to configure the basics of
-# Foreman: LDAP server, openstack-sti@ as admin group, probably the
-# config of the master node itself (i.e. connection to smart proxy,
-# subnet, domain and/or provisioning setup) and all the tweaks needed
-# to get CentOS to install when selected (binding between provisioning
-# templates, OS, host groups and environments)
+# Foreman: smart proxy, the rest of the config of the master node
+# (just run puppet agent --test? http://youtu.be/2dwyzPpFJYQ), LDAP
+# server, openstack-sti@ as admin group, probably the config of the
+# master node itself (i.e. connection to smart proxy, subnet, domain
+# and/or provisioning setup) and all the tweaks needed to get CentOS
+# to install when selected (binding between provisioning templates,
+# OS, host groups and environments)
 
 echo "All done."
