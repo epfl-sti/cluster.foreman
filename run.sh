@@ -15,9 +15,9 @@
 set -e -x
 
 rpm -q epel-release-6-8 || \
-  rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+  rpm -ivh https://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
 rpm -qa | grep puppetlabs-release || \
-  rpm -ivh http://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm
+  rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm
 
 which foreman-installer || {
     # TODO: this is currently untested.
