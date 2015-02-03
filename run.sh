@@ -24,16 +24,16 @@ which foreman-installer || {
     yum-config-manager --enable rhel-6-server-optional-rpms rhel-server-rhscl-6-rpms
     yum -y install http://yum.theforeman.org/releases/1.7/el6/x86_64/foreman-release.rpm
 }
- 
+
 # The : ${foo:=bar} mantra keeps foo from the environment, with bar as
 # the default value.
 : ${OPENSTACK_STIIT_INTERNAL_IFACE:=eth1}
 : ${OPENSTACK_STIIT_MASTER_HOSTNAME:="$(hostname --short)"}
 # TODO: ask user with sane defaults from parsing ifconfig or something.
-: ${OPENSTACK_STIIT_IPADDRESS=192.168.10.1}
-: ${OPENSTACK_STIIT_DHCP_RANGE="192.168.10.32 192.168.10.127"}
-: ${OPENSTACK_STIIT_CLUSTER_DOMAIN=epfl.ch}
-: ${OPENSTACK_STIIT_MASTER_FQDN="${OPENSTACK_STIIT_MASTER_HOSTNAME}.${OPENSTACK_STIIT_CLUSTER_DOMAIN}"}
+: ${OPENSTACK_STIIT_IPADDRESS:=192.168.10.1}
+: ${OPENSTACK_STIIT_DHCP_RANGE:="192.168.10.32 192.168.10.127"}
+: ${OPENSTACK_STIIT_CLUSTER_DOMAIN:=epfl.ch}
+: ${OPENSTACK_STIIT_MASTER_FQDN:="${OPENSTACK_STIIT_MASTER_HOSTNAME}.${OPENSTACK_STIIT_CLUSTER_DOMAIN}"}
 
 # TODO: instead of this, have the user edit a canned
 # /etc/foreman/foreman-installer-answers.yaml and then run
