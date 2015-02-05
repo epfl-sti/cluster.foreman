@@ -1,4 +1,4 @@
-#!/bin/bash
+d#!/bin/bash
 # nbo 2014-02-04
 
 #
@@ -14,7 +14,7 @@ set -e -x
 
 # VAR
 : ${OSSTIIT_USER:=admin}
-: ${OSSTIIT_PASS:=null}
+: ${OSSTIIT_PASS:=password}
 # - Foreman
 : ${OSSTIIT_FOREMAN_IP:=128.178.48.67}
 # - LDAP
@@ -38,6 +38,7 @@ set -e -x
 : ${OSSTIIT_AUTH_GRP_NAME:=OpenStack-STI2}
 : ${OSSTIIT_AUTH_GRP_ADMIN:=false}
 : ${OSSTIIT_AUTH_EXT_GRP:=openstack-sti}
+: ${OSSTIIT_ROLE_NAME:=STI-Smart-Admin}
 
 
 # Get auth_source_info
@@ -82,3 +83,24 @@ C_EX_GROUP=$(curl -s -u ${OSSTIIT_USER}:${OSSTIIT_PASS} -X POST -d "{\"external_
 echo "$C_EX_GROUP"
 echo "--------------------------------------------------------------------------------"
 echo "Now test it on http://${OSSTIIT_FOREMAN_IP} "
+
+
+# Role Begginer Administrator creation
+# curl -i -H 'Accept:version=2' -H "Content-Type:application/json" -H "Accept:application/json" -u admin http://${OSSTIIT_FOREMAN_IP}/api/roles/
+# {"name":"Beginner administrator","id":14,"builtin":0,"filters":[{"id":153},{"id":154},{"id":155},{"id":156},{"id":157},{"id":158},{"id":159},{"id":160},{"id":161},{"id":162},{"id":163},{"id":164},{"id":165},{"id":166},{"id":167},{"id":168},{"id":169},{"id":170},{"id":171},{"id":172},{"id":173},{"id":174},{"id":175},{"id":176}]}%
+# Provisioning setup
+# curl -i -H 'Accept:version=2' -H "Content-Type:application/json" -H "Accept:application/json" -u admin http://${OSSTIIT_FOREMAN_IP}/api/roles/10
+# {"name":"Provisioning setup","id":10,"builtin":0,"filters":[{"id":118}]}
+
+#
+# Create STI-Smart-Admin role
+# http://theforeman.org/api/apidoc/v2/roles.html
+
+#
+# WTF roles have differents ID on two installations :(
+#
+echo "-- Creating the STI-Smart-Admin role -------------------------------------------"
+C_ROLES=$(curl -s -u ${OSSTIIT_USER}:${OSSTIIT_PASS} -X POST -d "{\"role\":{\"name\": \
+  \"${OSSTIIT_ROLE_NAME}\",\"filters\":[{\"id\":XXXX},{\"id\":XXXX},{\"id\":XXXX},{\"id\":XXXX}]}}" -H 'Accept:version=2' -H "Content-Type:application/json" -H "Accept:application/json" http://${OSSTIIT_FOREMAN_IP}/api/roles)
+
+echo "$C_ROLES"
