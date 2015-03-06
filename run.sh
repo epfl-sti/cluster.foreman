@@ -56,7 +56,9 @@ test -z "${OPENSTACK_STIIT_SKIP_FOREMAN_INSTALLER}" && foreman-installer \
   --foreman-proxy-dns-reverse=10.168.192.in-addr.arpa \
   --foreman-proxy-dns-forwarders=128.178.15.228 \
   --foreman-proxy-dns-forwarders=128.178.15.227 \
-  --foreman-proxy-foreman-base-url=https://"$OPENSTACK_STIIT_MASTER_FQDN"
+  --foreman-proxy-foreman-base-url=https://"$OPENSTACK_STIIT_MASTER_FQDN" \
+  --foreman-proxy-bmc=true
+  --foreman-proxy-bmc-default-provider=ipmitool
 
 # TODO: this should clearly be done from Puppet.
 tftpboot_fdi_dir=/var/lib/tftpboot/boot
