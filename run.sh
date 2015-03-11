@@ -1,8 +1,10 @@
 #!/bin/sh
-
+#
+# Turn the local host into an OpenStack-STI master.
+#
 # Usage:
-#   wget -O /tmp/run.sh https://raw.githubusercontent.com/domq/epfl.openstack-sti.foreman/master/run.sh
-#   OPENSTACK_STIIT_INTERNAL_IFACE=eth1 bash /tmp/run.sh
+#   wget -O /tmp/run.sh https://raw.githubusercontent.com/epfl-sti/epfl.openstack-sti.foreman/master/run.sh
+#   OPENSTACK_STIIT_INTERNAL_IFACE=eth1 sudo bash /tmp/run.sh
 #
 # One unfortunately *cannot* just pipe wget into bash, because
 # foreman-installer wants a tty :(
