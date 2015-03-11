@@ -13,4 +13,9 @@ class openstack-sti::puppetmaster {
       exec { 'latest_hammer':
         command => "/opt/src/epfl.openstack-sti.foreman/scripts/ensure_latest_hammer",
       }
+      exec { 'configure_discovery_templates':
+        command => "/opt/src/epfl.openstack-sti.foreman/scripts/configure_discovery_templates",
+        require => Exec["latest_hammer"],
+      }
+        
 }
