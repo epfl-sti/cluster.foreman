@@ -84,7 +84,8 @@ test -d "$tftpboot_fdi_dir"/fdi-image || \
 
 # Install our own Puppet configuration
 test -L /etc/puppet/environments || {
-    mv --backup /etc/puppet/environments /etc/puppet/environments.ORIG
+    mv --backup -T /etc/puppet/environments /etc/puppet/environments.ORIG || \
+        rm -rf /etc/puppet/environments
     ln -s "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"/puppet/environments \
        /etc/puppet/environments
 }
