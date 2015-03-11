@@ -23,7 +23,15 @@ class ipmi::params {
           $ipmi_package = ['OpenIPMI', 'ipmitool']
         }
         default: {
-          fail("Module ${module_name} is not supported on operatingsystemmajrelease ${::operatingsystemmajrelease}")
+          case $::operatingsystemrelease {
+            6.6: {
+              # CentOS with ancient facter
+              $ipmi_package = ['OpenIPMI', 'ipmitool']
+            }
+            default: {
+              fail("Module ${module_name} is not supported on operatingsystemmajrelease ${::operatingsystemmajrelease}")
+            }
+          }
         }
       }
     }
