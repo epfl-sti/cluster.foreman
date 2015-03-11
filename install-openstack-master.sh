@@ -3,7 +3,7 @@
 # Turn the local host into an OpenStack-STI master.
 #
 # Usage:
-#   wget -O /tmp/run.sh https://raw.githubusercontent.com/epfl-sti/epfl.openstack-sti.foreman/master/run.sh
+#   wget -O /tmp/install-openstack-master.sh https://raw.githubusercontent.com/epfl-sti/epfl.openstack-sti.foreman/master/install-openstack-master.sh
 #   OPENSTACK_STIIT_INTERNAL_IFACE=eth1 sudo bash /tmp/run.sh
 #
 # One unfortunately *cannot* just pipe wget into bash, because
@@ -37,6 +37,9 @@ which foreman-installer || {
 : ${OPENSTACK_STIIT_DHCP_RANGE:="192.168.10.32 192.168.10.127"}
 : ${OPENSTACK_STIIT_CLUSTER_DOMAIN:=epfl.ch}
 : ${OPENSTACK_STIIT_MASTER_FQDN:="${OPENSTACK_STIIT_MASTER_HOSTNAME}.${OPENSTACK_STIIT_CLUSTER_DOMAIN}"}
+: ${OPENSTACK_STIIT_GITHUB_DEPOT:=epfl-sti/epfl.openstack-sti.foreman}
+: ${OPENSTACK_STIIT_GIT_CHECKOUT_DIR:=/opt/epfl.openstack-sti.foreman}
+
 
 # TODO: instead of this, have the user edit a canned
 # /etc/foreman/foreman-installer-answers.yaml and then run
@@ -71,21 +74,19 @@ test -f "$fdi_image" || wget -O "$fdi_image" \
 test -d "$tftpboot_fdi_dir"/fdi-image || \
   tar --overwrite -C"$tftpboot_fdi_dir" -xf "$fdi_image"
 
-# Hopefully hammer works out-of-the-box as a CLI bridge to the
-# API. (See
-# /usr/share/foreman-installer/modules/foreman/manifests/cli.pp)
-#
-# It does, because the admin password somehow goes into
-# /root/.hammer/cli.modules.d/foreman.yml – Presumably because of
-# Puppet magic built in foreman-installer.
-#
-# TODO: use it (preferably through Puppet) to configure the basics of
-# Foreman: smart proxy, the rest of the config of the master node
-# (just run puppet agent --test? http://youtu.be/2dwyzPpFJYQ), LDAP
-# server, openstack-sti@ as admin group, probably the config of the
-# master node itself (i.e. connection to smart proxy, subnet, domain
-# and/or provisioning setup) and all the tweaks needed to get CentOS
-# to install when selected (binding between provisioning templates,
-# OS, host groups and environments)
+# Install our own Puppet configuration
+test -d "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"/.git || (
+    cd "$(dirname "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}")"
+    git clone https://github.com/${OPENSTACK_STIIT_GITHUB_DEPOT}.git \
+        "$(basename "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}")"
+)
+
+(cd "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"; git pull)
+
+test -l /etc/puppet/environments || {
+    mv /etc/puppet/environments /etc/puppet/environments.ORIG
+    ln -s "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"/puppet/environments \
+       /etc/puppet/environments
+}
 
 echo "All done."

@@ -1,10 +1,31 @@
 #!/bin/bash
-# nbo 2014-02-04
-
 #
-# Basic bash script who use Foreman API with curl to create LDAP auth
+# Configure Foreman for an openstack-sti master
+#
+# DONE:
+#  * LDAP connectivity
+#  * User group
+# TODO (or do it via Puppet):
+#  * Roles (openstack-sti@ as admin group)
+#  * Basic networking (subnet, domain)
+#  * Smart proxy setup
+#  * Provisioning setup
+#  * More tweaks needed to get CentOS to install when selected
+#    (binding between provisioning templates, OS, host groups and
+#    environments)
+#
+# Hammer works out-of-the-box as a CLI bridge to the
+# API. (See
+# /usr/share/foreman-installer/modules/foreman/manifests/cli.pp)
+#
+# The reason is that foreman-installer somehow copies the admin
+# password from /etc/foreman/foreman-installer-answers.yaml into
+# /root/.hammer/cli.modules.d/foreman.yml
+#
+# But it's so much more fun to re-do everything ourselves :)
+#
 # API usage: http://theforeman.org/api/apidoc/v2.html
-#
+
 
 # Todo
 #   - Set ROLES
