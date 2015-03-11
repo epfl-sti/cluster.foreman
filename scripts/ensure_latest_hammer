@@ -1,0 +1,14 @@
+# Install latest version of Hammer
+# https://github.com/theforeman/hammer-cli/blob/master/doc/installation_source.md#installation-from-source
+control() {
+          hammer --version 2>&1 | \
+                 grep -q 'hammer_cli_foreman (0.1.4)' && exit 0
+}    
+
+control
+gem install hammer_cli
+gem install hammer_cli_foreman
+control
+
+echo >&2 "Cannot update hammer"
+exit 1

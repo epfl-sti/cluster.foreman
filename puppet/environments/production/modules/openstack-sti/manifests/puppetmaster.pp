@@ -10,4 +10,7 @@ class openstack-sti::puppetmaster {
       package { 'puppet':
               ensure => 'present',
       }
+      exec { 'latest_hammer':
+        command => "/opt/src/epfl.openstack-sti.foreman/scripts/ensure_latest_hammer",
+      }
 }
