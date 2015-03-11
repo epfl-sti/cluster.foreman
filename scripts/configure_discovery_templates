@@ -2,16 +2,21 @@
 #
 # Install discovery-ready PXE templates as per
 # http://theforeman.org/plugins/foreman_discovery/2.0/#3.1.1DefaultPXEtemplate
+
+export HOME=/root
+
 control() {
-    hammer template dump --id 2 | grep 'configure_discovery_templates' && exit 0
+    if hammer template dump --id 2 | \
+        grep 'configure_discovery_templates'; then
+        exit 0
+    fi
 }
 
-set -e -x
-control
-tempfile="$(mktemp configure_discovery_templates.XXXXX)"
+control; set -e -x
+tempfile="$(mktemp /tmp/configure_discovery_templates.XXXXX)"
 trap 'rm "$tempfile"' EXIT HUP TERM
 hammer template dump --id 2 > "$tempfile" | perl -pe 's/^ONTIMEOUT .*$/ONTIMEOUT discovery/g'
-echo >>"$tempfile" <<EOF
+cat >>"$tempfile" <<EOF
 
 <%# Added by configure_discovery_templates %>
 
@@ -23,6 +28,7 @@ APPEND initrd=boot/fdi-image/initrd0.img rootflags=loop root=live:/fdi.iso rootf
 IPAPPEND 2
 
 EOF
+hammer template update --id 2 --file "$tempfile"
 control
 
 echo >&2 "Cannot update template"

@@ -1,12 +1,17 @@
 #!/bin/sh
 # Install latest version of Hammer
-# https://github.com/theforeman/hammer-cli/blob/master/doc/installation_source.md#installation-from-source
+
+export HOME=/root
+
 control() {
-          hammer --version 2>&1 | \
-                 grep -q 'hammer_cli_foreman.*0\.1\.4' && exit 0
+    if hammer --version 2>&1 | \
+        grep -q 'hammer_cli_foreman.*0\.1\.4' ; then
+        exit 0
+    fi
 }    
 
-control
+
+control; set -e -x
 gem install hammer_cli
 gem install hammer_cli_foreman
 control
