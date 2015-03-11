@@ -16,6 +16,27 @@
 
 set -e -x
 
+# The : ${foo:=bar} mantra keeps foo from the environment, with bar as
+# the default value.
+: ${OPENSTACK_STIIT_INTERNAL_IFACE:=eth1}
+: ${OPENSTACK_STIIT_MASTER_HOSTNAME:="$(hostname --short)"}
+# TODO: ask user with sane defaults from parsing ifconfig or something.
+: ${OPENSTACK_STIIT_IPADDRESS:=192.168.10.1}
+: ${OPENSTACK_STIIT_DHCP_RANGE:="192.168.10.32 192.168.10.127"}
+: ${OPENSTACK_STIIT_CLUSTER_DOMAIN:=epfl.ch}
+: ${OPENSTACK_STIIT_MASTER_FQDN:="${OPENSTACK_STIIT_MASTER_HOSTNAME}.${OPENSTACK_STIIT_CLUSTER_DOMAIN}"}
+: ${OPENSTACK_STIIT_GITHUB_DEPOT:=epfl-sti/epfl.openstack-sti.foreman}
+: ${OPENSTACK_STIIT_SOURCE_DIR:=/opt/src}
+: ${OPENSTACK_STIIT_GIT_CHECKOUT_DIR:=${OPENSTACK_STIIT_SOURCE_DIR}/epfl.openstack-sti.foreman}
+
+# Check out sources
+test -d "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"/.git || (
+    cd "$(dirname "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}")"
+    git clone https://github.com/${OPENSTACK_STIIT_GITHUB_DEPOT}.git \
+        "$(basename "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}")"
+)
+(cd "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"; git pull)
+
 rpm -q epel-release-6-8 || \
   rpm -ivh https://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
 rpm -qa | grep puppetlabs-release || \
@@ -27,19 +48,6 @@ which foreman-installer || {
     yum -y install http://yum.theforeman.org/releases/1.7/el6/x86_64/foreman-release.rpm
     yum -y install foreman-installer
 }
-
-# The : ${foo:=bar} mantra keeps foo from the environment, with bar as
-# the default value.
-: ${OPENSTACK_STIIT_INTERNAL_IFACE:=eth1}
-: ${OPENSTACK_STIIT_MASTER_HOSTNAME:="$(hostname --short)"}
-# TODO: ask user with sane defaults from parsing ifconfig or something.
-: ${OPENSTACK_STIIT_IPADDRESS:=192.168.10.1}
-: ${OPENSTACK_STIIT_DHCP_RANGE:="192.168.10.32 192.168.10.127"}
-: ${OPENSTACK_STIIT_CLUSTER_DOMAIN:=epfl.ch}
-: ${OPENSTACK_STIIT_MASTER_FQDN:="${OPENSTACK_STIIT_MASTER_HOSTNAME}.${OPENSTACK_STIIT_CLUSTER_DOMAIN}"}
-: ${OPENSTACK_STIIT_GITHUB_DEPOT:=epfl-sti/epfl.openstack-sti.foreman}
-: ${OPENSTACK_STIIT_GIT_CHECKOUT_DIR:=/opt/epfl.openstack-sti.foreman}
-
 
 # TODO: instead of this, have the user edit a canned
 # /etc/foreman/foreman-installer-answers.yaml and then run
@@ -75,14 +83,6 @@ test -d "$tftpboot_fdi_dir"/fdi-image || \
   tar --overwrite -C"$tftpboot_fdi_dir" -xf "$fdi_image"
 
 # Install our own Puppet configuration
-test -d "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"/.git || (
-    cd "$(dirname "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}")"
-    git clone https://github.com/${OPENSTACK_STIIT_GITHUB_DEPOT}.git \
-        "$(basename "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}")"
-)
-
-(cd "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"; git pull)
-
 test -l /etc/puppet/environments || {
     mv /etc/puppet/environments /etc/puppet/environments.ORIG
     ln -s "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"/puppet/environments \
