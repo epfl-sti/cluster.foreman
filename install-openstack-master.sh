@@ -89,4 +89,7 @@ test -l /etc/puppet/environments || {
        /etc/puppet/environments
 }
 
+# TODO: add the openstack-sti::puppetmaster class to the current host first
+puppet agent --test
+
 echo "All done."
