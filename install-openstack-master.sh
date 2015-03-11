@@ -45,7 +45,7 @@ rpm -qa | grep puppetlabs-release || \
 which foreman-installer || {
     # TODO: this is currently untested.
     yum-config-manager --enable rhel-6-server-optional-rpms rhel-server-rhscl-6-rpms
-    yum -y install http://yum.theforeman.org/releases/1.7/el6/x86_64/foreman-release.rpm
+    yum -y install http://yum.theforeman.org/releases/1.8/el6/x86_64/foreman-release.rpm
     yum -y install foreman-installer
 }
 
