@@ -1,0 +1,21 @@
+{
+  "CHANGELOG.md": "ab746c3dc97973abddcd3130500bb2b9",
+  "Gemfile": "47d94a96032b63a0af91e26bb9b580fe",
+  "Gemfile.lock": "3c075bd4919eaf96000d05b7c0602568",
+  "LICENSE": "1d848b09e56bb739460e8a1d0a56e15f",
+  "Modulefile": "0d6b2261fae3ebe3c919b77e6477b418",
+  "README.md": "4e0a1a69fed5cefe8f919ba887163d4c",
+  "Rakefile": "5b4d1d8360e404120c94236c1fe0948a",
+  "manifests/init.pp": "f27e9805e9626fb37c1d3bd7727baa88",
+  "manifests/install.pp": "58a5e093b9a71eebd381bc95dd4cf566",
+  "manifests/params.pp": "70608973ba65a1fd82c83fea42db5c6b",
+  "manifests/service/ipmi.pp": "64b3ef5d4b80be40b8410f3e394e6b0f",
+  "manifests/service/ipmievd.pp": "755841fbde7c53dcd912e84062440a67",
+  "manifests/service.pp": "45fae393e0c5c2f8569e3fd6520df317",
+  "spec/classes/ipmi_install_spec.rb": "e715929aa1c3514471346e4a7a222675",
+  "spec/classes/ipmi_params_spec.rb": "eb7b2f751f54760e34f9bb05b9028802",
+  "spec/classes/ipmi_service_ipmi_spec.rb": "7d1d70826fd1a440f431ee96c76bd25e",
+  "spec/classes/ipmi_service_ipmievd_spec.rb": "1e64c8f2b677350d8ecab58fd8e3609f",
+  "spec/classes/ipmi_spec.rb": "8272cd6d770fd734f4c7801066937f69",
+  "spec/spec_helper.rb": "3ea886dd135e120afa31e0aab12e85b0"
+}
