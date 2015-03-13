@@ -4,6 +4,7 @@
 # http://theforeman.org/plugins/foreman_discovery/2.0/#3.1.1DefaultPXEtemplate
 
 # @TODO search with hammer the PXELinux global default template's id
+# hammer template list --search "PXELinux global default" | grep "PXELinux global default"
 
 export HOME=/root
 
