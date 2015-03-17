@@ -1,0 +1,23 @@
+#!/bin/bash
+# Hammer-cli script to get the template ID from the template name
+# Usage: ./getTemplateId "PXELinux global default"
+# set -e -x
+getTemplateId() {
+    templateId=0;
+    if test -z "$1" || test "$#" -ne 1; then
+        echo "Error: getTemplateId() needs the template name as input."
+        exit 0
+    else
+        # echo "searching for $1's id";
+	templateId=$(hammer template list --search "$1" | grep "$1" | grep -wo "^[0-9]*");
+	if test $templateId -ne 0; then
+            echo "$templateId"
+            return $templateId
+        else
+            echo "Error: no template's ID found for $1"
+            exit 0
+        fi
+    fi
+}
+
+getTemplateId "$1"
