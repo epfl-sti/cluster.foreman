@@ -3,22 +3,39 @@
 # Install discovery-ready PXE templates as per
 # http://theforeman.org/plugins/foreman_discovery/2.0/#3.1.1DefaultPXEtemplate
 
-# @TODO search with hammer the PXELinux global default template's id
-# hammer template list --search "PXELinux global default" | grep "PXELinux global default"
-
 export HOME=/root
 
+
+getTemplateId() {
+    templateId=0;
+    if test -z "$1" || test "$#" -ne 1; then
+        echo "Error: getTemplateId() needs the template name as input."
+        exit 0
+    else
+        # echo "searching for $1's id";
+        templateId=$(hammer template list --search "$1" | grep "$1" | grep -wo "^[0-9]*");
+        if test $templateId -ne 0; then
+            #returned value
+            echo "$templateId"
+        else
+            echo "Error: no template's ID found for $1"
+            exit 0
+        fi
+    fi
+}
+
 control() {
-    if hammer template dump --id 1 | \
+    if hammer template dump --id $1 | \
         grep 'configure_discovery_templates'; then
         exit 0
     fi
 }
 
-control; set -e -x
+TID=$(getTemplateId "PXELinux global default");
+control $TID; set -e -x
 tempfile="$(mktemp /tmp/configure_discovery_templates.XXXXX)"
 trap 'rm "$tempfile"' EXIT HUP TERM
-hammer template dump --id 1 > "$tempfile" | perl -pe 's/^ONTIMEOUT .*$/ONTIMEOUT discovery/g'
+hammer template dump --id $TID > "$tempfile" | perl -pe 's/^ONTIMEOUT .*$/ONTIMEOUT discovery/g'
 
 cat >>"$tempfile" <<EOF
 
@@ -32,8 +49,8 @@ APPEND initrd=boot/fdi-image/initrd0.img rootflags=loop root=live:/fdi.iso rootf
 IPAPPEND 2
 
 EOF
-hammer template update --id 1 --file "$tempfile"
-control
+hammer template update --id $TID --file "$tempfile"
+control $TID
 
 echo >&2 "Cannot update template"
 exit 1
