@@ -78,8 +78,37 @@ hammer auth-source ldap list
 
 # @TODO: search for OSSTIIT_AUTH_SRC_NAME in the result of hammer auth-source ldap list
 # No --search option for auth-source in hammer (sigh), old freestyle mode
+# Note: other way to do it is to check it with
+#       $ hammer auth-source ldap info --name "$OSSTIIT_AUTH_SRC_NAME"
 OSSTIIT_AUTH_SRC_ID=$(hammer auth-source ldap list --per-page 1000 | grep "$OSSTIIT_AUTH_SRC_NAME" | grep -wo "^[0-9]*")
-echo $OSSTIIT_AUTH_SRC_ID
+# debug : echo $OSSTIIT_AUTH_SRC_ID
+if [ -z $OSSTIIT_AUTH_SRC_ID ]; then
+  # get auth src id, now update it
+  hammer auth-source ldap info --id $OSSTIIT_AUTH_SRC_ID
+else
+  # this auth src id doesn't exists, create it
+  # hammer auth-source ldap create \
+: '
+Usage:
+    hammer auth-source ldap create [OPTIONS]
+
+Options:
+ --account ACCOUNT
+ --account-password ACCOUNT_PASSWORD   required if onthefly_register is true
+ --attr-firstname ATTR_FIRSTNAME       required if onthefly_register is true
+ --attr-lastname ATTR_LASTNAME         required if onthefly_register is true
+ --attr-login ATTR_LOGIN               required if onthefly_register is true
+ --attr-mail ATTR_MAIL                 required if onthefly_register is true
+ --attr-photo ATTR_PHOTO
+ --base-dn BASE_DN
+ --host HOST
+ --name NAME
+ --onthefly-register ONTHEFLY_REGISTER
+ --port PORT                           defaults to 389
+ --tls TLS
+ -h, --help                            print help
+'
+fi
 
 # @TODO: if the OSSTIIT_AUTH_SRC_NAME (LDAP authentification source)
 #         exists -> update it else create it
