@@ -82,7 +82,7 @@ hammer auth-source ldap list
 #       $ hammer auth-source ldap info --name "$OSSTIIT_AUTH_SRC_NAME"
 # debug :
 echo "Searching for $OSSTIIT_AUTH_SRC_NAME ID"
-OSSTIIT_AUTH_SRC_ID=$(hammer auth-source ldap list --per-page 1000 | grep "$OSSTIIT_AUTH_SRC_NAME" | grep -wo "^[0-9]*")
+OSSTIIT_AUTH_SRC_ID=$(hammer auth-source ldap list --per-page 1000 | grep "$OSSTIIT_AUTH_SRC_NAME" | grep -wo "^[0-9]*" || true)
 # debug :
 echo "OSSTIIT_AUTH_SRC_ID = $OSSTIIT_AUTH_SRC_ID"
 if [ -z "${OSSTIIT_AUTH_SRC_ID}" ]; then
