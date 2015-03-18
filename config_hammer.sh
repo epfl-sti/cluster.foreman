@@ -46,6 +46,7 @@ fi
 
 # Generic function to search for ID of specified source
 # Usage : getSourceId subcommands keywords
+# Usage : getSourceId subcommands keywords
 #  e.g. : getSourceId auth-source "EPFL LDAP"
 #  Tips : hammer --help to get availables subcommands
 getSourceId() {
@@ -55,7 +56,7 @@ getSourceId() {
         exit 0
     else
         echo "searching for $1->$2's id";
-        sourceId=$(hammer $1 list --search "$2" | grep "$2" | grep -wo "^[0-9]*");
+        sourceId=$(hammer $1 --search "$2" | grep "$2" | grep -wo "^[0-9]*");
         if test $sourceId -ne 0; then
             #returned value
             echo "$sourceId"
@@ -76,8 +77,9 @@ hammer auth-source ldap list
 #curl -i -H 'Accept:version=2' -H "Content-Type:application/json" -H "Accept:application/json" -u ${OSSTIIT_USER}:${OSSTIIT_PASS} http://${OSSTIIT_FOREMAN_IP}/api/auth_source_ldaps
 
 # @TODO: search for OSSTIIT_AUTH_SRC_NAME in the result of hammer auth-source ldap list
-# searching for auth-source id of OSSTIIT_AUTH_SRC_NAME
-getSourceId auth-source ${OSSTIIT_AUTH_SRC_NAME}
+# No --search option for auth-source in hammer (sigh), old freestyle mode
+OSSTIIT_AUTH_SRC_ID=$(hammer auth-source ldap list --per-page 1000 | grep "$OSSTIIT_AUTH_SRC_NAME" | grep -wo "^[0-9]*")
+echo $OSSTIIT_AUTH_SRC_ID
 
 # @TODO: if the OSSTIIT_AUTH_SRC_NAME (LDAP authentification source)
 #         exists -> update it else create it
