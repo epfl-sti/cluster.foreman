@@ -44,9 +44,75 @@ else
     exit 0
 fi
 
+# Generic function to search for ID of specified source
+# Usage : getSourceId subcommands keywords
+#  e.g. : getSourceId auth-source "EPFL LDAP"
+#  Tips : hammer --help to get availables subcommands
+getSourceId() {
+    sourceId=0;
+    if test -z "$1" || test -z "$2" || test "$#" -ne 2; then
+        echo "Error: getTemplateId() needs\n 1) the name of the source, e.g. auth \n 2)the source desc name as input.\nE.g. getSourceId auth-source \"EPFL LDAP\""
+        exit 0
+    else
+        echo "searching for $1->$2's id";
+        sourceId=$(hammer $1 list --search "$2" | grep "$2" | grep -wo "^[0-9]*");
+        if test $sourceId -ne 0; then
+            #returned value
+            echo "$sourceId"
+        else
+            echo "Error: no $1's ID found for $1->$2"
+            exit 0
+        fi
+    fi
+}
+
+
+#
+#    AUTH SOURCES - http://theforeman.org/api/apidoc/v2/auth_source_ldaps.html
+#
 # Get auth_source_info
 echo "-- Auth Source Info ------------------------------------------------------------"
-curl -i -H 'Accept:version=2' -H "Content-Type:application/json" -H "Accept:application/json" -u ${OSSTIIT_USER}:${OSSTIIT_PASS} http://${OSSTIIT_FOREMAN_IP}/api/auth_source_ldaps
+hammer auth-source ldap list
+#curl -i -H 'Accept:version=2' -H "Content-Type:application/json" -H "Accept:application/json" -u ${OSSTIIT_USER}:${OSSTIIT_PASS} http://${OSSTIIT_FOREMAN_IP}/api/auth_source_ldaps
+
+# @TODO: search for OSSTIIT_AUTH_SRC_NAME in the result of hammer auth-source ldap list
+# searching for auth-source id of OSSTIIT_AUTH_SRC_NAME
+getSourceId auth-source ${OSSTIIT_AUTH_SRC_NAME}
+
+# @TODO: if the OSSTIIT_AUTH_SRC_NAME (LDAP authentification source)
+#         exists -> update it else create it
+
+
+#
+#    USER GROUP - http://theforeman.org/api/apidoc/v2/usergroups.html
+#
+# @TODO: 1) search for it
+#        2) update or create it
+
+
+#
+#    EXTERNAL USER GROUP - http://theforeman.org/api/apidoc/v2/external_usergroups.html
+#
+# @TODO: 1) search for it
+#        2) update or create it
+
+
+#
+#    ROLES - http://theforeman.org/api/apidoc/v2/roles.html
+#
+# @TODO: 1) search for them
+#        2) update or create them
+#       => Create/update 2 roles:
+#       STI-Smart-Admin
+#       STI-Begginer-Admin
+
+
+
+
+exit 0
+#
+#  BELOW THE CURL WAY TO DO IT, TO BE REMOVED
+#
 
 
 # Create LDAP authentification source
