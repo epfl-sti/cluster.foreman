@@ -45,13 +45,13 @@ while read -r line ; do
             tempInput=${tempInput:-$tempVal}
             echo $tempInput
             # Write it to sticonfig.cfg
-            echo ": \${${tempVarName}:=$tempInput}" >> ./sticonfig.cfg
+            echo ": \${${tempVarName}:=$tempInput}" >> $STI_CONFIG_FILE
         fi
     done
 done 3<&0 < <(grep -hr ^: sticonfig.init  | cut -c 5-  | sed 's/.$//')
 
 echo "Print the result:"
-cat sticonfig.cfg
+cat $STI_CONFIG_FILE
 echo ".... end ...."
 echo "Be sure to add .config in your .gitignore file"
 
