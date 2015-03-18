@@ -16,18 +16,16 @@
 
 set -e -x
 
-# The : ${foo:=bar} mantra keeps foo from the environment, with bar as
-# the default value.
-: ${OPENSTACK_STIIT_INTERNAL_IFACE:=eth1}
-: ${OPENSTACK_STIIT_MASTER_HOSTNAME:="$(hostname --short)"}
-# TODO: ask user with sane defaults from parsing ifconfig or something.
-: ${OPENSTACK_STIIT_IPADDRESS:=192.168.10.1}
-: ${OPENSTACK_STIIT_DHCP_RANGE:="192.168.10.32 192.168.10.127"}
-: ${OPENSTACK_STIIT_CLUSTER_DOMAIN:=epfl.ch}
-: ${OPENSTACK_STIIT_MASTER_FQDN:="${OPENSTACK_STIIT_MASTER_HOSTNAME}.${OPENSTACK_STIIT_CLUSTER_DOMAIN}"}
-: ${OPENSTACK_STIIT_GITHUB_DEPOT:=epfl-sti/epfl.openstack-sti.foreman}
-: ${OPENSTACK_STIIT_SOURCE_DIR:=/opt/src}
-: ${OPENSTACK_STIIT_GIT_CHECKOUT_DIR:=${OPENSTACK_STIIT_SOURCE_DIR}/epfl.openstack-sti.foreman}
+# The configuration file
+STI_CONFIG_FILE='./sticonfig.cfg'
+# Include configuration file
+if [ -f $STI_CONFIG_FILE ]; then
+    # source the config file
+    . $STI_CONFIG_FILE
+else
+    echo "No config file found, please run ./init.sh to create $STI_CONFIG_FILE"
+    exit 0
+fi
 
 # Check out sources
 test -d "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"/.git || (
