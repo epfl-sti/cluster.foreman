@@ -6,6 +6,5 @@ RUN yum -y groupinstall "Development Tools"
 RUN yum -y install which
 
 RUN mkdir -p /opt/src
-# RUN git clone https://github.com/epfl-sti/epfl.openstack-sti.foreman.git /opt/src/epfl.openstack-sti.foreman
-ADD sticonfig.cfg /opt/src/epfl.openstack-sti.foreman/
 ADD bashrc /root/.bashrc
+ENV STI_CONFIG_FILE docker-foreman/sticonfig.cfg

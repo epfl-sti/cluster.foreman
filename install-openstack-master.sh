@@ -17,7 +17,7 @@
 set -e -x
 
 # The configuration file
-STI_CONFIG_FILE='./sticonfig.cfg'
+: ${STI_CONFIG_FILE:='./sticonfig.cfg'}
 # Include configuration file
 if [ -f $STI_CONFIG_FILE ]; then
     # source the config file
@@ -72,7 +72,7 @@ test -z "${OPENSTACK_STIIT_SKIP_FOREMAN_INSTALLER}" && foreman-installer \
   --foreman-proxy-tftp=true \
   --foreman-proxy-tftp-servername="$OPENSTACK_STIIT_IPADDRESS" \
   --foreman-proxy-dhcp=true \
-  --foreman-proxy-dhcp-interface=eth1 \
+  --foreman-proxy-dhcp-interface="$OPENSTACK_STIIT_INTERNAL_IFACE" \
   --foreman-proxy-dhcp-gateway="$OPENSTACK_STIIT_IPADDRESS" \
   --foreman-proxy-dhcp-range="$OPENSTACK_STIIT_DHCP_RANGE" \
   --foreman-proxy-dhcp-nameservers="$OPENSTACK_STIIT_IPADDRESS" \
