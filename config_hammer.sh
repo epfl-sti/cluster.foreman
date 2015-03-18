@@ -81,10 +81,10 @@ hammer auth-source ldap list
 # Note: other way to do it is to check it with
 #       $ hammer auth-source ldap info --name "$OSSTIIT_AUTH_SRC_NAME"
 # debug :
-echo "$OSSTIIT_AUTH_SRC_NAME ID"
+echo "Searching for $OSSTIIT_AUTH_SRC_NAME ID"
 OSSTIIT_AUTH_SRC_ID=$(hammer auth-source ldap list --per-page 1000 | grep "$OSSTIIT_AUTH_SRC_NAME" | grep -wo "^[0-9]*")
 # debug :
-echo "$OSSTIIT_AUTH_SRC_ID"
+echo "OSSTIIT_AUTH_SRC_ID = $OSSTIIT_AUTH_SRC_ID"
 if [ -z "${OSSTIIT_AUTH_SRC_ID}" ]; then
   # debug :
   echo "$OSSTIIT_AUTH_SRC_ID Not found, creating it"
