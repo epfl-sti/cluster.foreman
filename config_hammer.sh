@@ -83,12 +83,16 @@ hammer auth-source ldap list
 OSSTIIT_AUTH_SRC_ID=$(hammer auth-source ldap list --per-page 1000 | grep "$OSSTIIT_AUTH_SRC_NAME" | grep -wo "^[0-9]*")
 # debug : echo $OSSTIIT_AUTH_SRC_ID
 if [ -z $OSSTIIT_AUTH_SRC_ID ]; then
+  # debug :
+  echo "$OSSTIIT_AUTH_SRC_ID Not found, creating it"
   # get auth src id, now update it
   # List the info
   hammer auth-source ldap info --id $OSSTIIT_AUTH_SRC_ID
   # Update info
   # hammer auth-source ldap update --id $OSSTIIT_AUTH_SRC_ID
 else
+  # debug :
+  echo "$OSSTIIT_AUTH_SRC_ID found, updating it"
   # this auth src id doesn't exists, create it
   hammer auth-source ldap create \
     --name ${OSSTIIT_AUTH_SRC_NAME} \
