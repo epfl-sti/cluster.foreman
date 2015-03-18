@@ -80,9 +80,12 @@ hammer auth-source ldap list
 # No --search option for auth-source in hammer (sigh), old freestyle mode
 # Note: other way to do it is to check it with
 #       $ hammer auth-source ldap info --name "$OSSTIIT_AUTH_SRC_NAME"
+# debug :
+echo "$OSSTIIT_AUTH_SRC_NAME ID"
 OSSTIIT_AUTH_SRC_ID=$(hammer auth-source ldap list --per-page 1000 | grep "$OSSTIIT_AUTH_SRC_NAME" | grep -wo "^[0-9]*")
-# debug : echo $OSSTIIT_AUTH_SRC_ID
-if [ -z $OSSTIIT_AUTH_SRC_ID ]; then
+# debug :
+echo "$OSSTIIT_AUTH_SRC_ID"
+if [ -z "${OSSTIIT_AUTH_SRC_ID}" ]; then
   # debug :
   echo "$OSSTIIT_AUTH_SRC_ID Not found, creating it"
   # get auth src id, now update it
@@ -133,7 +136,7 @@ else
    -h, --help                            print help
   '
   OSSTIIT_AUTH_SRC_ID=$(hammer auth-source ldap list --per-page 1000 | grep "$OSSTIIT_AUTH_SRC_NAME" | grep -wo "^[0-9]*")
-  if [ -z $OSSTIIT_AUTH_SRC_ID ]; then
+  if [ -z "${OSSTIIT_AUTH_SRC_ID}" ]; then
     echo "$OSSTIIT_AUTH_SRC_NAME created with id=$OSSTIIT_AUTH_SRC_ID"
   else
     echo "$OSSTIIT_AUTH_SRC_NAME creation failure"
@@ -144,7 +147,7 @@ fi
 # @TODO: if the OSSTIIT_AUTH_SRC_NAME (LDAP authentification source)
 #         exists -> update it else create it
 
-
+if [ -z $OSSTIIT_AUTH_SRC_ID ]; then
 #
 #    USER GROUP - http://theforeman.org/api/apidoc/v2/usergroups.html
 #
