@@ -12,9 +12,7 @@
 
 STI_CONFIG_FILE='./sticonfig.cfg'
 
-# Read all the var from config files and save it to test.cfg
-# find . -name "*.sh" -exec grep -hr ^: {} \;  > test.cfg
-# Read all the var from config files and remove : {$ ... }
+# To create the config.init file from all the *.sh script
 # find . -name "*.sh" -exec grep -hr ^: {} \;  | cut -c 5-  | sed 's/.$//' > test.cfg 
 
 tempVarName=""
@@ -30,9 +28,6 @@ fi
 
 echo -e "######################################################################\n# STI Foreman config file \n# Generated on $(date)\n######################################################################" > ./sticonfig.cfg
 while read -r line ; do
-    #echo "Processing $line"
-    #echo $line | grep -hE '^[\:\ \${]' 
-    #echo $line | grep -ow '^:\ \${.*' 
     # http://stackoverflow.com/questions/10586153/bash-split-string-into-array
     IFS='\:=' read -a array <<< "$line"
     tempVarName=""
@@ -42,9 +37,7 @@ while read -r line ; do
     do
         if [ $index -eq 0 ]; then 
             tempVarName=${array[index]} 
-            #echo $tempVarName
         fi
-        #echo $index
         if [ $index -eq 2 ]; then
             # http://stackoverflow.com/questions/9651746/bash-read-inside-a-loop-reading-a-file
             tempVal=${array[index]}
