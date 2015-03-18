@@ -84,30 +84,57 @@ OSSTIIT_AUTH_SRC_ID=$(hammer auth-source ldap list --per-page 1000 | grep "$OSST
 # debug : echo $OSSTIIT_AUTH_SRC_ID
 if [ -z $OSSTIIT_AUTH_SRC_ID ]; then
   # get auth src id, now update it
+  # List the info
   hammer auth-source ldap info --id $OSSTIIT_AUTH_SRC_ID
+  # Update info
+  # hammer auth-source ldap update --id $OSSTIIT_AUTH_SRC_ID
 else
   # this auth src id doesn't exists, create it
-  # hammer auth-source ldap create \
-: '
-Usage:
-    hammer auth-source ldap create [OPTIONS]
+  hammer auth-source ldap create \
+    --name ${OSSTIIT_AUTH_SRC_NAME} \
+    --host ${OSSTIIT_LDAP_HOST} \
+    #--type ${OSSTIIT_LDAP_TYPE} \ # (@ISSUE? NOT IN THE Vhammer auth-source ldap update --help)
+    --tls ${OSSTIIT_LDAP_TLS} \
+    --port ${OSSTIIT_LDAP_PORT} \
+    --account ${OSSTIIT_LDAP_USER} \
+    --account-password ${OSSTIIT_LDAP_PASS} \
+    --base-dn ${OSSTIIT_LDAP_BASE} \
+    #--groups-base ${OSSTIIT_LDAP_BASE} \ #  (@ISSUE? NOT IN THE Vhammer auth-source ldap update --help)
+    #--ldap-filter ${OSSTIIT_LDAP_FILTER} \ #  (@ISSUE? NOT IN THE Vhammer auth-source ldap update --help)
+    --onthefly-register ${OSSTIIT_LDAP_REG} \
+    --attr-login ${OSSTIIT_LDAP_ATT_LOGIN} \
+    --attr-firstname ${OSSTIIT_LDAP_ATT_FIRST} \
+    --attr-lastname ${OSSTIIT_LDAP_ATT_LAST} \
+    --attr-mail ${OSSTIIT_LDAP_ATT_MAIL} \
+    --attr-photo ${OSSTIIT_LDAP_ATT_PHOTO}
 
-Options:
- --account ACCOUNT
- --account-password ACCOUNT_PASSWORD   required if onthefly_register is true
- --attr-firstname ATTR_FIRSTNAME       required if onthefly_register is true
- --attr-lastname ATTR_LASTNAME         required if onthefly_register is true
- --attr-login ATTR_LOGIN               required if onthefly_register is true
- --attr-mail ATTR_MAIL                 required if onthefly_register is true
- --attr-photo ATTR_PHOTO
- --base-dn BASE_DN
- --host HOST
- --name NAME
- --onthefly-register ONTHEFLY_REGISTER
- --port PORT                           defaults to 389
- --tls TLS
- -h, --help                            print help
-'
+  : '
+  Usage:
+      hammer auth-source ldap create [OPTIONS]
+
+  Options:
+   --account ACCOUNT
+   --account-password ACCOUNT_PASSWORD   required if onthefly_register is true
+   --attr-firstname ATTR_FIRSTNAME       required if onthefly_register is true
+   --attr-lastname ATTR_LASTNAME         required if onthefly_register is true
+   --attr-login ATTR_LOGIN               required if onthefly_register is true
+   --attr-mail ATTR_MAIL                 required if onthefly_register is true
+   --attr-photo ATTR_PHOTO
+   --base-dn BASE_DN
+   --host HOST
+   --name NAME
+   --onthefly-register ONTHEFLY_REGISTER
+   --port PORT                           defaults to 389
+   --tls TLS
+   -h, --help                            print help
+  '
+  OSSTIIT_AUTH_SRC_ID=$(hammer auth-source ldap list --per-page 1000 | grep "$OSSTIIT_AUTH_SRC_NAME" | grep -wo "^[0-9]*")
+  if [ -z $OSSTIIT_AUTH_SRC_ID ]; then
+    echo "$OSSTIIT_AUTH_SRC_NAME created with id=$OSSTIIT_AUTH_SRC_ID"
+  else
+    echo "$OSSTIIT_AUTH_SRC_NAME creation failure"
+    exit 0
+  fi
 fi
 
 # @TODO: if the OSSTIIT_AUTH_SRC_NAME (LDAP authentification source)
