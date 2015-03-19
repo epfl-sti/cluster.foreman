@@ -12,6 +12,9 @@ class openstack-sti::puppetmaster(
       package { 'puppet':
               ensure => 'present',
       }
+      package { 'foreman':
+              ensure => 'present',
+      }
       exec { 'latest_hammer':
         command => "${src_dir}/puppet/scripts/install_latest_hammer",
         unless => "${src_dir}/puppet/scripts/install_latest_hammer --check-only"
@@ -21,5 +24,9 @@ class openstack-sti::puppetmaster(
         unless => "${src_dir}/puppet/scripts/configure_discovery_templates --check-only",
         require => Exec["latest_hammer"],
       }
-        
+      class { "dnsclient":
+        nameservers => [ '127.0.0.1' ],
+        domain => "epfl.ch"
+      }
+      class { "ntp": }
 }
