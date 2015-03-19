@@ -29,4 +29,10 @@ class openstack-sti::puppetmaster(
         domain => "epfl.ch"
       }
       class { "ntp": }
+
+      # Act as a masquerading proxy, assuming the compute nodes will use us
+      # as their default route.
+      # https://forge.puppetlabs.com/bashtoni/masq
+      class { 'firewall': }
+      class { 'masq': }
 }
