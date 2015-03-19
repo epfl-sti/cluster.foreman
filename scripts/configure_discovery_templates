@@ -25,14 +25,14 @@ getTemplateId() {
 }
 
 control() {
-    if hammer template dump --id $1 | \
-        grep 'configure_discovery_templates'; then
-        exit 0
-    fi
+    hammer template dump --id $TID | grep -q 'configure_discovery_templates'
 }
 
 TID=$(getTemplateId "PXELinux global default");
-control $TID; set -e -x
+control && exit 0
+[ "$1" == "--check-only" ] && exit 1
+
+set -e -x
 tempfile="$(mktemp /tmp/configure_discovery_templates.XXXXX)"
 trap 'rm "$tempfile"' EXIT HUP TERM
 hammer template dump --id $TID > "$tempfile" | perl -pe 's/^ONTIMEOUT .*$/ONTIMEOUT discovery/g'
@@ -50,8 +50,8 @@ IPAPPEND 2
 
 EOF
 hammer template update --id $TID --file "$tempfile"
-control $TID
 
+control && exit 0
 echo >&2 "Cannot update template"
 exit 1
 

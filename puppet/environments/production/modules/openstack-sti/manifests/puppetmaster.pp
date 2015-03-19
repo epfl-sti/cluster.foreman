@@ -11,10 +11,12 @@ class openstack-sti::puppetmaster {
               ensure => 'present',
       }
       exec { 'latest_hammer':
-        command => "/opt/src/epfl.openstack-sti.foreman/scripts/ensure_latest_hammer",
+        command => "/opt/src/epfl.openstack-sti.foreman/scripts/install_latest_hammer",
+        unless => "/opt/src/epfl.openstack-sti.foreman/scripts/install_latest_hammer --check-only"
       }
       exec { 'configure_discovery_templates':
         command => "/opt/src/epfl.openstack-sti.foreman/scripts/configure_discovery_templates",
+        unless => "/opt/src/epfl.openstack-sti.foreman/scripts/configure_discovery_templates --check-only",
         require => Exec["latest_hammer"],
       }
         

@@ -4,17 +4,16 @@
 export HOME=/root
 
 control() {
-    if hammer --version 2>&1 | \
-        grep -q 'hammer_cli_foreman.*0\.1\.4' ; then
-        exit 0
-    fi
+    hammer --version 2>&1 | grep -q 'hammer_cli_foreman.*0\.1\.4'
 }    
 
+control && exit 0
+[ "$1" == "--check-only" ] && exit 1
 
-control; set -e -x
+set -e -x
 gem install hammer_cli
 gem install hammer_cli_foreman
-control
 
+control && exit 0
 echo >&2 "Cannot update hammer"
 exit 1
