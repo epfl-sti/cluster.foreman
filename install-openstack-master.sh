@@ -17,7 +17,7 @@
 set -e -x
 
 # The configuration file
-STI_CONFIG_FILE='./sticonfig.cfg'
+: ${STI_CONFIG_FILE:='./sticonfig.cfg'}
 # Include configuration file
 if [ -f $STI_CONFIG_FILE ]; then
     # source the config file
@@ -35,16 +35,30 @@ test -d "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"/.git || (
 )
 (cd "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"; git pull)
 
-rpm -q epel-release-6-8 || \
-  rpm -ivh https://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
-rpm -qa | grep puppetlabs-release || \
-  rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm
+which yum-config-manager || {
+  yum -y install yum-utils
+}
+
+case "$(cat /etc/redhat-release)" in
+  "Fedora release 20"*)
+    # Supported only for the Docker test; see docker-foreman/Dockerfile
+    foreman_release_url="http://yum.theforeman.org/releases/1.8/f19/x86_64/foreman-release.rpm"
+    rpm -qa | grep puppetlabs-release || \
+      rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-fedora-20.noarch.rpm
+    ;;
+  "Red Hat"*)
+    foreman_release_url="http://yum.theforeman.org/releases/1.8/el6/x86_64/foreman-release.rpm"
+    rpm -q epel-release-6-8 || \
+      rpm -ivh --force https://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+    yum-config-manager --enable rhel-6-server-optional-rpms rhel-server-rhscl-6-rpms
+    rpm -qa | grep puppetlabs-release || \
+      rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm
+
+    ;;
+  esac
 
 which foreman-installer || {
-    # TODO: this is currently untested.
-    yum-config-manager --enable rhel-6-server-optional-rpms rhel-server-rhscl-6-rpms
-    rpm -q foreman-release || \
-        yum -y install http://yum.theforeman.org/releases/1.8/el6/x86_64/foreman-release.rpm
+    rpm -q foreman-release || yum -y install $foreman_release_url
     yum -y install foreman-installer
 }
 
@@ -58,7 +72,7 @@ test -z "${OPENSTACK_STIIT_SKIP_FOREMAN_INSTALLER}" && foreman-installer \
   --foreman-proxy-tftp=true \
   --foreman-proxy-tftp-servername="$OPENSTACK_STIIT_IPADDRESS" \
   --foreman-proxy-dhcp=true \
-  --foreman-proxy-dhcp-interface=eth1 \
+  --foreman-proxy-dhcp-interface="$OPENSTACK_STIIT_INTERNAL_IFACE" \
   --foreman-proxy-dhcp-gateway="$OPENSTACK_STIIT_IPADDRESS" \
   --foreman-proxy-dhcp-range="$OPENSTACK_STIIT_DHCP_RANGE" \
   --foreman-proxy-dhcp-nameservers="$OPENSTACK_STIIT_IPADDRESS" \
