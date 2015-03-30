@@ -35,6 +35,17 @@ class ipmi::params {
         }
       }
     }
+    'debian': {
+      case $::operatingsystemrelease {
+        12.02, 14.04: {
+          # debian
+          $ipmi_package = ['openipmi', 'ipmitool']
+        }
+        default: {
+          fail("Module ${module_name} is not supported on operatingsystemmajrelease ${::operatingsystemmajrelease}")
+        }
+      }
+    }
     default: {
       fail("Module ${module_name} is not supported on ${::operatingsystem}")
     }
