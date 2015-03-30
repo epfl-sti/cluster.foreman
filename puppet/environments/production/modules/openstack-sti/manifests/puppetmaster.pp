@@ -8,10 +8,7 @@
 
 class openstack-sti::puppetmaster(
   $src_dir = "/opt/src/epfl.openstack-sti.foreman"
-  ) {
-      package { 'puppet':
-              ensure => 'present',
-      }
+  ) inherits openstack-sti {
       package { 'foreman':
               ensure => 'present',
       }
@@ -28,7 +25,6 @@ class openstack-sti::puppetmaster(
         nameservers => [ '127.0.0.1' ],
         domain => "epfl.ch"
       }
-      class { "ntp": }
 
       # Act as a masquerading proxy, assuming the compute nodes will use us
       # as their default route.
