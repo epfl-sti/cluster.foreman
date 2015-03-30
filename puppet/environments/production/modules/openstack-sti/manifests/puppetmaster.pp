@@ -1,11 +1,12 @@
-# Class: puppetmaster
+# Class: openstack-sti::puppetmaster
 #
 # This class describes an OpenStack-STI puppetmaster.
 #
 # At the moment, there is exactly one of these per cluster, and it
 # manages bare-metal provisioning (using Foreman) in addition to being
-# the puppetmaster.
-
+# the puppetmaster. If it goes down, software update and provisioning
+# become impossible until it is brought back up, but the cluster should
+# otherwise work. We hope.
 class openstack-sti::puppetmaster(
   $src_dir = "/opt/src/epfl.openstack-sti.foreman"
   ) inherits openstack-sti {
@@ -29,6 +30,7 @@ class openstack-sti::puppetmaster(
       # Act as a masquerading proxy, assuming the compute nodes will use us
       # as their default route.
       # https://forge.puppetlabs.com/bashtoni/masq
+      # TODO: the fault tolerance story is somewhat lacking here.
       class { 'firewall': }
       class { 'masq': }
 }

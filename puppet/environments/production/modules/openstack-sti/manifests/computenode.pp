@@ -1,4 +1,4 @@
-# Class: computenode
+# Class: openstack-sti::computenode
 #
 # This class describes an ordinary OpenStack-STI compute node.
 #
