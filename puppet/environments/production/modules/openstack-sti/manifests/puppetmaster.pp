@@ -24,7 +24,7 @@ class openstack-sti::puppetmaster(
       }
       class { "dnsclient":
         nameservers => [ '127.0.0.1' ],
-        domain => "epfl.ch"
+        domain => "cloud.epfl.ch"
       }
 
       # Act as a masquerading proxy, assuming the compute nodes will use us
