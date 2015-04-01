@@ -1,0 +1,16 @@
+{
+  "CHANGELOG": "ccc691d90dfda5cfffd03967aecaccce",
+  "Gemfile": "740b1fe8e19de137fb506a89b8dbf8a4",
+  "README.md": "00b8e8b2044736bbfd16499e80094081",
+  "Rakefile": "f37e6131fe7de9a49b09d31596f5fbf1",
+  "lib/puppet/provider/rpmkey/rpm.rb": "a840595b5aac5c3e7526d00962714269",
+  "lib/puppet/type/rpmkey.rb": "4f150dcb24f68df9f050c16d888ccbc2",
+  "metadata.json": "c7a3c158df6aef6fd01a89ccabe07508",
+  "spec/fixtures/unit/provider/rpmkey/rpm/rpm_q": "d9a82d38bf6d6eb5571ac3e907567f33",
+  "spec/fixtures/unit/provider/rpmkey/rpm/rpm_q_unexpected": "3e65819e77616ff9f4812288fe0256f4",
+  "spec/integration/provider/rpmkey/rpm_spec.rb": "c7a5f3fc770aaf4c8a48233dc499f81c",
+  "spec/spec.opts": "e27aed91d33ecc4417f97ff0365ece35",
+  "spec/spec_helper.rb": "f7508059834e3bb5c865063193a896d5",
+  "spec/unit/provider/rpmkey/rpm_spec.rb": "782e49c3435e463105661f4a378d0490",
+  "spec/unit/type/rpmkey_spec.rb": "45786600b29bb20a46f62e67d6a812a2"
+}

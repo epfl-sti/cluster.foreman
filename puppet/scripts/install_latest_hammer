@@ -1,0 +1,19 @@
+#!/bin/sh
+# Install latest version of Hammer
+
+export HOME=/root
+
+control() {
+    hammer --version 2>&1 | grep -q 'hammer_cli_foreman.*0\.1\.4'
+}    
+
+control && exit 0
+[ "$1" == "--check-only" ] && exit 1
+
+set -e -x
+gem install hammer_cli
+gem install hammer_cli_foreman
+
+control && exit 0
+echo >&2 "Cannot update hammer"
+exit 1
