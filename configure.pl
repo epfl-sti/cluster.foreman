@@ -136,6 +136,13 @@ sub public_ip_address : PromptUser {
   return inet_ntoa($myaddr);
 }
 
+# Let foreman-installer know that we want our own
+# foreman-installer/modules/openstacksti to be part of its to-do list.
+sub openstacksti : ToYaml { return {} }
+
+# Same effect as --enable-foreman-plugin-discovery
+#   --foreman-plugin-discovery-install-images=true etc.
+
 =pod
 
 The rest is cuisine.

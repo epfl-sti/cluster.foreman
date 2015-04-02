@@ -308,13 +308,11 @@ sub yaml_key {
       return split m/__/, $key;
     }
   } elsif ($self->has_PromptUser) {
-    # HACK ALERT!
-    # The name of this section is also what prompts foreman-installer to add
-    # ../foreman-installer/modules/openstacksti to its to-do list.
-    # This is not great, because doing so also clobbers all values.
-    # TODO: move the storage of configure.pl's own state either under a different
-    # top-level key (foreman), or into its own file altoghether.
-    return ("openstacksti",  $self->{name});
+    # We can't pick our own top-level name, lest foreman-installer believe
+    # that it references a module. Hide our data under foreman.
+    # TODO: this unfortunately goes away as soon as foreman-installer runs;
+    # need to save into a different YAML file.
+    return ("foreman", "openstacksti", $self->{name});
   } else {
     die "$self->{name} is not persistent";
   }
