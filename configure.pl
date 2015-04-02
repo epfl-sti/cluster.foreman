@@ -22,15 +22,6 @@ use Memoize;
 use FindBin; use lib "$FindBin::Bin/lib";
 use GenerateAnswersYaml;
 
-sub foreman_plugin_discovery : ToYaml("foreman::plugin::discovery") {
-  return {
-    tftp_root => "/var/lib/tftpboot",
-    image_name => "fdi-image-latest.tar",
-    source_url => "http://downloads.theforeman.org/discovery/releases/latest/",
-    install_images => "true"
-  }
-}
-
 sub foreman_proxy__tftp_severname : ToYaml    { private_ip_address() }
 sub foreman_proxy__dhcp_gateway : ToYaml      { private_ip_address() }
 sub foreman_proxy__dhcp_nameservers : ToYaml  { private_ip_address() }
@@ -42,6 +33,15 @@ sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
   my $begin_dhcp_range = "$net.32";
   my $end_dhcp_range = "$net.127";
   return "$begin_dhcp_range $end_dhcp_range";
+}
+
+sub foreman_proxy__dns_interface : ToYaml    { private_interface() }
+sub foreman_proxy__dhcp_interface : ToYaml   { private_interface() }
+
+sub foreman_proxy__dns_reverse : ToYaml : PromptUser {
+  my @arpa = (reverse(split m/\./, private_ip_address()), qw(in-addr arpa));
+  shift @arpa;
+  return join(".", @arpa);
 }
 
 memoize('interfaces_and_ips');
@@ -80,6 +80,11 @@ sub private_ip_address : PromptUser {
   my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
     (values %interfaces_and_ips);
   return $private_ips[0];
+}
+
+sub private_interface : PromptUser {
+  my %ips_to_interfaces = reverse(interfaces_and_ips);
+  return $ips_to_interfaces{private_ip_address()};
 }
 
 sub public_ip_address : PromptUser {
