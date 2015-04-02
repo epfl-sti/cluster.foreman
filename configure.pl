@@ -26,7 +26,7 @@ sub foreman_plugin_discovery : ToYaml {
     tftp_root => "/var/lib/tftpboot",
     image_name => "fdi-image-latest.tar",
     source_url => "http://downloads.theforeman.org/discovery/releases/latest/",
-    install_images => 1
+    install_images => "true"
   }
 }
 
