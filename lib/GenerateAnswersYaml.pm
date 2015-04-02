@@ -300,7 +300,7 @@ sub yaml_key {
 sub flag_name {
   my ($self) = @_;
   my $flag = lc($self->{name});
-  $flag =~ s/_/-/g;
+  $flag =~ s/_+/-/g;
   return $flag;
 }
 
