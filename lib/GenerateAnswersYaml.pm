@@ -333,7 +333,7 @@ sub value {
   my ($self) = @_;
   if ($self->{flag_value}) {
     return $self->{flag_value};
-  } elsif ($self->{interactive_value}) {
+  } elsif (exists $self->{interactive_value}) {
     return $self->{interactive_value};
   } elsif ($self->has_PromptUser) {
     my $default_value = $self->{interactive_default_value} || $self->{code_orig}->();
