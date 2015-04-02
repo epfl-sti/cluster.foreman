@@ -39,6 +39,15 @@ sub foreman_proxy__tftp_severname : ToYaml {
   return private_ip_address();
 }
 
+sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
+  my $ip = private_ip_address();
+  # We might want to be smarter here.
+  my $net = $ip; $net =~ s/\.[0-9]+$//;
+  my $begin_dhcp_range = "$net.32";
+  my $end_dhcp_range = "$net.127";
+  return "$begin_dhcp_range $end_dhcp_range";
+}
+
 memoize('interfaces_and_ips');
 sub interfaces_and_ips {
   my %interfaces_and_ips;
