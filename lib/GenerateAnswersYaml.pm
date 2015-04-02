@@ -291,7 +291,7 @@ sub yaml_key {
       return split m/__/, $key;
     }
   } elsif ($self->has_PromptUser) {
-    return ["openstack-sti",  $self->{name}];
+    return ("openstack-sti::configure",  $self->{name});
   } else {
     die "$self->{name} is not persistent";
   }
@@ -307,7 +307,7 @@ sub flag_name {
 sub human_name {
   my ($self) = @_;
   my $flag = ucfirst($self->{name});
-  $flag =~ s/_/ /g;
+  $flag =~ s/_+/ /g;
   return $flag;
 }
 
