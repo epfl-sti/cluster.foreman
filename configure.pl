@@ -136,6 +136,12 @@ sub public_ip_address : PromptUser {
   return inet_ntoa($myaddr);
 }
 
+=pod
+
+The rest is cuisine.
+
+=cut
+
 memoize('interfaces_and_ips');
 sub interfaces_and_ips {
   my %interfaces_and_ips;
