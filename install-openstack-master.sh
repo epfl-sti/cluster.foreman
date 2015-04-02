@@ -58,7 +58,7 @@ which foreman-installer || {
 
 # Install ruby193-rubygem-foreman_column_view if not present
 which ruby193-rubygem-foreman_column_view || {
-    yum -y install ruby193-rubygem-foreman_column_view
+    yum -y install ruby193-rubygem-foreman_column_view || true
 }
  
 # Configure the foreman column view plugin
@@ -77,7 +77,7 @@ echo "# Default Openstack STI foreman cloumn view plugin configuration
     :title: Comment
     :after: last_report
     :content: comment
-" > /usr/share/foreman/config/settings.plugins.d/foreman_column_view.yaml
+" > /usr/share/foreman/config/settings.plugins.d/foreman_column_view.yaml || true
 
 
 if test -z "${OPENSTACK_STIIT_SKIP_FOREMAN_INSTALLER}"; then
