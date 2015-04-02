@@ -183,6 +183,10 @@ sub dump {
   # Mimic the real foreman-installer format even though I'm not sure
   # how right that is:
   $yaml =~ s/---\n-\n/---\n/;
+  # This, on the other hand, would most likely throw Ruby off the
+  # rails (pun intended) if we didn't do it.
+  $yaml =~ s/'true'$/true/gm;
+  $yaml =~ s/'false'$/false/gm;
   return $yaml;
 }
 
