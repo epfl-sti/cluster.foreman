@@ -16,6 +16,7 @@ use base 'Exporter'; our @EXPORT = qw(debug);
 use Attribute::Handlers;
 use Getopt::Long;
 use YAML::Tiny;
+use Tie::IxHash;
 
 sub debug {
   warn @_;
@@ -68,6 +69,7 @@ sub _prompt_user {
   my ($question, $default) = @_;
   print "$question [$default]:\n";
   my $answer = <>;
+  chomp($answer);
   if ($answer eq "") {
     return $default;
   } elsif ($answer eq ".") {
@@ -84,6 +86,28 @@ sub _function_name {
   return svref_2object($sub_ref)->GV->NAME;
 }
 
+=head2 get_yaml_state
+
+Return the entire state as a single YAML string.
+
+=cut
+
+sub get_yaml_state {
+  tie(my %yaml, "Tie::IxHash");
+  my @all = GenerateAnswersYaml::_MagicSub->all;
+  foreach my $item (@all) {
+    if ($item->{has_ToYaml}) {
+      $yaml{$item->yaml_key} = $item->value();
+    }
+  }
+  foreach my $item (@all) {
+    if ($item->{has_PromptUser} && ! $item->{has_ToYaml}) {
+      $yaml{$item->yaml_key} = $item->value();
+    }
+  }
+  return YAML::Tiny->new(\%yaml)->write_string;
+}
+
 
 =head2 Generate
 
@@ -92,16 +116,7 @@ Perform the update on /etc/foreman/foreman-installer-answers.yaml.
 =cut
 
 sub Generate {
-  my @persistent = GenerateAnswersYaml::_MagicSub->all_with_attribute("ToYaml");
-  foreach my $promptable (GenerateAnswersYaml::_MagicSub->all_with_attribute("PromptUser")) {
-    my $already_accounted_for = $promptable->{has_ToYaml};
-    push @persistent, $promptable unless $already_accounted_for;
-  }
-  my $yaml = YAML::Tiny->new;
-  for (@persistent) {
-    push @$yaml, {$_->yaml_key => $_->value() };
-  }
-  print $yaml->write_string;  # XXX
+  print get_yaml_state;  # XXX
 }
 
 =head1 GenerateAnswersYaml::_MagicSub
@@ -114,6 +129,7 @@ L</Flag>.
 package GenerateAnswersYaml::_MagicSub;
 
 use vars qw(%known);
+tie(%known, "Tie::IxHash");
 
 sub _find {
   my ($class, $coderef) = @_;
@@ -133,9 +149,9 @@ sub decorate {
   }
 }
 
-sub all_with_attribute {
-  my ($class, $attribute) = @_;
-  return grep { $_->{"has_$attribute"} } (values %known);
+sub all {
+  my ($class) = @_;
+  return values %known;
 }
 
 sub yaml_key {
@@ -185,8 +201,9 @@ sub value {
   } elsif ($self->{interactive_value}) {
     return $self->{interactive_value};
   } elsif ($self->{has_PromptUser}) {
+    my $default_value = $self->{interactive_default_value} || $self->{code_orig}->();
     return ($self->{interactive_value} = GenerateAnswersYaml::_prompt_user(
-      $self->human_name, $self->{code_orig}->()));
+      $self->human_name, $default_value);
   } else {
     # Flag sub absent from command line
     return $self->{code_orig}->();
