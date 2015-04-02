@@ -38,4 +38,4 @@ sub public_ip_address : PromptUser {
   return inet_ntoa($myaddr);
 }
 
-GenerateAnswersYaml::Generate(\@ARGV);
+GenerateAnswersYaml::Generate();

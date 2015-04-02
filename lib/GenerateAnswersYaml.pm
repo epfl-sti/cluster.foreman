@@ -18,8 +18,12 @@ use Getopt::Long;
 use YAML::Tiny;
 use Tie::IxHash;
 
+# Both of these can be changed with L</parse_argv>.
+
+our $target_file = "/etc/foreman/foreman-installer-answers.yaml";
+
 sub debug {
-  warn @_;
+  warn @_ if $ENV{DEBUG};
 }
 
 =head2 ToYaml
@@ -105,9 +109,24 @@ sub get_yaml_state {
       $yaml{$item->yaml_key} = $item->value();
     }
   }
+  if ($ENV{DEBUG}) {
+    require Data::Dumper;
+    debug(Data::Dumper::Dumper(\%yaml));
+  }
   return YAML::Tiny->new(\%yaml)->write_string;
 }
 
+=head2 parse_argv
+
+Change global state and values for options from the command-line flags.
+
+=cut
+
+sub parse_argv {
+  die "Bad flags" unless GetOptions(
+    "target-file=s" => sub { my ($opt, $value) = @_; $target_file = $value },
+    GenerateAnswersYaml::_MagicSub->getopt_spec);
+}
 
 =head2 Generate
 
@@ -116,6 +135,7 @@ Perform the update on /etc/foreman/foreman-installer-answers.yaml.
 =cut
 
 sub Generate {
+  parse_argv;
   print get_yaml_state;  # XXX
 }
 
@@ -185,8 +205,8 @@ sub getopt_spec {
   my ($class) = @_;
   return map {
     my $self = $_;
-    ($self->flag_name . "=s") => sub { $self->set_from_flag(@_) }
-  } (values %known);
+    ($self->flag_name . "=s") => sub { shift; $self->set_from_flag(@_) }
+  } (grep {$_->{has_Flag} || $_->{has_PromptUser}} values %known);
 }
 
 sub set_from_flag {
@@ -203,7 +223,7 @@ sub value {
   } elsif ($self->{has_PromptUser}) {
     my $default_value = $self->{interactive_default_value} || $self->{code_orig}->();
     return ($self->{interactive_value} = GenerateAnswersYaml::_prompt_user(
-      $self->human_name, $default_value);
+      $self->human_name, $default_value));
   } else {
     # Flag sub absent from command line
     return $self->{code_orig}->();
