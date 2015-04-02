@@ -7,7 +7,8 @@
 #   OPENSTACK_STIIT_INTERNAL_IFACE=eth1 sudo bash /tmp/run.sh
 #
 # One unfortunately *cannot* just pipe wget into bash, because
-# foreman-installer wants a tty :(
+# foreman-installer wants a tty :( Oh well, this means we are free
+# to have configure.pl ask questions interactively.
 #
 # Please keep this script:
 #  * repeatable: it should be okay to run it twice
@@ -16,16 +17,9 @@
 
 set -e -x
 
-# The configuration file
-: ${STI_CONFIG_FILE:='./sticonfig.cfg'}
-# Include configuration file
-if [ -f $STI_CONFIG_FILE ]; then
-    # source the config file
-    . $STI_CONFIG_FILE
-else
-    echo "No config file found, please run ./init.sh to create $STI_CONFIG_FILE"
-    exit 0
-fi
+: ${OPENSTACK_STIIT_GITHUB_DEPOT:=epfl-sti/epfl.openstack-sti.foreman}
+: ${OPENSTACK_STIIT_SOURCE_DIR:=/opt/src}
+: ${OPENSTACK_STIIT_GIT_CHECKOUT_DIR:=${OPENSTACK_STIIT_SOURCE_DIR}/epfl.openstack-sti.foreman}
 
 # Check out sources
 test -d "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"/.git || (
@@ -33,7 +27,7 @@ test -d "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"/.git || (
     git clone https://github.com/${OPENSTACK_STIIT_GITHUB_DEPOT}.git \
         "$(basename "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}")"
 )
-(cd "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"; git pull)
+(cd "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"; git pull || true)
 
 which yum-config-manager || {
   yum -y install yum-utils
@@ -62,29 +56,18 @@ which foreman-installer || {
     yum -y install foreman-installer
 }
 
-# TODO: instead of this, have the user edit a canned
-# /etc/foreman/foreman-installer-answers.yaml and then run
-# foreman-installer -y without any flags.
-test -z "${OPENSTACK_STIIT_SKIP_FOREMAN_INSTALLER}" && foreman-installer \
-  --enable-foreman-plugin-discovery \
-  --foreman-plugin-discovery-install-images=true \
-  --enable-foreman-proxy \
-  --foreman-proxy-tftp=true \
-  --foreman-proxy-tftp-servername="$OPENSTACK_STIIT_IPADDRESS" \
-  --foreman-proxy-dhcp=true \
-  --foreman-proxy-dhcp-interface="$OPENSTACK_STIIT_INTERNAL_IFACE" \
-  --foreman-proxy-dhcp-gateway="$OPENSTACK_STIIT_IPADDRESS" \
-  --foreman-proxy-dhcp-range="$OPENSTACK_STIIT_DHCP_RANGE" \
-  --foreman-proxy-dhcp-nameservers="$OPENSTACK_STIIT_IPADDRESS" \
-  --foreman-proxy-dns=true \
-  --foreman-proxy-dns-interface="$OPENSTACK_STIIT_INTERNAL_IFACE" \
-  --foreman-proxy-dns-zone="$OPENSTACK_STIIT_CLUSTER_DOMAIN" \
-  --foreman-proxy-dns-reverse=10.168.192.in-addr.arpa \
-  --foreman-proxy-dns-forwarders=128.178.15.228 \
-  --foreman-proxy-dns-forwarders=128.178.15.227 \
-  --foreman-proxy-foreman-base-url=https://"$OPENSTACK_STIIT_MASTER_FQDN" \
-  --foreman-proxy-bmc=true \
-  --foreman-proxy-bmc-default-provider=ipmitool
+if test -z "${OPENSTACK_STIIT_SKIP_FOREMAN_INSTALLER}"; then
+    ./configure.pl
+    foreman-installer \
+        --enable-foreman-proxy \
+        --foreman-proxy-tftp=true \
+        --foreman-proxy-dhcp=true \
+        --foreman-proxy-dns=true \
+        --enable-foreman-plugin-discovery \
+        --foreman-plugin-discovery-install-images=true \
+        --foreman-proxy-bmc=true \
+        --foreman-proxy-bmc-default-provider=ipmitool
+fi
 
 # TODO: this should clearly be done from Puppet.
 tftpboot_fdi_dir=/var/lib/tftpboot/boot

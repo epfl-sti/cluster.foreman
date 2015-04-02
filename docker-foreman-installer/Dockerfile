@@ -7,4 +7,3 @@ RUN yum -y install which
 
 RUN mkdir -p /opt/src
 ADD bashrc /root/.bashrc
-ENV STI_CONFIG_FILE docker-foreman/sticonfig.cfg
