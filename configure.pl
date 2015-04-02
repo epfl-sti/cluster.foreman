@@ -41,6 +41,7 @@ computes the value for the C<tftp_servername> entry in C<foreman_proxy>.
 =cut
 
 use Memoize;
+use Net::Domain qw(hostname);
 use FindBin; use lib "$FindBin::Bin/lib";
 use GenerateAnswersYaml;
 
@@ -48,11 +49,35 @@ sub foreman_proxy__tftp_severname : ToYaml    { private_ip_address() }
 sub foreman_proxy__dhcp_gateway : ToYaml      { private_ip_address() }
 sub foreman_proxy__dhcp_nameservers : ToYaml  { private_ip_address() }
 
+sub foreman_proxy__dns_zone : ToYaml { return dns_domain() }
+sub foreman__servername : ToYaml {
+  return fully_qualified_domain_name()
+}
+
+=pod
+
+One can override the default path deduction by passing parameters to
+the ToYaml annotation, e.g.
+
+   sub foreman_url : ToYaml("foreman", "foreman_url")  { ... }
+
+=cut
+
+sub foreman_url : ToYaml("foreman", "foreman_url") {
+  return "https://" . fully_qualified_domain_name;
+}
 
 =item *
 
 Functions that have a ": PromptUser" attribute compute a value, and
 leave the option for the user to override it interactively.
+
+=cut
+
+sub dns_domain : PromptUser { "cloud.epfl.ch" }
+sub fully_qualified_domain_name : PromptUser {
+  return sprintf("%s.%s", hostname(), dns_domain());
+}
 
 =back
 
@@ -78,6 +103,12 @@ sub foreman_proxy__dns_reverse : ToYaml : PromptUser {
   return join(".", @arpa);
 }
 
+sub foreman_proxy__dns_forwarders : ToYaml {
+  [qw(128.178.15.227 128.178.15.228)]
+}
+
+sub foreman_proxy__puppet_url : ToYaml { foreman_url . ":8140" }
+sub foreman_proxy__template_url : ToYaml { foreman_url . ":8000" }
 
 sub private_ip_address : PromptUser {
   my %interfaces_and_ips = interfaces_and_ips();
@@ -99,8 +130,6 @@ sub public_ip_address : PromptUser {
   my (undef, $myaddr) = sockaddr_in(getsockname($sock));
   return inet_ntoa($myaddr);
 }
-
-sub dns_domain : PromptUser { "cloud.epfl.ch" }
 
 =begin internals
 
