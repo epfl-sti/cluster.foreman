@@ -69,7 +69,7 @@ the ToYaml annotation, e.g.
 =cut
 
 sub foreman_url : ToYaml("foreman", "foreman_url") {
-  return "https://" . fully_qualified_domain_name;
+  return "https://" . fully_qualified_domain_name();
 }
 
 =item *
@@ -135,10 +135,6 @@ sub public_ip_address : PromptUser {
   my (undef, $myaddr) = sockaddr_in(getsockname($sock));
   return inet_ntoa($myaddr);
 }
-
-=begin internals
-
-=cut
 
 memoize('interfaces_and_ips');
 sub interfaces_and_ips {
