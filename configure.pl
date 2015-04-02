@@ -58,13 +58,22 @@ sub interfaces_and_ips {
 
 sub is_rfc1918_ip {
   my ($byte1, $byte2) = split m/\./, shift;
-  return ($byte1 eq "10" || "$byte1.$byte2" == "192.168" ||
-            ($byte1 == 172 && $byte2 >= 16 && $byte2 <= 31));
+  # Actually returns a "credibility score", 192.168 coming first:
+  if ("$byte1.$byte2" == "192.168") {
+    return 3;
+  } elsif ($byte1 eq "10") {
+    return 2;
+  } elsif ($byte1 == 172 && $byte2 >= 16 && $byte2 <= 31) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 sub private_ip_address : PromptUser {
   my %interfaces_and_ips = interfaces_and_ips;
-  my @private_ips = grep { is_rfc1918_ip($_) } (values %interfaces_and_ips);
+  my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
+    (values %interfaces_and_ips);
   return $private_ips[0];
 }
 
