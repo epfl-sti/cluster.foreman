@@ -225,7 +225,7 @@ sub compute_all {
 
 sub dump {
   my ($self) = @_;
-  if ($ENV{DEBUG}) {
+  if ($ENV{DEBUG} && $ENV{DEBUG} >= 9) {
     require Data::Dumper;
     GenerateAnswersYaml::debug(Data::Dumper::Dumper($self->{state}));
   }
@@ -266,11 +266,13 @@ sub decorate {
   unless ($attr eq "ToYaml") {
     # Set one and the same wrapper for all annotations that require one.
     # This guarantees that said annotations are commutative.
-    $glob = sub { $self->value() };
+    GenerateAnswersYaml::debug($self->{name} . " is being wrapped");
+    no warnings "redefine";
+    *$glob = sub { $self->value() };
   }
 }
 
-sub has_PromptUser { exists shift->{decoration_Promptuser} }
+sub has_PromptUser { exists shift->{decoration_PromptUser} }
 sub has_Flag { exists shift->{decoration_Flag} }
 sub has_ToYaml { exists shift->{decoration_ToYaml} }
 
