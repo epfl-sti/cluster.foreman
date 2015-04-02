@@ -11,4 +11,4 @@ docker build -t epflsti/foreman-test-install $SCRIPT_DIR
 docker run \
     -v "$GIT_TOPDIR":/opt/src/epfl.openstack-sti.foreman \
     -h ostest0.epfl.ch \
-    -it epflsti/foreman-test-install /bin/bash
+    -it epflsti/foreman-test-install:config.pl-started /bin/bash

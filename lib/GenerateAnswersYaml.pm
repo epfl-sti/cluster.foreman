@@ -312,7 +312,7 @@ sub yaml_key {
     # that it references a module. Hide our data under foreman.
     # TODO: this unfortunately goes away as soon as foreman-installer runs;
     # need to save into a different YAML file.
-    return ("foreman", "openstacksti", $self->{name});
+    return ("openstacksti", "configure_answers", $self->{name});
   } else {
     die "$self->{name} is not persistent";
   }
