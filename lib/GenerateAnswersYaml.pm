@@ -108,6 +108,23 @@ Change global state and values for options from the command-line flags.
 =cut
 
 sub parse_argv {
+  if ($ARGV[0] =~ m/-h|help/) {
+    my $flags = join("", map {
+      my $flagname = $_->flag_name;
+      "  --$flagname\n"
+    } (grep {$_->is_settable_from_flag}
+       GenerateAnswersYaml::_MagicSub->all));
+
+    die <<"USAGE";
+Tune $target_file prior to (re-)running foreman-installer.
+
+Usage: $0 [flags]
+
+Known flags:
+
+$flags
+USAGE
+  }
   die "Bad flags" unless GetOptions(
     "target-file=s" => sub { my ($opt, $value) = @_; $target_file = $value },
     GenerateAnswersYaml::_MagicSub->getopt_spec);
@@ -316,12 +333,17 @@ sub getopt_spec {
   return map {
     my $self = $_;
     ($self->flag_name . "=s") => sub { shift; $self->set_from_flag(@_) }
-  } (grep {$_->has_Flag || $_->has_PromptUser} values %known);
+  } (grep {$_->is_settable_from_flag} $class->all);
 }
 
 sub set_from_flag {
   my ($self, $flagval) = @_;
   $self->{flag_value} = $flagval;
+}
+
+sub is_settable_from_flag {
+  my ($self) = @_;
+  return ($self->has_Flag || $self->has_PromptUser);
 }
 
 sub set_default_from_yaml {
