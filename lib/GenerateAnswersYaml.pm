@@ -98,21 +98,6 @@ Return the entire state as a single YAML string.
 
 sub get_yaml_state {
   tie(my %yaml, "Tie::IxHash");
-  my @all = GenerateAnswersYaml::_MagicSub->all;
-  foreach my $item (@all) {
-    if ($item->{has_ToYaml}) {
-      $yaml{$item->yaml_key} = $item->value();
-    }
-  }
-  foreach my $item (@all) {
-    if ($item->{has_PromptUser} && ! $item->{has_ToYaml}) {
-      $yaml{$item->yaml_key} = $item->value();
-    }
-  }
-  if ($ENV{DEBUG}) {
-    require Data::Dumper;
-    debug(Data::Dumper::Dumper(\%yaml));
-  }
   return YAML::Tiny->new(\%yaml)->write_string;
 }
 
@@ -136,7 +121,69 @@ Perform the update on /etc/foreman/foreman-installer-answers.yaml.
 
 sub Generate {
   parse_argv;
-  print get_yaml_state;  # XXX
+  if (-f $target_file) {
+    warn "$target_file already exists.\n\n";
+  }
+  my $state = GenerateAnswersYaml::_YamlState->load($target_file);
+  $state->compute_all;
+  print $state->dump;  # XXX
+}
+
+=head1 GenerateAnswersYaml::_YamlState
+
+Models the entire state of the script.
+
+=cut
+
+package GenerateAnswersYaml::_YamlState;
+
+sub load {
+  my ($class, $filename) = @_;
+  die unless defined $filename;
+  my $state;
+  if (! $filename) {
+    tie(my %objects, "Tie::IxHash");
+    $state = \%objects;
+  } else {
+    # Not sure how to keep order when loading, oh well
+    $state = YAML::Tiny->read($filename)->[0];
+  }
+  return bless {
+    state => $state
+  }, $class;
+}
+
+sub update {
+  my ($self, $magicsub) = @_;
+  $self->{state}->{$magicsub->yaml_key} = $magicsub->value();
+}
+
+sub compute_all {
+  my ($self) = @_;
+  my @all = GenerateAnswersYaml::_MagicSub->all;
+  foreach my $magicsub (@all) {
+    if ($magicsub->{has_ToYaml}) {
+      $self->update($magicsub);
+    }
+  }
+  foreach my $magicsub (@all) {
+    if ($magicsub->{has_PromptUser} && ! $magicsub->{has_ToYaml}) {
+      $self->update($magicsub);
+    }
+  }
+}
+
+sub dump {
+  my ($self) = @_;
+  if ($ENV{DEBUG}) {
+    require Data::Dumper;
+    GenerateAnswersYaml::debug(Data::Dumper::Dumper($self->{state}));
+  }
+  my $yaml = YAML::Tiny->new([$self->{state}])->write_string;
+  # Mimic the real foreman-installer format even though I'm not sure
+  # how right that is:
+  $yaml =~ s/---\n-\n/---\n/;
+  return $yaml;
 }
 
 =head1 GenerateAnswersYaml::_MagicSub
