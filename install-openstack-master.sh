@@ -82,6 +82,8 @@ echo "# Default Openstack STI foreman cloumn view plugin configuration
 
 if test -z "${OPENSTACK_STIIT_SKIP_FOREMAN_INSTALLER}"; then
     ./configure.pl
+    ln -sf "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"/foreman-installer/modules/openstacksti \
+       /usr/share/foreman-installer/modules/openstacksti
     foreman-installer \
         --enable-foreman-proxy \
         --foreman-proxy-tftp=true \
