@@ -13,8 +13,30 @@ configure.pl - Your friendly configure script
 
 =head1 DESCRIPTION
 
-This script computes reasonable default values for /etc/foreman/foreman-installer-answers.yaml,
-then runs $EDITOR on it.
+This script computes reasonable default values for
+/etc/foreman/foreman-installer-answers.yaml.
+
+=head1 OPTIONS
+
+To see the list of all options, try
+
+  ./configure.pl --help
+
+=head1 HACKING
+
+This script is very easy to hack.
+
+=over 4
+
+=item *
+
+Functions that have a ": ToYaml" annotation return the value for a
+YAML configuration item, whose path is deducted from the function name.
+For instance,
+
+   sub foreman_proxy__tftp_severname : ToYaml  { ... }
+
+computes the value for the C<tftp_servername> entry in C<foreman_proxy>.
 
 =cut
 
@@ -25,6 +47,18 @@ use GenerateAnswersYaml;
 sub foreman_proxy__tftp_severname : ToYaml    { private_ip_address() }
 sub foreman_proxy__dhcp_gateway : ToYaml      { private_ip_address() }
 sub foreman_proxy__dhcp_nameservers : ToYaml  { private_ip_address() }
+
+
+=item *
+
+Functions that have a ": PromptUser" attribute compute a value, and
+leave the option for the user to override it interactively.
+
+=back
+
+Functions can also have multiple attributes.
+
+=cut
 
 sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
   my $ip = private_ip_address();
@@ -43,6 +77,34 @@ sub foreman_proxy__dns_reverse : ToYaml : PromptUser {
   shift @arpa;
   return join(".", @arpa);
 }
+
+
+sub private_ip_address : PromptUser {
+  my %interfaces_and_ips = interfaces_and_ips();
+  my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
+    (values %interfaces_and_ips);
+  return $private_ips[0];
+}
+
+sub private_interface : PromptUser {
+  my %ips_to_interfaces = reverse(interfaces_and_ips());
+  return $ips_to_interfaces{private_ip_address()};
+}
+
+sub public_ip_address : PromptUser {
+  use IO::Socket::INET;
+  use Socket;
+  my $sock = new IO::Socket::INET(
+    PeerHost => "8.8.8.8", PeerPort => 80, Blocking => 0);
+  my (undef, $myaddr) = sockaddr_in(getsockname($sock));
+  return inet_ntoa($myaddr);
+}
+
+sub dns_domain : PromptUser { "cloud.epfl.ch" }
+
+=begin internals
+
+=cut
 
 memoize('interfaces_and_ips');
 sub interfaces_and_ips {
@@ -73,27 +135,6 @@ sub is_rfc1918_ip {
   } else {
     return 0;
   }
-}
-
-sub private_ip_address : PromptUser {
-  my %interfaces_and_ips = interfaces_and_ips;
-  my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
-    (values %interfaces_and_ips);
-  return $private_ips[0];
-}
-
-sub private_interface : PromptUser {
-  my %ips_to_interfaces = reverse(interfaces_and_ips);
-  return $ips_to_interfaces{private_ip_address()};
-}
-
-sub public_ip_address : PromptUser {
-  use IO::Socket::INET;
-  use Socket;
-  my $sock = new IO::Socket::INET(
-    PeerHost => "8.8.8.8", PeerPort => 80, Blocking => 0);
-  my (undef, $myaddr) = sockaddr_in(getsockname($sock));
-  return inet_ntoa($myaddr);
 }
 
 GenerateAnswersYaml::Generate();
