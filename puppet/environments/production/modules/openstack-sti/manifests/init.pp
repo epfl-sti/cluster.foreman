@@ -16,6 +16,10 @@ class openstack-sti(
     ensure => 'latest',
     require => Package['puppetlabs-release-6']
   }
+  package { 'facter':
+    ensure => 'latest',
+    require => Package['puppetlabs-release-6']
+  }
   class { "ntp": }
   class { "ipmi": }
 }
