@@ -148,40 +148,76 @@ sub load {
   my ($class, $filename) = @_;
   die unless defined $filename;
   my $state;
-  if (! $filename) {
+  if (! -f $filename) {
     tie(my %objects, "Tie::IxHash");
     $state = \%objects;
   } else {
     # Not sure how to keep order when loading, oh well
     $state = YAML::Tiny->read($filename)->[0];
-    foreach my $magicsub (GenerateAnswersYaml::_MagicSub->all) {
-      next unless ($magicsub->{has_PromptUser});
-      my $key = $magicsub->yaml_key;
-      next unless exists $state->{$key};
-      my $saved_value = $state->{$key};
-      $magicsub->set_default_from_yaml($saved_value);
-    }
   }
-  return bless {
+  my $self = bless {
     state => $state
   }, $class;
+  # Read default values for : PromptUser subs
+  foreach my $magicsub (GenerateAnswersYaml::_MagicSub->all) {
+    next unless ($magicsub->has_PromptUser);
+    my @key = $magicsub->yaml_key;
+    next unless $self->exists(@key);
+    $magicsub->set_default_from_yaml($self->get(@key));
+  }
+  return $self;
 }
+
+sub exists {
+  my ($self, @key) = @_;
+  my ($struct, $lastkey) = $self->_walk(@key);
+  return exists $struct->{$lastkey};
+}
+
+sub _walk {
+  my ($self, @key) = @_;
+  die if ! @key;
+  my $struct = $self->{state};
+  while(@key > 1) {
+    my $key = shift @key;
+    if (! exists $struct->{$key}) {
+      $struct->{$key} = {};
+    }
+    $struct = $struct->{$key};
+  }
+  return ($struct, $key[0]);
+}
+
+sub get {
+  my ($self, @key) = @_;
+  my ($struct, $lastkey) = $self->_walk(@key);
+  return $struct->{$lastkey};
+}
+
+sub set {
+  my $val = pop @_;
+  my ($self, @key) = @_;
+  my ($struct, $lastkey) = $self->_walk(@key);
+  $struct->{$lastkey} = $val;
+}
+
 
 sub update {
   my ($self, $magicsub) = @_;
-  $self->{state}->{$magicsub->yaml_key} = $magicsub->value();
+  $self->set($magicsub->yaml_key, $magicsub->value());
 }
 
 sub compute_all {
   my ($self) = @_;
   my @all = GenerateAnswersYaml::_MagicSub->all;
   foreach my $magicsub (@all) {
-    if ($magicsub->{has_ToYaml}) {
+    if ($magicsub->has_ToYaml) {
       $self->update($magicsub);
     }
   }
   foreach my $magicsub (@all) {
-    if ($magicsub->{has_PromptUser} && ! $magicsub->{has_ToYaml}) {
+    if ($magicsub->has_PromptUser && ! $magicsub->has_ToYaml &&
+          $magicsub->answered) {
       $self->update($magicsub);
     }
   }
@@ -224,15 +260,19 @@ sub _find {
 }
 
 sub decorate {
-  my ($class, undef, $glob, $coderef, $attr) = @_;
+  my ($class, undef, $glob, $coderef, $attr, $value) = @_;
   my $self = $class->_find($coderef);
-  $self->{"has_$attr"} = 1;
+  $self->{"decoration_$attr"} = $value;
   unless ($attr eq "ToYaml") {
     # Set one and the same wrapper for all annotations that require one.
     # This guarantees that said annotations are commutative.
     $glob = sub { $self->value() };
   }
 }
+
+sub has_PromptUser { exists shift->{decoration_Promptuser} }
+sub has_Flag { exists shift->{decoration_Flag} }
+sub has_ToYaml { exists shift->{decoration_ToYaml} }
 
 sub all {
   my ($class) = @_;
@@ -241,12 +281,15 @@ sub all {
 
 sub yaml_key {
   my ($self) = @_;
-  if ($self->{has_ToYaml}) {
-    my $key = lc($self->{name});
-    $key =~ s/_/::/g;
-    return $key;
-  } elsif ($self->{has_PromptUser}) {
-    return "openstack-sti::" . $self->{name};
+  if ($self->has_ToYaml) {
+    if (ref($self->{decoration_ToYaml}) eq "ARRAY") {
+      return @{$self->{decoration_ToYaml}};
+    } else {
+      my $key = lc($self->{name});
+      return split m/__/, $key;
+    }
+  } elsif ($self->has_PromptUser) {
+    return ["openstack-sti",  $self->{name}];
   } else {
     die "$self->{name} is not persistent";
   }
@@ -271,7 +314,7 @@ sub getopt_spec {
   return map {
     my $self = $_;
     ($self->flag_name . "=s") => sub { shift; $self->set_from_flag(@_) }
-  } (grep {$_->{has_Flag} || $_->{has_PromptUser}} values %known);
+  } (grep {$_->has_Flag || $_->has_PromptUser} values %known);
 }
 
 sub set_from_flag {
@@ -290,7 +333,7 @@ sub value {
     return $self->{flag_value};
   } elsif ($self->{interactive_value}) {
     return $self->{interactive_value};
-  } elsif ($self->{has_PromptUser}) {
+  } elsif ($self->has_PromptUser) {
     my $default_value = $self->{interactive_default_value} || $self->{code_orig}->();
     return ($self->{interactive_value} = GenerateAnswersYaml::_prompt_user(
       $self->human_name, $default_value));
@@ -299,5 +342,7 @@ sub value {
     return $self->{code_orig}->();
   }
 }
+
+sub answered { exists shift->{interactive_value} }
 
 1;
