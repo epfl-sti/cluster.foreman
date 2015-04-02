@@ -126,7 +126,14 @@ sub Generate {
   }
   my $state = GenerateAnswersYaml::_YamlState->load($target_file);
   $state->compute_all;
-  print $state->dump;  # XXX
+  do {
+    open(OUT, ">", "$target_file.new") &&
+      (print OUT $state->dump) &&
+      close(OUT)
+  } or die "Cannot write to $target_file.new: $!";
+  rename("$target_file.new", $target_file) or
+    die "Cannot rename $target_file.new to $target_file: $!";
+  warn "Configuration updated in $target_file.\n\n";
 }
 
 =head1 GenerateAnswersYaml::_YamlState
@@ -147,6 +154,13 @@ sub load {
   } else {
     # Not sure how to keep order when loading, oh well
     $state = YAML::Tiny->read($filename)->[0];
+    foreach my $magicsub (GenerateAnswersYaml::_MagicSub->all) {
+      next unless ($magicsub->{has_PromptUser});
+      my $key = $magicsub->yaml_key;
+      next unless exists $state->{$key};
+      my $saved_value = $state->{$key};
+      $magicsub->set_default_from_yaml($saved_value);
+    }
   }
   return bless {
     state => $state
@@ -263,6 +277,11 @@ sub getopt_spec {
 sub set_from_flag {
   my ($self, $flagval) = @_;
   $self->{flag_value} = $flagval;
+}
+
+sub set_default_from_yaml {
+  my ($self, $value) = @_;
+  $self->{interactive_default_value} = $value;
 }
 
 sub value {
