@@ -89,22 +89,12 @@ if test -z "${OPENSTACK_STIIT_SKIP_FOREMAN_INSTALLER}"; then
         --foreman-proxy-tftp=true \
         --foreman-proxy-dhcp=true \
         --foreman-proxy-dns=true \
-        --enable-foreman-plugin-discovery \
-        --foreman-plugin-discovery-install-images=true \
         --foreman-proxy-bmc=true \
         --foreman-proxy-bmc-default-provider=ipmitool
 fi
 
-# TODO: this should clearly be done from Puppet.
-tftpboot_fdi_dir=/var/lib/tftpboot/boot
-fdi_image="$tftpboot_fdi_dir"/fdi-image-latest.tar
-test -f "$fdi_image" || wget -O "$fdi_image" \
-  http://downloads.theforeman.org/discovery/releases/latest/fdi-image-latest.tar
-
-test -d "$tftpboot_fdi_dir"/fdi-image || \
-  tar --overwrite -C"$tftpboot_fdi_dir" -xf "$fdi_image"
-
 # Install our own Puppet configuration
+# This should be done using foreman-installer/modules/openstacksti instead
 test -L /etc/puppet/environments || {
     mv --backup -T /etc/puppet/environments /etc/puppet/environments.ORIG || \
         rm -rf /etc/puppet/environments

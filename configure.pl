@@ -143,6 +143,15 @@ sub openstacksti : ToYaml { return {} }
 # Same effect as --enable-foreman-plugin-discovery
 #   --foreman-plugin-discovery-install-images=true etc.
 
+sub discovery_config : ToYaml("foreman::plugin::discovery") {
+  {
+    install_images => "true",
+    tftp_root => "/var/lib/tftpboot/",
+    source_url => "http://downloads.theforeman.org/discovery/releases/latest/",
+    image_name => "fdi-image-latest.tar",
+  }
+}
+
 =pod
 
 The rest is cuisine.
