@@ -31,13 +31,9 @@ sub foreman_plugin_discovery : ToYaml("foreman::plugin::discovery") {
   }
 }
 
-sub foreman_proxy__dhcp_gateway : ToYaml {
-  return private_ip_address();
-}
-
-sub foreman_proxy__tftp_severname : ToYaml {
-  return private_ip_address();
-}
+sub foreman_proxy__tftp_severname : ToYaml    { private_ip_address() }
+sub foreman_proxy__dhcp_gateway : ToYaml      { private_ip_address() }
+sub foreman_proxy__dhcp_nameservers : ToYaml  { private_ip_address() }
 
 sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
   my $ip = private_ip_address();
