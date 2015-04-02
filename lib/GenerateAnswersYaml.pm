@@ -108,7 +108,7 @@ Change global state and values for options from the command-line flags.
 =cut
 
 sub parse_argv {
-  if ($ARGV[0] =~ m/-h|help/) {
+  if ($ARGV[0] && $ARGV[0] =~ m/-h|help/) {
     my $flags = join("", map {
       my $flagname = $_->flag_name;
       "  --$flagname\n"
