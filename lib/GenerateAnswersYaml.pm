@@ -308,7 +308,13 @@ sub yaml_key {
       return split m/__/, $key;
     }
   } elsif ($self->has_PromptUser) {
-    return ("openstack-sti::configure",  $self->{name});
+    # HACK ALERT!
+    # The name of this section is also what prompts foreman-installer to add
+    # ../foreman-installer/modules/openstacksti to its to-do list.
+    # This is not great, because doing so also clobbers all values.
+    # TODO: move the storage of configure.pl's own state either under a different
+    # top-level key (foreman), or into its own file altoghether.
+    return ("openstacksti",  $self->{name});
   } else {
     die "$self->{name} is not persistent";
   }
