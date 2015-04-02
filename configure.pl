@@ -13,8 +13,13 @@ configure.pl - Your friendly configure script
 
 =head1 DESCRIPTION
 
-This script computes reasonable default values for
-/etc/foreman/foreman-installer-answers.yaml.
+This script computes some of the values for
+/etc/foreman/foreman-installer-answers.yaml. Running foreman-installer
+thereafter will complete the process.
+
+foreman-installer is designed to be fine if run multiple times, and
+configure.pl respects that; it should also be fine to run configure.pl
+multiple times, even after foreman-installer has run.
 
 =head1 OPTIONS
 
