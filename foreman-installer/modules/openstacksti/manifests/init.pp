@@ -1,3 +1,7 @@
+# = Class: git::params
+#
+# Customizations to foreman-installer that are specific to EPFL STI.
+#
 # This file is being symlinked as
 # /usr/share/foreman-installer/modules/openstacksti/manifests/init.pp by
 # install-openstack-master.sh, and then loaded by foreman-installer
