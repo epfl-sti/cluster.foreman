@@ -40,7 +40,7 @@ case "$(cat /etc/redhat-release)" in
     rpm -qa | grep puppetlabs-release || \
       rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-fedora-20.noarch.rpm
     ;;
-  "Red Hat"*)
+  "Red Hat"*|CentOS*)
     foreman_release_url="http://yum.theforeman.org/releases/1.8/el6/x86_64/foreman-release.rpm"
     rpm -q epel-release-6-8 || \
       rpm -ivh --force https://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm

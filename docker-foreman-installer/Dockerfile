@@ -1,5 +1,4 @@
-# Fedora 20 is no RedHat 6.6 but it's the closest we have.
-FROM fedora:20
+FROM centos:6.6
 MAINTAINER Nicolas Borboën <nicolas.borboen@epfl.ch>
 
 RUN yum -y groupinstall "Development Tools"
