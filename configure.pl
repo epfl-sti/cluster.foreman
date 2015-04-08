@@ -132,15 +132,6 @@ sub public_ip_address : PromptUser {
   return inet_ntoa($myaddr);
 }
 
-# Same effect as --enable-foreman-plugin-discovery
-#   --foreman-plugin-discovery-install-images=true etc.
-sub discovery_config : ToYaml("foreman::plugin::discovery") {
-  {
-    install_images => "true",
-    tftp_root => "/var/lib/tftpboot/",
-  }
-}
-
 =head2 YAML Structure
 
 Every top-level entry in the YAML file corresponds to a directory with
@@ -170,6 +161,25 @@ L<GenerateAnswersYaml>), as well as for bona fide Puppet parameters.
 =cut
 
 sub epflsti__src_path : ToYaml { $FindBin::Bin }
+
+=head3 Plugins
+
+Plugins are an exception to the above rule: as they are listed section
+C<:mapping:> of file /etc/foreman/foreman-installer.yaml, their
+foreman-installer configuration is read from a different set of files.
+As a consequence, only those plugins that are known to the stock
+foreman-installer may be configured with configure.pl. To install and
+configure third-party plugins, take a look at the 'column_view' mantra
+in foreman-installer/modules/epflsti/manifests/init.pp .
+
+=cut
+
+sub discovery_config : ToYaml("foreman::plugin::discovery") {
+  {
+    install_images => "true",
+    tftp_root => "/var/lib/tftpboot/",
+  }
+}
 
 =head1 UTILITY FUNCTIONS
 

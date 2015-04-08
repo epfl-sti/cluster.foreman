@@ -21,8 +21,7 @@ class epflsti(
     fail '$src_path must be set'
   }
 
-  # For now, just a test to demonstrate that the Puppet code gets executed:
-  file { "/etc/a-winner-is-you":
-    ensure => "directory"
+  foreman::plugin {'column_view':
+    config => template('epflsti/foreman_column_view_yaml.erb')
   }
 }

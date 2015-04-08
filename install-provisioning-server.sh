@@ -14,6 +14,7 @@
 #  * repeatable: it should be okay to run it twice
 #  * readable (with comments in english)
 #  * minimalistic: complicated things should be done with Puppet instead
+#                  (see README.md for more details)
 
 set -e -x
 
@@ -34,12 +35,6 @@ which yum-config-manager || {
 }
 
 case "$(cat /etc/redhat-release)" in
-  "Fedora release 20"*)
-    # Supported only for the Docker test; see docker-foreman/Dockerfile
-    foreman_release_url="http://yum.theforeman.org/releases/1.8/f19/x86_64/foreman-release.rpm"
-    rpm -qa | grep puppetlabs-release || \
-      rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-fedora-20.noarch.rpm
-    ;;
   "Red Hat"*|CentOS*)
     foreman_release_url="http://yum.theforeman.org/releases/1.8/el6/x86_64/foreman-release.rpm"
     rpm -q epel-release-6-8 || \
@@ -49,6 +44,10 @@ case "$(cat /etc/redhat-release)" in
       rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm
 
     ;;
+  *)
+    echo >&2 "Unsupported OS: $(cta /etc/redhat-release)"
+    exit 2
+    ;;
   esac
 
 which foreman-installer || {
@@ -56,40 +55,14 @@ which foreman-installer || {
     yum -y install foreman-installer
 }
 
-# Install ruby193-rubygem-foreman_column_view if not present
-which ruby193-rubygem-foreman_column_view || {
-    yum -y install ruby193-rubygem-foreman_column_view || true
-}
- 
-# Configure the foreman column view plugin
-echo "# Default foreman column view plugin configuration for an EPFL-STI cluster
-# See ruby193-rubygem-foreman_column_view-doc and /opt/rh/ruby193/root/usr/share/gems/gems/foreman_column_view-0.2.0/README.md for more information
-:column_view:
-  :architecture:
-    :title: Arch
-    :after: last_report
-    :content: facts_hash['architecture']
-  :memorytotal:
-    :title: Mem
-    :after: architecture
-    :content: facts_hash['memorysize']
-  :comment:
-    :title: Comment
-    :after: last_report
-    :content: comment
-" > /usr/share/foreman/config/settings.plugins.d/foreman_column_view.yaml || true
-
-
-if test -z "${EPFLSTI_CLUSTER_SKIP_FOREMAN_INSTALLER}"; then
-    ./configure.pl
-    foreman-installer \
-        --enable-foreman-proxy \
-        --foreman-proxy-tftp=true \
-        --foreman-proxy-dhcp=true \
-        --foreman-proxy-dns=true \
-        --foreman-proxy-bmc=true \
-        --foreman-proxy-bmc-default-provider=ipmitool
-fi
+./configure.pl
+foreman-installer \
+    --enable-foreman-proxy \
+    --foreman-proxy-tftp=true \
+    --foreman-proxy-dhcp=true \
+    --foreman-proxy-dns=true \
+    --foreman-proxy-bmc=true \
+    --foreman-proxy-bmc-default-provider=ipmitool
 
 # Install our own Puppet configuration
 # This should be done using foreman-installer/modules/epflsti instead
@@ -100,7 +73,7 @@ test -L /etc/puppet/environments || {
        /etc/puppet/environments
 }
 
-# TODO: add the epflsti::puppetmaster class to the current host first
+# TODO: add the epflsti::puppetmaster class to the current host
 puppet agent --test
 
 echo "All done."
