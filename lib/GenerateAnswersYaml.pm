@@ -90,6 +90,18 @@ sub _function_name {
   return svref_2object($sub_ref)->GV->NAME;
 }
 
+=head2 PostConfigure
+
+Functions annotated with this attribute are run (typically for their
+side effects) after foreman-installer-answers.yaml is written.
+
+=cut
+
+sub UNIVERSAL::PostConfigure : ATTR(CODE) {
+  debug(_function_name($_[2]) . " will run at the end");
+  GenerateAnswersYaml::_MagicSub->decorate(@_);
+}
+
 =head2 get_yaml_state
 
 Return the entire state as a single YAML string.
@@ -132,7 +144,8 @@ USAGE
 
 =head2 Generate
 
-Perform the update on /etc/foreman/foreman-installer-answers.yaml.
+Perform the update on /etc/foreman/foreman-installer-answers.yaml,
+then run any L<PostConfigure> subs in the order they were seen.
 
 =cut
 
@@ -151,6 +164,10 @@ sub Generate {
   rename("$target_file.new", $target_file) or
     die "Cannot rename $target_file.new to $target_file: $!";
   warn "Configuration updated in $target_file.\n\n";
+  foreach my $magicsub (GenerateAnswersYaml::_MagicSub->all) {
+    next unless ($magicsub->has_PostConfigure);
+    $magicsub->{code_orig}->();
+  }
 }
 
 =head1 GenerateAnswersYaml::_YamlState
@@ -292,6 +309,7 @@ sub decorate {
 sub has_PromptUser { exists shift->{decoration_PromptUser} }
 sub has_Flag { exists shift->{decoration_Flag} }
 sub has_ToYaml { exists shift->{decoration_ToYaml} }
+sub has_PostConfigure { exists shift->{decoration_PostConfigure} }
 
 sub all {
   my ($class) = @_;

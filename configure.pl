@@ -154,18 +154,20 @@ the same name in C</usr/share/foreman-installer/modules>. One
 particular module, C<epflsti>, gets grafted (using a symlink)
 into the foreman-installer machinery when running this script.
 
+Also, you can probably guess what a ": PostConfigure" annotation is for.
+
 =cut
 
-do {
+sub symlink_epflsti_module : PostConfigure {
   my $foreman_installer_module_path = "/usr/share/foreman-installer/modules";
   my $our_module_name = "epflsti";
   my $our_module_path = "$foreman_installer_module_path/$our_module_name";
   unless (-l $our_module_path) {
     my $target = "$FindBin::Bin/foreman-installer/modules/$our_module_name";
-    warn "Creating symlink $our_module_path => $target\n";
+    warn "Creating symlink $our_module_path => $target\n\n";
     symlink($target, $our_module_path);
   }
-};
+}
 
 =pod
 
