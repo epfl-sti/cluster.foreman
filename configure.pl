@@ -27,6 +27,13 @@ To see the list of all options, try
 
   ./configure.pl --help
 
+=cut
+
+use Memoize;
+use Net::Domain qw(hostname);
+use FindBin; use lib "$FindBin::Bin/lib";
+use GenerateAnswersYaml;
+
 =head1 HACKING
 
 This script is very easy to hack.
@@ -35,16 +42,11 @@ Functions that have a ": ToYaml" annotation return the value for a
 YAML configuration item, whose path is deducted from the function name.
 For instance,
 
-   sub foreman_proxy__tftp_severname : ToYaml  { ... }
+   sub foreman_proxy__tftp_servername : ToYaml  { ... }
 
 computes the value for the C<tftp_servername> entry in C<foreman_proxy>.
 
 =cut
-
-use Memoize;
-use Net::Domain qw(hostname);
-use FindBin; use lib "$FindBin::Bin/lib";
-use GenerateAnswersYaml;
 
 sub foreman_proxy__tftp_severname : ToYaml    { private_ip_address() }
 sub foreman_proxy__dhcp_gateway : ToYaml      { private_ip_address() }
@@ -69,6 +71,19 @@ See L</YAML Structure> below for details.
 sub foreman_url : ToYaml("foreman", "foreman_url") {
   return "https://" . fully_qualified_domain_name();
 }
+
+=pod
+
+Booleans per se don't really exist in Perl. In order to pass Booleans
+to Ruby, one uses "true" and "false" as strings.
+
+=cut
+
+sub foreman_proxy__tftp: ToYaml    { "true" }
+sub foreman_proxy__dhcp: ToYaml    { "true" }
+sub foreman_proxy__dns: ToYaml     { "true" }
+sub foreman_proxy__bmc: ToYaml     { "true" }
+sub foreman_proxy__bmc_default_provider: ToYaml { "ipmitool" }
 
 =pod
 

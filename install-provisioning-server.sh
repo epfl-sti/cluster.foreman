@@ -4,17 +4,23 @@
 #
 # Usage:
 #   wget -O /tmp/install-provisioning-server.sh https://raw.githubusercontent.com/epfl-sti/cluster.foreman/master/install-provisioning-server.sh
-#   EPFLSTI_CLUSTER_INTERNAL_IFACE=eth1 sudo bash /tmp/run.sh
+#   sudo bash /tmp/run.sh
 #
 # One unfortunately *cannot* just pipe wget into bash, because
-# foreman-installer wants a tty :( Oh well, this means we are free
-# to have configure.pl ask questions interactively.
+# foreman-installer wants a tty :(
+#
+# This script doesn't take flags, but its behavior can be changed using
+# environment variables, e.g.
+#
+#   EPFLSTI_CLUSTER_SOURCE_DIR=/somewhere/else sudo bash /tmp/run.sh
+#
+# Search for EPFLSTI_CLUSTER_ for other variables that can be used in that way.
 #
 # Please keep this script:
 #  * repeatable: it should be okay to run it twice
 #  * readable (with comments in english)
 #  * minimalistic: complicated things should be done with Puppet instead
-#                  (see README.md for more details)
+#                  (see README.md for how to do what where)
 
 set -e -x
 
@@ -55,14 +61,11 @@ which foreman-installer || {
     yum -y install foreman-installer
 }
 
-./configure.pl
-foreman-installer \
-    --enable-foreman-proxy \
-    --foreman-proxy-tftp=true \
-    --foreman-proxy-dhcp=true \
-    --foreman-proxy-dns=true \
-    --foreman-proxy-bmc=true \
-    --foreman-proxy-bmc-default-provider=ipmitool
+# Writes (or updates) /etc/foreman/foreman-installer-answers.yaml:
+./configure.pl $EPFLSTI_CLUSTER_CONFIGURE_FLAGS
+# Reads same, and thus doesn't need any command-line flags; please
+# keep it that way
+foreman-installer
 
 # Install our own Puppet configuration
 # This should be done using foreman-installer/modules/epflsti instead
@@ -73,7 +76,7 @@ test -L /etc/puppet/environments || {
        /etc/puppet/environments
 }
 
-# TODO: add the epflsti::puppetmaster class to the current host
+# TODO: first add the epflsti::puppetmaster class to the current host
 puppet agent --test
 
 echo "All done."
