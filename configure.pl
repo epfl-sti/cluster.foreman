@@ -15,10 +15,10 @@ configure.pl - Your friendly configure script
 
 This script computes some of the values for
 /etc/foreman/foreman-installer-answers.yaml. Running foreman-installer
-thereafter will complete the process.
+thereafter will make use of the values in that file.
 
-foreman-installer is designed to be fine if run multiple times, and
-configure.pl respects that; it should also be fine to run configure.pl
+foreman-installer is designed to support being run multiple times, and
+configure.pl follows suit; it should also be fine to run configure.pl
 multiple times, even after foreman-installer has run.
 
 =head1 OPTIONS
@@ -30,10 +30,6 @@ To see the list of all options, try
 =head1 HACKING
 
 This script is very easy to hack.
-
-=over 4
-
-=item *
 
 Functions that have a ": ToYaml" annotation return the value for a
 YAML configuration item, whose path is deducted from the function name.
@@ -53,11 +49,11 @@ use GenerateAnswersYaml;
 sub foreman_proxy__tftp_severname : ToYaml    { private_ip_address() }
 sub foreman_proxy__dhcp_gateway : ToYaml      { private_ip_address() }
 sub foreman_proxy__dhcp_nameservers : ToYaml  { private_ip_address() }
+sub foreman_proxy__dns_interface : ToYaml    { private_interface() }
+sub foreman_proxy__dhcp_interface : ToYaml   { private_interface() }
 
-sub foreman_proxy__dns_zone : ToYaml { return dns_domain() }
-sub foreman__servername : ToYaml {
-  return fully_qualified_domain_name()
-}
+sub foreman_proxy__dns_zone : ToYaml { dns_domain() }
+sub foreman__servername : ToYaml { fully_qualified_domain_name() }
 
 =pod
 
@@ -66,16 +62,19 @@ the ToYaml annotation, e.g.
 
    sub foreman_url : ToYaml("foreman", "foreman_url")  { ... }
 
+See L</YAML Structure> below for details.
+
 =cut
 
 sub foreman_url : ToYaml("foreman", "foreman_url") {
   return "https://" . fully_qualified_domain_name();
 }
 
-=item *
+=pod
 
 Functions that have a ": PromptUser" attribute compute a value, and
-leave the option for the user to override it interactively.
+leave the option for the user to override it interactively or with a
+command-line switch.
 
 =cut
 
@@ -84,7 +83,7 @@ sub fully_qualified_domain_name : PromptUser {
   return sprintf("%s.%s", hostname(), dns_domain());
 }
 
-=back
+=pod
 
 Functions can also have multiple attributes.
 
@@ -98,9 +97,6 @@ sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
   my $end_dhcp_range = "$net.127";
   return "$begin_dhcp_range $end_dhcp_range";
 }
-
-sub foreman_proxy__dns_interface : ToYaml    { private_interface() }
-sub foreman_proxy__dhcp_interface : ToYaml   { private_interface() }
 
 sub foreman_proxy__dns_reverse : ToYaml : PromptUser {
   my @arpa = (reverse(split m/\./, private_ip_address()), qw(in-addr arpa));
@@ -142,14 +138,43 @@ sub discovery_config : ToYaml("foreman::plugin::discovery") {
   {
     install_images => "true",
     tftp_root => "/var/lib/tftpboot/",
-    source_url => "http://downloads.theforeman.org/discovery/releases/latest/",
-    image_name => "fdi-image-latest.tar",
   }
 }
 
+=head2 YAML Structure
+
+Every top-level entry in the YAML file corresponds to a directory with
+the same name in C</usr/share/foreman-installer/modules>. One
+particular module, C<openstacksti>, gets grafted (using a symlink)
+into the foreman-installer machinery when running this script.
+
+=cut
+
+do {
+  my $foreman_installer_module_path = "/usr/share/foreman-installer/modules";
+  my $our_module_name = "openstacksti";
+  my $our_module_path = "$foreman_installer_module_path/$our_module_name";
+  unless (-l $our_module_path) {
+    my $target = "$FindBin::Bin/foreman-installer/modules/$our_module_name";
+    warn "Creating symlink $our_module_path => $target\n";
+    symlink($target, $our_module_path);
+  }
+};
+
 =pod
 
-The rest is cuisine.
+The C<openstacksti> YAML section is used to persist interactive
+answers to "PromptUser" functions (see details in
+L<GenerateAnswersYaml>), as well as for bona fide Puppet parameters.
+
+=cut
+
+sub openstacksti__src_path : ToYaml { $FindBin::Bin }
+
+=head1 UTILITY FUNCTIONS
+
+A number of helper functions are available for calling from the magic
+functions with attributes.
 
 =cut
 
@@ -183,5 +208,12 @@ sub is_rfc1918_ip {
     return 0;
   }
 }
+
+=pod
+
+Finally, the magic with function attributes happens in the
+L<GenerateAnswersYaml> module.
+
+=cut
 
 GenerateAnswersYaml::Generate();
