@@ -20,4 +20,5 @@ docker build -t epflsti/foreman-test-install \
 docker run \
     -v "$GIT_TOPDIR":/opt/src/cluster.foreman \
     -h ostest0.epfl.ch \
+    -p 443:443 -p 69:69/udp \
     -it epflsti/foreman-test-install:${DOCKER_TAG:-latest} /bin/bash
