@@ -179,13 +179,13 @@ sub epflsti__src_path : ToYaml { $FindBin::Bin }
 
 =head3 Plugins
 
-Plugins are an exception to the above rule: as they are listed section
+Plugins are an exception to the above rule: because they are listed section
 C<:mapping:> of file /etc/foreman/foreman-installer.yaml, their
-foreman-installer configuration is read from a different set of files.
-As a consequence, only those plugins that are known to the stock
-foreman-installer may be configured with configure.pl. To install and
-configure third-party plugins, take a look at the 'column_view' mantra
-in foreman-installer/modules/epflsti/manifests/init.pp .
+foreman-installer configuration is read from a different set of files. As a
+consequence, only those plugins that are known to the stock foreman-installer
+may be configured with configure.pl. To install and configure third-party
+plugins, take a look at the 'column_view' example in
+foreman-installer/modules/epflsti/manifests/init.pp
 
 =cut
 
