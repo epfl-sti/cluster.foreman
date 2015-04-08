@@ -1,10 +1,10 @@
 #!/bin/sh
 #
-# Turn the local host into an OpenStack-STI master.
+# Turn the local host into an EPFL-STI provisioning server.
 #
 # Usage:
-#   wget -O /tmp/install-openstack-master.sh https://raw.githubusercontent.com/epfl-sti/epfl.openstack-sti.foreman/master/install-openstack-master.sh
-#   OPENSTACK_STIIT_INTERNAL_IFACE=eth1 sudo bash /tmp/run.sh
+#   wget -O /tmp/install-provisioning-server.sh https://raw.githubusercontent.com/epfl-sti/cluster.foreman/master/install-provisioning-server.sh
+#   EPFLSTI_CLUSTER_INTERNAL_IFACE=eth1 sudo bash /tmp/run.sh
 #
 # One unfortunately *cannot* just pipe wget into bash, because
 # foreman-installer wants a tty :( Oh well, this means we are free
@@ -17,17 +17,17 @@
 
 set -e -x
 
-: ${OPENSTACK_STIIT_GITHUB_DEPOT:=epfl-sti/epfl.openstack-sti.foreman}
-: ${OPENSTACK_STIIT_SOURCE_DIR:=/opt/src}
-: ${OPENSTACK_STIIT_GIT_CHECKOUT_DIR:=${OPENSTACK_STIIT_SOURCE_DIR}/epfl.openstack-sti.foreman}
+: ${EPFLSTI_CLUSTER_GITHUB_DEPOT:=epfl-sti/cluster.foreman}
+: ${EPFLSTI_CLUSTER_SOURCE_DIR:=/opt/src}
+: ${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR:=${EPFLSTI_CLUSTER_SOURCE_DIR}/cluster.foreman}
 
 # Check out sources
-test -d "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"/.git || (
-    cd "$(dirname "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}")"
-    git clone https://github.com/${OPENSTACK_STIIT_GITHUB_DEPOT}.git \
-        "$(basename "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}")"
+test -d "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/.git || (
+    cd "$(dirname "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}")"
+    git clone https://github.com/${EPFLSTI_CLUSTER_GITHUB_DEPOT}.git \
+        "$(basename "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}")"
 )
-(cd "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"; git pull || true)
+(cd "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"; git pull || true)
 
 which yum-config-manager || {
   yum -y install yum-utils
@@ -62,7 +62,7 @@ which ruby193-rubygem-foreman_column_view || {
 }
  
 # Configure the foreman column view plugin
-echo "# Default Openstack STI foreman cloumn view plugin configuration
+echo "# Default foreman column view plugin configuration for an EPFL-STI cluster
 # See ruby193-rubygem-foreman_column_view-doc and /opt/rh/ruby193/root/usr/share/gems/gems/foreman_column_view-0.2.0/README.md for more information
 :column_view:
   :architecture:
@@ -80,7 +80,7 @@ echo "# Default Openstack STI foreman cloumn view plugin configuration
 " > /usr/share/foreman/config/settings.plugins.d/foreman_column_view.yaml || true
 
 
-if test -z "${OPENSTACK_STIIT_SKIP_FOREMAN_INSTALLER}"; then
+if test -z "${EPFLSTI_CLUSTER_SKIP_FOREMAN_INSTALLER}"; then
     ./configure.pl
     foreman-installer \
         --enable-foreman-proxy \
@@ -92,15 +92,15 @@ if test -z "${OPENSTACK_STIIT_SKIP_FOREMAN_INSTALLER}"; then
 fi
 
 # Install our own Puppet configuration
-# This should be done using foreman-installer/modules/openstacksti instead
+# This should be done using foreman-installer/modules/epflsti instead
 test -L /etc/puppet/environments || {
     mv --backup -T /etc/puppet/environments /etc/puppet/environments.ORIG || \
         rm -rf /etc/puppet/environments
-    ln -s "${OPENSTACK_STIIT_GIT_CHECKOUT_DIR}"/puppet/environments \
+    ln -s "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/puppet/environments \
        /etc/puppet/environments
 }
 
-# TODO: add the openstack-sti::puppetmaster class to the current host first
+# TODO: add the epflsti::puppetmaster class to the current host first
 puppet agent --test
 
 echo "All done."

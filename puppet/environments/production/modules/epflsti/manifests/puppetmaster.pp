@@ -1,15 +1,15 @@
-# Class: openstack-sti::puppetmaster
+# Class: epflsti::puppetmaster
 #
-# This class describes an OpenStack-STI puppetmaster.
+# This class describes an Epflsti puppetmaster.
 #
 # At the moment, there is exactly one of these per cluster, and it
 # manages bare-metal provisioning (using Foreman) in addition to being
 # the puppetmaster. If it goes down, software update and provisioning
 # become impossible until it is brought back up, but the cluster should
 # otherwise work. We hope.
-class openstack-sti::puppetmaster(
-  $src_dir = "/opt/src/epfl.openstack-sti.foreman"
-  ) inherits openstack-sti {
+class epflsti::puppetmaster(
+  $src_dir = "/opt/src/cluster.foreman"
+  ) inherits epflsti {
       package { 'foreman':
               ensure => 'present',
       }

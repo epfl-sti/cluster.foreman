@@ -1,10 +1,10 @@
-# Class: openstack-sti
+# Class: epflsti
 #
-# Base class for openstack-sti::puppetmaster, openstack-sti::computenode
-# and openstack-sti::quorumnode.
+# Base class for epflsti::puppetmaster, epflsti::computenode
+# and epflsti::quorumnode.
 #
 # You probably want to use one of the subclasses from Foreman or puppet.conf.
-class openstack-sti(
+class epflsti(
   $ensure         = 'present',
 ) {
   package { 'puppetlabs-release-6':

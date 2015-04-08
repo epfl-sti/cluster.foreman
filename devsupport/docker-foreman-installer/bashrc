@@ -43,4 +43,4 @@ if [ -x /usr/bin/dircolors ]; then
 fi
 
 
-cd /opt/src/epfl.openstack-sti.foreman/
+cd /opt/src/cluster.foreman/

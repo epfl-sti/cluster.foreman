@@ -1,14 +1,14 @@
-# Class: openstack-sti::quorumnode
+# Class: epflsti::quorumnode
 #
-# This class describes "special" services of openstack-sti that require fixed
+# This class describes "special" services of epflsti that require fixed
 # instances.  The number of nodes that install this in a cluster should be
 # kept low and constant (say 3 or 5). In low count clusters, nodes may use
-# belong to both the openstack-sti::quorumnode and openstack-sti::computenode
+# belong to both the epflsti::quorumnode and epflsti::computenode
 # classes.
-class openstack-sti::quorumnode(
+class epflsti::quorumnode(
   $quorum_node_id = undef,      # Must be an int between 1 and $count
   $quorum_node_id_max = undef,  # Must be an int
-  ) inherits openstack-sti {
+  ) inherits epflsti {
     if !(is_integer($quorum_node_id)) {
       fail('$quorum_node_id must be an integer')
     }

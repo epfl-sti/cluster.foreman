@@ -3,7 +3,7 @@
 # Run Docker in order to test the foreman-installer process.
 #
 # Thanks to Docker, a mere laptop on any platform (including Mac or
-# Windows) is adequate for developing and testing the Openstack-STI
+# Windows) is adequate for developing and testing the EPFL-STI
 # Foreman installer extensions.
 
 set -e -x
@@ -18,6 +18,6 @@ docker build -t epflsti/foreman-test-install \
 # To run from a different tag (created e.g. with "docker commit"), say
 # DOCKER_TAG=mytag devsupport/run.sh
 docker run \
-    -v "$GIT_TOPDIR":/opt/src/epfl.openstack-sti.foreman \
+    -v "$GIT_TOPDIR":/opt/src/cluster.foreman \
     -h ostest0.epfl.ch \
     -it epflsti/foreman-test-install:${DOCKER_TAG:-latest} /bin/bash

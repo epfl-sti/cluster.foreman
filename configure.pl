@@ -145,14 +145,14 @@ sub discovery_config : ToYaml("foreman::plugin::discovery") {
 
 Every top-level entry in the YAML file corresponds to a directory with
 the same name in C</usr/share/foreman-installer/modules>. One
-particular module, C<openstacksti>, gets grafted (using a symlink)
+particular module, C<epflsti>, gets grafted (using a symlink)
 into the foreman-installer machinery when running this script.
 
 =cut
 
 do {
   my $foreman_installer_module_path = "/usr/share/foreman-installer/modules";
-  my $our_module_name = "openstacksti";
+  my $our_module_name = "epflsti";
   my $our_module_path = "$foreman_installer_module_path/$our_module_name";
   unless (-l $our_module_path) {
     my $target = "$FindBin::Bin/foreman-installer/modules/$our_module_name";
@@ -163,13 +163,13 @@ do {
 
 =pod
 
-The C<openstacksti> YAML section is used to persist interactive
+The C<epflsti> YAML section is used to persist interactive
 answers to "PromptUser" functions (see details in
 L<GenerateAnswersYaml>), as well as for bona fide Puppet parameters.
 
 =cut
 
-sub openstacksti__src_path : ToYaml { $FindBin::Bin }
+sub epflsti__src_path : ToYaml { $FindBin::Bin }
 
 =head1 UTILITY FUNCTIONS
 

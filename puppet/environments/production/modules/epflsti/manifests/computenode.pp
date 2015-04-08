@@ -1,9 +1,9 @@
-# Class: openstack-sti::computenode
+# Class: epflsti::computenode
 #
-# This class describes an ordinary OpenStack-STI compute node.
+# This class describes an ordinary EPFL-STI compute node.
 #
 # All nodes ought to be completely interchangeable.
-class openstack-sti::computenode() inherits openstack-sti {
+class epflsti::computenode() inherits epflsti {
     class { "mesos":
       repo => "mesosphere",
       manage_python => true
