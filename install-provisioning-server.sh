@@ -62,9 +62,9 @@ which foreman-installer || {
     yum -y install foreman-installer
 }
 
-# Writes (or updates) /etc/foreman/foreman-installer-answers.yaml:
+# Write (or update) /etc/foreman/foreman-installer-answers.yaml:
 ./configure.pl $EPFLSTI_CLUSTER_CONFIGURE_FLAGS
-# Reads same, and thus doesn't need any command-line flags; please
+# Read same, and thus doesn't need any command-line flags; please
 # keep it that way
 foreman-installer
 
