@@ -32,6 +32,7 @@ To see the list of all options, try
 use Memoize;
 use FindBin; use lib "$FindBin::Bin/lib";
 use GenerateAnswersYaml qw(prompt_yn);
+use NetAddr::IP::Lite;
 
 =head1 HACKING
 
@@ -197,6 +198,22 @@ L<GenerateAnswersYaml>), as well as for bona fide Puppet parameters.
 
 sub epflsti__src_path : ToYaml { $FindBin::Bin }
 
+sub epflsti__provisioning_interface : ToYaml { private_interface }
+sub epflsti__provisioning_domain_name: ToYaml{ hostdomain() }
+sub epflsti__provisioning_network_address: ToYaml {
+  return private_interface_config()->network->addr;
+}
+sub epflsti__provisioning_netmask: ToYaml {
+  return private_interface_config()->mask;
+}
+sub epflsti__provisioning_gateway: ToYaml { private_ip_address }
+sub epflsti__provisioning_dns: ToYaml : PromptUser { private_ip_address }
+sub epflsti__provisioning_dhcp_range: ToYaml {
+  my $range = foreman_proxy__dhcp_range;
+  $range =~ s/\s+/-/g;
+  return $range;
+}
+
 =head3 Plugins
 
 Plugins are an exception to the above rule: because they are listed section
@@ -228,21 +245,31 @@ functions with attributes.
 
 =cut
 
-memoize('interfaces_and_ips');
 sub interfaces_and_ips {
-  my %interfaces_and_ips;
+  my %network_configs = network_configs();
+  return map { ($_, $network_configs{$_}->addr) } (keys %network_configs);
+}
+
+memoize('network_configs');
+sub network_configs {
+  my %network_configs;
   local *IP_ADDR;
   open(IP_ADDR, "ip addr |");
   my $current_interface;
   while(<IP_ADDR>) {
     if (m/^\d+: (\S+):/) {
       $current_interface = $1;
-    } elsif (m/inet ([0-9.]+)/) {
-      $interfaces_and_ips{$current_interface} = $1;
+    } elsif (m|inet ([0-9.]+/[0-9]+)|) {
+      $network_configs{$current_interface} = NetAddr::IP::Lite->new($1);
     }
   }
   close(IP_ADDR);
-  return %interfaces_and_ips;
+  return %network_configs;
+}
+
+sub private_interface_config {
+  my %network_configs = network_configs();
+  return $network_configs{private_interface()};
 }
 
 sub is_rfc1918_ip {
