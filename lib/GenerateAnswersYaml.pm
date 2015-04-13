@@ -11,7 +11,7 @@ GenerateAnswersYaml - The engine behind ../configure.pl
 
 =cut
 
-use base 'Exporter'; our @EXPORT = qw(debug);
+use base 'Exporter'; our @EXPORT_OK = qw(debug prompt_user prompt_yn);
 
 use Attribute::Handlers;
 use Getopt::Long;
@@ -69,7 +69,7 @@ sub UNIVERSAL::PromptUser : ATTR(CODE) {
   GenerateAnswersYaml::_MagicSub->decorate(@_);
 }
 
-sub _prompt_user {
+sub prompt_user {
   my ($question, $default) = @_;
   print "$question [$default]:\n";
   my $answer = <>;
@@ -83,11 +83,37 @@ sub _prompt_user {
   }
 }
 
+sub prompt_yn {
+  my ($question, $default_bool) = @_;
+  my $prompt = $default_bool ? "Yn" : "yN";
+  print "$question [$prompt]:\n";
+  my $answer = <>;
+  chomp($answer);
+  if ($answer eq "") {
+    return $default_bool;
+  } elsif (lc($answer) =~ m/^y/) {
+    return 1;
+  } else {
+    return undef;
+  }
+}
+
 sub _function_name {
   my ($sub_ref) = @_;
   # https://stackoverflow.com/questions/7419071/determining-the-subroutine-name-of-a-perl-code-reference
   use B qw(svref_2object);
   return svref_2object($sub_ref)->GV->NAME;
+}
+
+=head2 PreConfigure
+
+Functions annotated with this attribute are run first.
+
+=cut
+
+sub UNIVERSAL::PreConfigure : ATTR(CODE) {
+  debug(_function_name($_[2]) . " will run at the beginning");
+  GenerateAnswersYaml::_MagicSub->decorate(@_);
 }
 
 =head2 PostConfigure
@@ -151,6 +177,11 @@ then run any L<PostConfigure> subs in the order they were seen.
 
 sub Generate {
   parse_argv;
+  foreach my $magicsub (GenerateAnswersYaml::_MagicSub->all) {
+    next unless ($magicsub->has_PreConfigure);
+    $magicsub->{code_orig}->();
+  }
+
   if (-f $target_file) {
     warn "$target_file already exists.\n\n";
   }
@@ -309,6 +340,7 @@ sub decorate {
 sub has_PromptUser { exists shift->{decoration_PromptUser} }
 sub has_Flag { exists shift->{decoration_Flag} }
 sub has_ToYaml { exists shift->{decoration_ToYaml} }
+sub has_PreConfigure { exists shift->{decoration_PreConfigure} }
 sub has_PostConfigure { exists shift->{decoration_PostConfigure} }
 
 sub all {
@@ -381,7 +413,7 @@ sub value {
     return $self->{interactive_value};
   } elsif ($self->has_PromptUser) {
     my $default_value = $self->{interactive_default_value} || $self->{code_orig}->();
-    return ($self->{interactive_value} = GenerateAnswersYaml::_prompt_user(
+    return ($self->{interactive_value} = GenerateAnswersYaml::prompt_user(
       $self->human_name, $default_value));
   } else {
     # Flag sub absent from command line

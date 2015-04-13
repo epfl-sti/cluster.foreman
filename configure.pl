@@ -30,9 +30,8 @@ To see the list of all options, try
 =cut
 
 use Memoize;
-use Net::Domain qw(hostname);
 use FindBin; use lib "$FindBin::Bin/lib";
-use GenerateAnswersYaml;
+use GenerateAnswersYaml qw(prompt_yn);
 
 =head1 HACKING
 
@@ -53,24 +52,6 @@ sub foreman_proxy__dhcp_gateway : ToYaml      { private_ip_address() }
 sub foreman_proxy__dhcp_nameservers : ToYaml  { private_ip_address() }
 sub foreman_proxy__dns_interface : ToYaml    { private_interface() }
 sub foreman_proxy__dhcp_interface : ToYaml   { private_interface() }
-
-sub foreman_proxy__dns_zone : ToYaml { dns_domain() }
-sub foreman__servername : ToYaml { fully_qualified_domain_name() }
-
-=pod
-
-One can override the default path deduction by passing parameters to
-the ToYaml annotation, e.g.
-
-   sub foreman_url : ToYaml("foreman", "foreman_url")  { ... }
-
-See L</YAML Structure> below for details.
-
-=cut
-
-sub foreman_url : ToYaml("foreman", "foreman_url") {
-  return "https://" . fully_qualified_domain_name();
-}
 
 =pod
 
@@ -93,9 +74,25 @@ command-line switch.
 
 =cut
 
-sub dns_domain : PromptUser { "cloud.epfl.ch" }
-sub fully_qualified_domain_name : PromptUser {
-  return sprintf("%s.%s", hostname(), dns_domain());
+sub private_ip_address : PromptUser {
+  my %interfaces_and_ips = interfaces_and_ips();
+  my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
+    (values %interfaces_and_ips);
+  return $private_ips[0];
+}
+
+sub private_interface : PromptUser {
+  my %ips_to_interfaces = reverse(interfaces_and_ips());
+  return $ips_to_interfaces{private_ip_address()};
+}
+
+sub public_ip_address : PromptUser {
+  use IO::Socket::INET;
+  use Socket;
+  my $sock = new IO::Socket::INET(
+    PeerHost => "8.8.8.8", PeerPort => 80, Blocking => 0);
+  my (undef, $myaddr) = sockaddr_in(getsockname($sock));
+  return inet_ntoa($myaddr);
 }
 
 =pod
@@ -123,28 +120,49 @@ sub foreman_proxy__dns_forwarders : ToYaml {
   [qw(128.178.15.227 128.178.15.228)]
 }
 
-sub foreman_proxy__puppet_url : ToYaml { foreman_url . ":8140" }
-sub foreman_proxy__template_url : ToYaml { foreman_url . ":8000" }
+=pod
 
-sub private_ip_address : PromptUser {
-  my %interfaces_and_ips = interfaces_and_ips();
-  my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
-    (values %interfaces_and_ips);
-  return $private_ips[0];
-}
+Functions that have a ": PreConfigure" attribute are run before
+everything else.
 
-sub private_interface : PromptUser {
-  my %ips_to_interfaces = reverse(interfaces_and_ips());
-  return $ips_to_interfaces{private_ip_address()};
-}
+=cut
 
-sub public_ip_address : PromptUser {
-  use IO::Socket::INET;
-  use Socket;
-  my $sock = new IO::Socket::INET(
-    PeerHost => "8.8.8.8", PeerPort => 80, Blocking => 0);
-  my (undef, $myaddr) = sockaddr_in(getsockname($sock));
-  return inet_ntoa($myaddr);
+sub validate_dns_domain : PreConfigure {
+  use Net::Domain qw(hostfqdn hostdomain);
+  printf STDERR <<"DIAG", hostfqdn(), hostdomain();
+
+This host's Fully Qualified Domain Name (FQDN) is: %s,
+meaning that the DNS domain used for the hosts in the cluster will
+be:
+
+  %s
+
+DIAG
+  my $ok = undef;
+  if (hostdomain eq "epfl.ch") {
+    warn <<'DNS_CLASH';
+WARNING: THIS IS NOT A GOOD THING.
+
+There is (of course) already a DNS server for epfl.ch.
+
+DNS_CLASH
+    $ok = prompt_yn("Do you still want to proceed?", 0);
+  } else {
+    $ok = prompt_yn("Is this correct?", 1);
+  }
+
+  die <<"FIX_IT_YOURSELF" if (! $ok);
+
+Please:
+  * change the hostname with hostname -f as root;
+  * edit /etc/hosts and /etc/sysconfig/network to match;
+  * and re-run $0.
+
+(The FQDN is used as a default value in so many places, that it would
+be unwise to try and override it with a configure-time question.
+Sorry about that!)
+
+FIX_IT_YOURSELF
 }
 
 =head2 YAML Structure
@@ -188,6 +206,11 @@ consequence, only those plugins that are known to the stock foreman-installer
 may be configured with configure.pl. To install and configure third-party
 plugins, take a look at the 'column_view' example in
 foreman-installer/modules/epflsti/manifests/init.pp
+
+One can conveniently override the default path deduction by passing
+parameters to the ToYaml annotation, e.g.
+
+   sub discovery_config : ToYaml("foreman::plugin::discovery")  { ... }
 
 =cut
 

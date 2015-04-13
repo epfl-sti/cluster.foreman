@@ -36,6 +36,6 @@ esac
 # DOCKER_TAG=mytag devsupport/run.sh
 docker run \
     -v "$GIT_TOPDIR":/opt/src/cluster.foreman \
-    -h ostest0.epfl.ch \
+    -h ostest0.cloud.epfl.ch \
     -p $FOREMAN_PORT:443 -p 69:69/udp \
     -it epflsti/foreman-test-install:${DOCKER_TAG:-latest} /bin/bash

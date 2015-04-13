@@ -62,6 +62,8 @@ which foreman-installer || {
     yum -y install foreman-installer
 }
 
+[ -n "$EPFLSTI_CLUSTER_INSTALL_PREREQS_ONLY" ] && exit 0
+
 # Write (or update) /etc/foreman/foreman-installer-answers.yaml:
 ./configure.pl $EPFLSTI_CLUSTER_CONFIGURE_FLAGS
 # Read same, and thus doesn't need any command-line flags; please
