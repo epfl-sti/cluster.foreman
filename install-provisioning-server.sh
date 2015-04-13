@@ -20,7 +20,8 @@
 #  * repeatable: it should be okay to run it twice
 #  * readable (with comments in english)
 #  * minimalistic: complicated things should be done with Puppet instead
-#                  (see README.md for how to do what where)
+#                  (see https://github.com/epfl-sti/cluster.foreman/wiki/Hacking
+#                  for how to do what where)
 
 set -e -x
 
@@ -61,9 +62,11 @@ which foreman-installer || {
     yum -y install foreman-installer
 }
 
-# Writes (or updates) /etc/foreman/foreman-installer-answers.yaml:
+[ -n "$EPFLSTI_CLUSTER_INSTALL_PREREQS_ONLY" ] && exit 0
+
+# Write (or update) /etc/foreman/foreman-installer-answers.yaml:
 ./configure.pl $EPFLSTI_CLUSTER_CONFIGURE_FLAGS
-# Reads same, and thus doesn't need any command-line flags; please
+# Read same, and thus doesn't need any command-line flags; please
 # keep it that way
 foreman-installer
 
