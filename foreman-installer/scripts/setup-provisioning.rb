@@ -61,6 +61,10 @@ class ForemanSetup::ProvisionersController
   # The script of this script
   def run_wizard
     find_myself
+    if ! @host
+      create_host
+      find_myself
+    end
     step1_auto
     set_params_for_step2_update
     step2_update
@@ -68,6 +72,11 @@ class ForemanSetup::ProvisionersController
     step4
     set_params_for_step4_update
     step4_update
+  end
+
+  def create_host
+    fqdn = Facter.value(:fqdn)
+    Host.new(:name => fqdn).save
   end
 
   def step1_auto
