@@ -49,10 +49,23 @@ class epflsti(
     config => template('epflsti/foreman_column_view_yaml.erb')
   }
 
-  $setup_provisioning_breadcrumb_file = "${foreman_vardir}/setup-provisioning.done"
+  $_breadcrumb_files = {
+    setup_provisioning => "${foreman_vardir}/setup-provisioning.done",
+    run_puppet_agent   => "${foreman_vardir}/puppet-agent.done",
+  }
 
+  exec { 'run puppet agent for the first time' :
+    command => "/usr/bin/puppet agent -t",
+    unless => "/usr/bin/test -f '${_breadcrumb_files[run_puppet_agent]}'",
+    require => [
+                Class["puppet"],
+                ]
+  } ->
+  file { "${_breadcrumb_files[run_puppet_agent]}":
+    ensure => "present"
+  } ->
   exec { 'setup provisioning in Foreman':
-    command => "${rails} runner -e production ${src_path}/foreman-installer/scripts/setup-provisioning.rb \
+    command => "/bin/sleep 3600; ${rails} runner -e production ${src_path}/foreman-installer/scripts/setup-provisioning.rb \
     --interface-name=${provisioning_interface} \
     --domain-name=${provisioning_domain_name} \
     --network-address=${provisioning_network_address} \
@@ -62,14 +75,14 @@ class epflsti(
     --dhcp-range=$provisioning_dhcp_range",
     cwd => $foreman_topdir,
     user => "foreman",
-    unless => "/usr/bin/test -f '${setup_provisioning_breadcrumb_file}'",
+    unless => "/usr/bin/test -f '${_breadcrumb_files[setup_provisioning]}'",
     require => [
                 Class["foreman::database"],
                 Class["foreman::plugin::setup"],
-                Class["::foreman_proxy::register"]
+                Class["::foreman_proxy::register"],
                 ],
   } ->
-  file { "${setup_provisioning_breadcrumb_file}":
+  file { "${_breadcrumb_files[setup_provisioning]}":
     ensure => "present"
   }
 }
