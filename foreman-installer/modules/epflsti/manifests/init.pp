@@ -66,6 +66,7 @@ class epflsti(
     require => [
                 Class["foreman::database"],
                 Class["foreman::plugin::setup"],
+                Class["::foreman_proxy::register"]
                 ],
   } ->
   file { "${setup_provisioning_breadcrumb_file}":
