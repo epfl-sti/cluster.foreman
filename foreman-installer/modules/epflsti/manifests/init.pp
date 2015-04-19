@@ -1,4 +1,4 @@
-# = Class: git::params
+# = Class: epflsti
 #
 # Customizations to foreman-installer that are specific to EPFL STI.
 #
@@ -14,75 +14,13 @@
 #                           provided by the user
 # $src_path::               The path where epfl-sti/cluster.foreman.git is
 #                           checked out
-# $provisioning_interface:: The name of the network interface connected to the
-#                           provisioning network
-# $provisioning_domain_name:: The domain name to set on provisioned hosts
-# $provisioning_network_address:: The IP network address of the provisioning
-#                                  network
-# $provisioning_netmask::   The netmask of the network to provision into
-# $provisioning_gateway::   The gateway to set on provisioned hosts
-# $provisioning_dns::       The IP of the DNS server to set on provisioned
-#                            hosts
-# $provisioning_dhcp_range:: Range of addresses to allocate for provisioning
-# $rails::                  The full path of the rails utility
-# $foreman_topdir::         The directory where to run "foreman runner" from
-# $foreman_vardir::         The directory where to write breadcrumb files
 class epflsti(
   $configure_answers = {},
   $src_path = undef,
-  $provisioning_interface       = undef,
-  $provisioning_domain_name     = undef,
-  $provisioning_network_address = undef,
-  $provisioning_netmask         = undef,
-  $provisioning_gateway         = undef,
-  $provisioning_dns             = undef,
-  $provisioning_dhcp_range      = undef,
-  $foreman_topdir               = $::epflsti::params::foreman_topdir,
-  $foreman_vardir               = $::epflsti::params::foreman_vardir,
-  $rails                        = $::epflsti::params::rails,
   ) inherits epflsti::params {
-  if $src_path == undef {
-    fail '$src_path must be set'
-  }
+  validate_absolute_path($src_path)
 
   foreman::plugin {'column_view':
     config => template('epflsti/foreman_column_view_yaml.erb')
-  }
-
-  $_breadcrumb_files = {
-    setup_provisioning => "${foreman_vardir}/setup-provisioning.done",
-    run_puppet_agent   => "${foreman_vardir}/puppet-agent.done",
-  }
-
-  exec { 'run puppet agent for the first time' :
-    command => "/usr/bin/puppet agent -t",
-    unless => "/usr/bin/test -f '${_breadcrumb_files[run_puppet_agent]}'",
-    require => [
-                Class["puppet"],
-                ]
-  } ->
-  file { "${_breadcrumb_files[run_puppet_agent]}":
-    ensure => "present"
-  } ->
-  exec { 'setup provisioning in Foreman':
-    command => "/bin/sleep 3600; ${rails} runner -e production ${src_path}/foreman-installer/scripts/setup-provisioning.rb \
-    --interface-name=${provisioning_interface} \
-    --domain-name=${provisioning_domain_name} \
-    --network-address=${provisioning_network_address} \
-    --netmask=${provisioning_netmask} \
-    --gateway=${provisioning_gateway} \
-    --dns-primary=${provisioning_dns} \
-    --dhcp-range=$provisioning_dhcp_range",
-    cwd => $foreman_topdir,
-    user => "foreman",
-    unless => "/usr/bin/test -f '${_breadcrumb_files[setup_provisioning]}'",
-    require => [
-                Class["foreman::database"],
-                Class["foreman::plugin::setup"],
-                Class["::foreman_proxy::register"],
-                ],
-  } ->
-  file { "${_breadcrumb_files[setup_provisioning]}":
-    ensure => "present"
   }
 }

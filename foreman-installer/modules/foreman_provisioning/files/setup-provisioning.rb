@@ -1,4 +1,13 @@
 # coding: utf-8
+#
+# Run the foreman_setup wizard hands-free.
+#
+# foreman_setup [https://github.com/theforeman/foreman_setup] is a
+# Foreman plugin that makes it easier to configure provisioning. This
+# script makes it easier to use foreman_setup, which otherwise
+# requires the operator to first run foreman-installer, then go
+# through a Web wizard where all mistakes are basically fatal, then
+# run foreman-installer again.
 
 SubnetParams = Struct.new(
   :interface_name,       # e.g. "eth0"
@@ -62,9 +71,14 @@ class ForemanSetup::ProvisionersController
   def run_wizard
     find_myself
     if ! @proxy
+      # The SmartProxy object ought to be created through an HTTP/S API
+      # call triggered by the Foreman_smartproxy stanza in
+      # /usr/share/foreman-installer/modules/foreman/manifests/init.pp
       raise "SmartProxy not found for " + Facter.value(:fqdn)
     end
     if ! @host
+      # Creating this is the job of the steps before us in
+      # foreman-installer/foreman_provisioning/manifests/init.pp
       raise "Host not found for " + Facter.value(:fqdn)
     end
 
@@ -73,6 +87,7 @@ class ForemanSetup::ProvisionersController
     step2_update
     # There is no step 3
     step4
+    reload_provisioner
     set_params_for_step4_update
     step4_update
   end
@@ -92,6 +107,18 @@ class ForemanSetup::ProvisionersController
       "subnet_attributes" => @subnet.to_params,
       "domain_name" => @subnet.domain_name,
     }
+  end
+
+  # Recover the @provisioner object from the database, sans the updates
+  # of #step4.
+  #
+  # This mimics what would happen in between controller steps in the
+  # real, Web-based wizard.
+  def reload_provisioner
+    if ! @provisioner.id
+      @provisioner.save!
+    end
+    @provisioner = ForemanSetup::Provisioner.find(@provisioner.id)
   end
 
   def set_params_for_step4_update
@@ -162,10 +189,6 @@ OptionParser.new do |opts|
     subnet.from, subnet.to = v.split(/[^.0-9]/)
   end    
 end.parse!
-
-ForemanSetup::Provisioner.delete_all
-Hostgroup.delete_all
-Subnet.delete_all
 
 c = ForemanSetup::ProvisionersController.new
 c.subnet = subnet

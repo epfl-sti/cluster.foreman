@@ -169,50 +169,57 @@ FIX_IT_YOURSELF
 =head2 YAML Structure
 
 Every top-level entry in the YAML file corresponds to a directory with
-the same name in C</usr/share/foreman-installer/modules>. One
-particular module, C<epflsti>, gets grafted (using a symlink)
-into the foreman-installer machinery when running this script.
+the same name in C</usr/share/foreman-installer/modules>. All modules
+in the C<foreman-installer/modules> subdirectory in the sources get
+grafted (using a symlink) into the foreman-installer machinery when
+running this script.
 
 Also, you can probably guess what a ": PostConfigure" annotation is for.
 
 =cut
 
-sub symlink_epflsti_module : PostConfigure {
+sub symlink_modules : PostConfigure {
   my $foreman_installer_module_path = "/usr/share/foreman-installer/modules";
-  my $our_module_name = "epflsti";
-  my $our_module_path = "$foreman_installer_module_path/$our_module_name";
-  unless (-l $our_module_path) {
-    my $target = "$FindBin::Bin/foreman-installer/modules/$our_module_name";
-    warn "Creating symlink $our_module_path => $target\n\n";
-    symlink($target, $our_module_path);
+  my $src_modules_dir = "$FindBin::Bin/foreman-installer/modules";
+  opendir(my $dirhandle, $src_modules_dir) ||
+    die "can't opendir $src_modules_dir: $!";
+  foreach my $subdir (readdir($dirhandle)) {
+    next if ($subdir eq "." or $subdir eq "..");
+    next unless -d (my $src_module_dir = "$src_modules_dir/$subdir");
+    my $symlink = "$foreman_installer_module_path/$subdir";
+    warn "Creating symlink $symlink => $src_module_dir\n";
+    symlink($src_module_dir, $symlink) or
+      die "symlink($src_module_dir, $symlink): $!";
   }
+  closedir($dirhandle);
+  warn "\n";
 }
 
-=pod
-
-The C<epflsti> YAML section is used to persist interactive
-answers to "PromptUser" functions (see details in
-L<GenerateAnswersYaml>), as well as for bona fide Puppet parameters.
-
-=cut
-
-sub epflsti__src_path : ToYaml { $FindBin::Bin }
-
-sub epflsti__provisioning_interface : ToYaml { private_interface }
-sub epflsti__provisioning_domain_name: ToYaml{ hostdomain() }
-sub epflsti__provisioning_network_address: ToYaml {
+sub foreman_provisioning__interface : ToYaml { private_interface }
+sub foreman_provisioning__domain_name: ToYaml{ hostdomain() }
+sub foreman_provisioning__network_address: ToYaml {
   return private_interface_config()->network->addr;
 }
-sub epflsti__provisioning_netmask: ToYaml {
+sub foreman_provisioning__netmask: ToYaml {
   return private_interface_config()->mask;
 }
-sub epflsti__provisioning_gateway: ToYaml { private_ip_address }
-sub epflsti__provisioning_dns: ToYaml : PromptUser { private_ip_address }
-sub epflsti__provisioning_dhcp_range: ToYaml {
+sub foreman_provisioning__gateway: ToYaml { private_ip_address }
+sub foreman_provisioning__dns: ToYaml : PromptUser { private_ip_address }
+sub foreman_provisioning__dhcp_range: ToYaml {
   my $range = foreman_proxy__dhcp_range;
   $range =~ s/\s+/-/g;
   return $range;
 }
+
+=pod
+
+The C<epflsti> YAML section is used to persist interactive answers to
+"PromptUser" functions (see details in L<GenerateAnswersYaml>), as
+well as for bona fide Puppet parameters for the like-named module.
+
+=cut
+
+sub epflsti__src_path : ToYaml { $FindBin::Bin }
 
 =head3 Plugins
 
