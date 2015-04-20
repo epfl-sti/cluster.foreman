@@ -33,6 +33,7 @@ use Memoize;
 use FindBin; use lib "$FindBin::Bin/lib";
 use GenerateAnswersYaml qw(prompt_yn);
 use NetAddr::IP::Lite;
+use Errno;
 
 =head1 HACKING
 
@@ -65,6 +66,7 @@ sub foreman_proxy__tftp: ToYaml    { "true" }
 sub foreman_proxy__dhcp: ToYaml    { "true" }
 sub foreman_proxy__dns: ToYaml     { "true" }
 sub foreman_proxy__bmc: ToYaml     { "true" }
+
 sub foreman_proxy__bmc_default_provider: ToYaml { "ipmitool" }
 
 =pod
@@ -188,8 +190,9 @@ sub symlink_modules : PostConfigure {
     next unless -d (my $src_module_dir = "$src_modules_dir/$subdir");
     my $symlink = "$foreman_installer_module_path/$subdir";
     warn "Creating symlink $symlink => $src_module_dir\n";
-    symlink($src_module_dir, $symlink) or
-      die "symlink($src_module_dir, $symlink): $!";
+    unless (symlink($src_module_dir, $symlink)) {
+      die "symlink($src_module_dir, $symlink): $!" unless $! == Errno::EEXIST;
+    }
   }
   closedir($dirhandle);
   warn "\n";
@@ -210,16 +213,6 @@ sub foreman_provisioning__dhcp_range: ToYaml {
   $range =~ s/\s+/-/g;
   return $range;
 }
-
-=pod
-
-The C<epflsti> YAML section is used to persist interactive answers to
-"PromptUser" functions (see details in L<GenerateAnswersYaml>), as
-well as for bona fide Puppet parameters for the like-named module.
-
-=cut
-
-sub epflsti__src_path : ToYaml { $FindBin::Bin }
 
 =head3 Plugins
 
@@ -244,6 +237,34 @@ sub discovery_config : ToYaml("foreman::plugin::discovery") {
     tftp_root => "/var/lib/tftpboot/",
   }
 }
+
+=head1 QUIRKS
+
+Here we document a number of special-purpose settings that oil some
+cogs or others.
+
+=head2 C<epflsti> module
+
+The C<epflsti> section in /etc/foreman/foreman-installer.yaml is used
+for bona fide Puppet parameters for the like-named module, but also to
+persist all the interactive answers to "PromptUser" functions that
+don't have a "ToYaml" place of persistence of their own (see details
+in L<GenerateAnswersYaml>),
+
+=cut
+
+sub epflsti__src_path : ToYaml { $FindBin::Bin }
+
+=head2 server_environments
+
+Hijacked so that foreman-installer doesn't create (and re-create)
+/etc/puppet/environments (we want a symlink to our source tree here).
+
+=cut
+
+sub puppet__server_environments : ToYaml { [] }
+
+=head2 I<>
 
 =head1 UTILITY FUNCTIONS
 
