@@ -65,7 +65,9 @@ class foreman_provisioning(
 
   $puppet_facts_file = "${puppet_facts_dir}/${::fqdn}.yaml"
   file { $puppet_facts_dir :
-    ensure => "directory"
+    ensure => "directory",
+    owner => "puppet",
+    group => "puppet"
   } ->
   exec { "create ${puppet_facts_file}" :
     command => "${state_dir}/create-facts-yaml.pl \
@@ -73,6 +75,10 @@ class foreman_provisioning(
     creates => $puppet_facts_file,
     require => Package["puppet"]
     # The script (created above) is also automagically counted as a dependency
+  } ->
+  file { $puppet_facts_file :
+    owner => "puppet",
+    group => "puppet"
   } ->
   exec { "upload ${puppet_facts_file}" :
     command => "/etc/puppet/node.rb --push-facts",  # See above re dependencies
