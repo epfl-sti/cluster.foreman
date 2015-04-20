@@ -23,4 +23,10 @@ class epflsti(
   foreman::plugin {'column_view':
     config => template('epflsti/foreman_column_view_yaml.erb')
   }
+
+  file { "/etc/puppet/environments/production":
+    ensure => "symlink",
+    target => "${src_path}/puppet/environments/production",
+    before => Class["Puppet::Agent::Service"],
+  }
 }

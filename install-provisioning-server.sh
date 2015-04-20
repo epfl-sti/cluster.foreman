@@ -69,12 +69,3 @@ which foreman-installer || {
 # Read same, and thus doesn't need any command-line flags; please
 # keep it that way
 foreman-installer
-
-# Install our own Puppet configuration
-# This should be done using foreman-installer/modules/epflsti instead
-test -L /etc/puppet/environments || {
-    mv --backup -T /etc/puppet/environments /etc/puppet/environments.ORIG || \
-        rm -rf /etc/puppet/environments
-    ln -s "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/puppet/environments \
-       /etc/puppet/environments
-}
