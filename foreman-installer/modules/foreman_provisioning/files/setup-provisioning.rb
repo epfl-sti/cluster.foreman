@@ -47,26 +47,6 @@ FakeRequest = Struct.new(:parameters)
 class ForemanSetup::ProvisionersController
   attr_accessor :subnet
   
-  # Use a mock request object
-  def initialize(*args)
-    super(*args)
-    self.request = FakeRequest.new(:parameters => {})
-  end
-
-  # neuter the "all done, transfer to view" plumbing:
-  def process_success(ignored)
-  end
-  def process_error(ignored)
-  end
-  def redirect_to(ignored)
-  end
-  def step2_foreman_setup_provisioner_path
-  end
-  def step3_foreman_setup_provisioner_path
-  end
-  def step5_foreman_setup_provisioner_path
-  end
-
   # The script of this script
   def run_wizard
     find_myself
@@ -90,6 +70,26 @@ class ForemanSetup::ProvisionersController
     reload_provisioner
     set_params_for_step4_update
     step4_update
+  end
+
+  # Use a mock request object
+  def initialize(*args)
+    super(*args)
+    self.request = FakeRequest.new(:parameters => {})
+  end
+
+  # neuter the "all done, transfer to view" plumbing:
+  def process_success(ignored)
+  end
+  def process_error(ignored)
+  end
+  def redirect_to(ignored)
+  end
+  def step2_foreman_setup_provisioner_path
+  end
+  def step3_foreman_setup_provisioner_path
+  end
+  def step5_foreman_setup_provisioner_path
   end
 
   def step1_auto
