@@ -82,6 +82,10 @@ class foreman_provisioning(
     ensure => "present",
     require => File[$state_dir]
   } ->
+  ## Uncomment the line below to take a db:dump just before running the wizard
+  ## See the project wiki on how to restore the dump so as to debug
+  ## setup-provisioning.rb
+#  exec { 'XXX DEBUG': command => "/usr/sbin/foreman-rake db:dump" } ->
   exec { 'setup provisioning in Foreman':
     command => "${rails} runner -e production \
     ${state_dir}/setup-provisioning.rb \
