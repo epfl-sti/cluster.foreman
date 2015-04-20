@@ -78,8 +78,3 @@ test -L /etc/puppet/environments || {
     ln -s "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/puppet/environments \
        /etc/puppet/environments
 }
-
-# TODO: first add the epflsti::puppetmaster class to the current host
-puppet agent --test
-
-echo "All done."
