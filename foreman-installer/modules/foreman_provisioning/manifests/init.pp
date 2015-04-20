@@ -74,15 +74,11 @@ class foreman_provisioning(
   # STEP 1: our create-facts-yaml.pl script creates a Puppet-style
   # fact file, unless it already exists.
   exec { "create ${puppet_facts_file}" :
-    command => "${state_dir}/create-facts-yaml.pl \
-      > ${puppet_facts_file}",
+    command => "${state_dir}/create-facts-yaml.pl > ${puppet_facts_file} && \
+                chown puppet:puppet ${puppet_facts_file}",
+    # create-facts-yaml.pl is also automagically counted as a dependency
     creates => $puppet_facts_file,
     require => Package["puppet"]
-    # The script (created above) is also automagically counted as a dependency
-  } ->
-  file { $puppet_facts_file :
-    owner => "puppet",
-    group => "puppet"
   } ->
   # STEP 2: we call foreman's /etc/puppet/node.rb to push the facts
   # into the Foreman database. This creates a Host object and some
