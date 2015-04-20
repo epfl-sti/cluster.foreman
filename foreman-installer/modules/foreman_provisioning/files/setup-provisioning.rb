@@ -9,40 +9,6 @@
 # through a Web wizard where all mistakes are basically fatal, then
 # run foreman-installer again.
 
-SubnetParams = Struct.new(
-  :interface_name,       # e.g. "eth0"
-  :domain_name,          # "cloud.epfl.ch"
-  # The other symbol names are in sync with the HTML form fields of Step 2
-  :network, :mask, :gateway, :dns_primary, :dns_secondary,
-  :from, :to  # DHCP IP range
-) do
-  # http://stackoverflow.com/questions/5407940
-  def initialize *args
-    opts = args.last.is_a?(Hash) ? args.pop : Hash.new
-    super *args
-    opts.each_pair do |k, v|
-      self.send "#{k}=", v
-    end
-  end
-
-  # https://stackoverflow.com/questions/8082423
-  def to_h() Hash[each_pair.to_a] end
-
-  def to_params
-    ret = to_h
-    ret.delete :interface_name
-    ret.delete :domain_name
-    ret.merge!({
-      "name" => _("Provisioning network"),
-      "ipam" => "DHCP",
-      "boot_mode" => "DHCP"
-    })
-    return ret
-  end
-end
-
-FakeRequest = Struct.new(:parameters)
-
 # Re-open the class for a few customizations
 class ForemanSetup::ProvisionersController
   attr_accessor :subnet
@@ -72,7 +38,7 @@ class ForemanSetup::ProvisionersController
     step4_update
   end
 
-  # Use a mock request object
+  # Use a mock request object (see FakeRequest definition below)
   def initialize(*args)
     super(*args)
     self.request = FakeRequest.new(:parameters => {})
@@ -135,6 +101,40 @@ class ForemanSetup::ProvisionersController
   end
 
 end
+
+SubnetParams = Struct.new(
+  :interface_name,       # e.g. "eth0"
+  :domain_name,          # "cloud.epfl.ch"
+  # The other symbol names are in sync with the HTML form fields of Step 2
+  :network, :mask, :gateway, :dns_primary, :dns_secondary,
+  :from, :to  # DHCP IP range
+) do
+  # http://stackoverflow.com/questions/5407940
+  def initialize *args
+    opts = args.last.is_a?(Hash) ? args.pop : Hash.new
+    super *args
+    opts.each_pair do |k, v|
+      self.send "#{k}=", v
+    end
+  end
+
+  # https://stackoverflow.com/questions/8082423
+  def to_h() Hash[each_pair.to_a] end
+
+  def to_params
+    ret = to_h
+    ret.delete :interface_name
+    ret.delete :domain_name
+    ret.merge!({
+      "name" => _("Provisioning network"),
+      "ipam" => "DHCP",
+      "boot_mode" => "DHCP"
+    })
+    return ret
+  end
+end
+
+FakeRequest = Struct.new(:parameters)
 
 #############################################################
 
