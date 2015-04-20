@@ -194,4 +194,8 @@ c = ForemanSetup::ProvisionersController.new
 c.subnet = subnet
 c.run_wizard
 
+# Hostgroups are confusing:
+# https://github.com/epfl-sti/cluster.foreman/wiki/Getting-Started%3a-Using-Foreman#dont-use-host-groups-at-provisioning-time
+# We might have to reverse this decision soon though, as Foreman's
+# discovery plugin appears to insist on using one.
 Hostgroup.delete_all

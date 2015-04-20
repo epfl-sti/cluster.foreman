@@ -52,7 +52,7 @@ case "$(cat /etc/redhat-release)" in
 
     ;;
   *)
-    echo >&2 "Unsupported OS: $(cta /etc/redhat-release)"
+    echo >&2 "Unsupported OS: $(cat /etc/redhat-release)"
     exit 2
     ;;
   esac
