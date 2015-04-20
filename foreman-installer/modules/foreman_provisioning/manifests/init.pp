@@ -6,6 +6,8 @@
 # foreman_setup's weird and error-prone workflow of having to go to a
 # Web UI first, and then re-run foreman-installer a second time.
 #
+# Tour guide: search for "STEP " in the comments below.
+#
 # === Parameters:
 # 
 # $interface::          The name of the network interface connected to the
@@ -69,6 +71,8 @@ class foreman_provisioning(
     owner => "puppet",
     group => "puppet"
   } ->
+  # STEP 1: our create-facts-yaml.pl script creates a Puppet-style
+  # fact file, unless it already exists.
   exec { "create ${puppet_facts_file}" :
     command => "${state_dir}/create-facts-yaml.pl \
       > ${puppet_facts_file}",
@@ -80,6 +84,10 @@ class foreman_provisioning(
     owner => "puppet",
     group => "puppet"
   } ->
+  # STEP 2: we call foreman's /etc/puppet/node.rb to push the facts
+  # into the Foreman database. This creates a Host object and some
+  # Fact objects, including the network configuration, to meet prerequisites
+  # #1 and #3 of foreman_setup's Web wizard.
   exec { "upload ${puppet_facts_file}" :
     command => "/etc/puppet/node.rb --push-facts",  # See above re dependencies
     unless => "/usr/bin/test -f '${breadcrumb_files[upload_facts]}'"
@@ -92,6 +100,9 @@ class foreman_provisioning(
   ## See the project wiki on how to restore the dump so as to debug
   ## setup-provisioning.rb
 #  exec { 'XXX DEBUG': command => "/usr/sbin/foreman-rake db:dump" } ->
+
+  ## STEP 3: our setup-provisioning.rb script runs the same Ruby on
+  ## Rails controller as the Web wizard, but on full auto.
   exec { 'setup provisioning in Foreman':
     command => "${rails} runner -e production \
     ${state_dir}/setup-provisioning.rb \
@@ -108,8 +119,7 @@ class foreman_provisioning(
                 File["${state_dir}/setup-provisioning.rb"],
                 Class["foreman::database"],
                 Class["foreman::plugin::setup"],
-                # Prerequisite #2 in step 1 of the Web wizard: (prereqs #1 and
-                # #3 being provided by the uploading of facts, above)
+                # This ensures prerequisite #2 in step 1 of the Web wizard:
                 Class["::foreman_proxy::register"],
                 ],
     unless => "/usr/bin/test -f '${breadcrumb_files[setup_provisioning]}'",
