@@ -132,6 +132,25 @@ everything else.
 
 sub validate_dns_domain : PreConfigure {
   use Net::Domain qw(hostfqdn hostdomain);
+  chomp(my $facter_fqdn = `facter fqdn`);
+
+  my $libc_fqdn = hostfqdn;
+  $libc_fqdn = "<undefined>" if ! defined $libc_fqdn;
+  die <<"BAD_SYSTEM_CONFIG" if ($facter_fqdn ne $libc_fqdn);
+
+Mismatch between "facter fqdn" ($facter_fqdn) and the system hostname
+($libc_fqdn).
+
+Please do any of the following as needed:
+  * change the system hostname with hostname -f as root;
+  * edit /etc/hosts and /etc/sysconfig/network to match;
+  * and re-run $0.
+
+(foreman-installer would complain about exactly this down the line if we
+didn't)
+
+BAD_SYSTEM_CONFIG
+
   printf STDERR <<"DIAG", hostfqdn(), hostdomain();
 
 This host's Fully Qualified Domain Name (FQDN) is: %s,
