@@ -66,6 +66,6 @@ which foreman-installer || {
 
 # Write (or update) /etc/foreman/foreman-installer-answers.yaml:
 ./configure.pl $EPFLSTI_CLUSTER_CONFIGURE_FLAGS
-# Read same, and thus doesn't need any command-line flags; please
+# Read same, and thus not needing any command-line flags; please
 # keep it that way
 foreman-installer
