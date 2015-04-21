@@ -24,9 +24,19 @@ class epflsti(
     config => template('epflsti/foreman_column_view_yaml.erb')
   }
 
+  # Take control of the rules depot for the "real" Puppet instance.
+  # See also puppet__server_environments in configure.pl
   file { "/etc/puppet/environments/production":
     ensure => "symlink",
     target => "${src_path}/puppet/environments/production",
+    # puppet agent creates /etc/puppet/environments/production as
+    # a directory if it doesn't exist by then:
     before => Class["Puppet::Agent::Service"],
+  }
+
+  # This is left over by the puppet-server RPM
+  file { "/etc/puppet/environments/example_env":
+    ensure => "absent",
+    force => true
   }
 }

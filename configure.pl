@@ -258,7 +258,8 @@ sub epflsti__src_path : ToYaml { $FindBin::Bin }
 =head2 server_environments
 
 Hijacked so that foreman-installer doesn't create (and re-create)
-/etc/puppet/environments (we want a symlink to our source tree here).
+/etc/puppet/environments (we want a symlink to our source tree here;
+see foreman-installer/modules/epflsti/manifests/init.pp).
 
 =cut
 
