@@ -301,7 +301,9 @@ sub network_configs {
     if (m/^\d+: (\S+):/) {
       $current_interface = $1;
     } elsif (m|inet ([0-9.]+/[0-9]+)|) {
-      $network_configs{$current_interface} = NetAddr::IP::Lite->new($1);
+      # In case of multiple IPs for the same interface (i.e., aliases),
+      # keep only the first one.
+      $network_configs{$current_interface} ||= NetAddr::IP::Lite->new($1);
     }
   }
   close(IP_ADDR);
