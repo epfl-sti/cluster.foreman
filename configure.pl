@@ -150,41 +150,34 @@ Please do any of the following as needed:
 didn't)
 
 BAD_SYSTEM_CONFIG
+}
 
-  printf STDERR <<"DIAG", hostfqdn(), hostdomain();
+=pod
 
-This host's Fully Qualified Domain Name (FQDN) is: %s,
-meaning that the DNS domain used for the hosts in the cluster will
-be:
+C<PromptUser> can take arguments, in particular C<< validate => >> for
+a validation function.
 
-  %s
+=cut
 
-DIAG
-  my $ok = undef;
-  if (hostdomain eq "epfl.ch") {
-    warn <<'DNS_CLASH';
+sub foreman_provisioning__domain_name : ToYaml
+  : PromptUser(validate => \&_check_foreman_provisioning_domain_name) {
+    hostdomain()
+}
+sub _check_foreman_provisioning_domain_name {
+  my ($domainref) = @_;
+  my $domain = $$domainref;
+  return if ($domain ne "epfl.ch");
+  warn <<"DNS_CLASH";
+You selected $domain for the domain to provision into.
+
 WARNING: THIS IS NOT A GOOD THING.
 
 There is (of course) already a DNS server for epfl.ch.
 
 DNS_CLASH
-    $ok = prompt_yn("Do you still want to proceed?", 0);
-  } else {
-    $ok = prompt_yn("Is this correct?", 1);
-  }
 
-  die <<"FIX_IT_YOURSELF" if (! $ok);
-
-Please:
-  * change the hostname with hostname -f as root;
-  * edit /etc/hosts and /etc/sysconfig/network to match;
-  * and re-run $0.
-
-(The FQDN is used as a default value in so many places, that it would
-be unwise to try and override it with a configure-time question.
-Sorry about that!)
-
-FIX_IT_YOURSELF
+  prompt_yn("Do you still want to proceed?", 0) and return $domain;
+  die "Bailing out.\n";
 }
 
 =head2 YAML Structure
@@ -218,7 +211,6 @@ sub symlink_modules : PostConfigure {
 }
 
 sub foreman_provisioning__interface : ToYaml { private_interface }
-sub foreman_provisioning__domain_name: ToYaml{ hostdomain() }
 sub foreman_provisioning__network_address: ToYaml {
   return private_interface_config()->network->addr;
 }

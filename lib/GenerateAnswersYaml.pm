@@ -343,6 +343,13 @@ sub has_ToYaml { exists shift->{decoration_ToYaml} }
 sub has_PreConfigure { exists shift->{decoration_PreConfigure} }
 sub has_PostConfigure { exists shift->{decoration_PostConfigure} }
 
+sub param_PromptUser {
+  my ($self, $key) = @_;
+  return unless (ref($self->{decoration_PromptUser}) eq "ARRAY");
+  $self->{params_PromptUser} ||= {@{$self->{decoration_PromptUser}}};
+  return $self->{params_PromptUser}->{$key};
+}
+
 sub all {
   my ($class) = @_;
   return values %known;
@@ -413,8 +420,12 @@ sub value {
     return $self->{interactive_value};
   } elsif ($self->has_PromptUser) {
     my $default_value = $self->{interactive_default_value} || $self->{code_orig}->();
-    return ($self->{interactive_value} = GenerateAnswersYaml::prompt_user(
-      $self->human_name, $default_value));
+    my $answer = GenerateAnswersYaml::prompt_user(
+      $self->human_name, $default_value);
+    if (my $validator = $self->param_PromptUser("validate")) {
+      $validator->(\$answer);
+    }
+    $self->{interactive_value} = $answer;
   } else {
     # Flag sub absent from command line
     return $self->{code_orig}->();
