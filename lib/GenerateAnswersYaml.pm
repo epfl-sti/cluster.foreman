@@ -55,12 +55,19 @@ sub UNIVERSAL::Flag : ATTR(CODE) {
 
 =head2 PromptUser
 
+=head2 PromptUser (validate => \&my_validation_sub)
+
 Functions in ../configure.pl decorated with this attribute prompt the
 user for their return value. The return value of the function body is
 used as the default.
 
 C<PromptUser> implies L</Flag>; if the flag is present on the command
 line, then the user is I<not> prompted.
+
+If a validating function is specified, that function will be called
+with a reference to the user-specified value as the first argument.
+The function may modify the user-specified value, or throw an
+exception if the user-specified value is unacceptable.
 
 =cut
 
