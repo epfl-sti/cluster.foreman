@@ -1,11 +1,16 @@
 # Class: epflsti
 #
-# Base class for epflsti::puppetmaster, epflsti::computenode
-# and epflsti::quorumnode.
+# Single entry point for all EPFLSTI cluster nodes.
 #
-# You probably want to use one of the subclasses from Foreman or puppet.conf.
+# Class parameters specify the functionality.
+#
+# === Parameters
+#
+# [*is_openstack_compute_node*]
+#   A Boolean
+#
 class epflsti(
-  $ensure         = 'present',
+  $is_openstack_compute_node = false,
 ) {
   package { 'puppetlabs-release-6':
     ensure => 'latest',
@@ -22,4 +27,8 @@ class epflsti(
   }
   class { "ntp": }
   class { "ipmi": }
+
+  if ($is_openstack_compute_node) {
+    class { "epflsti::private::openstack": }
+  }
 }
