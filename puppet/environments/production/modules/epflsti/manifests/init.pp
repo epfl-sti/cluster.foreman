@@ -7,7 +7,7 @@
 class epflsti(
   $ensure         = 'present',
 ) {
-  case $::osfamily
+  case $::osfamily {
     'RedHat': {
       if $::operatingsystemmajrelease = '6' {
         package { 'puppetlabs-release-6':
@@ -44,7 +44,7 @@ class epflsti(
     default: {
         fail('Unsupported OS in /etc/puppet/environments/production/modules/epflsti/manifests/init.pp')
     }
-
+  }
   class { "ntp": }
   class { "ipmi": }
 }
