@@ -8,13 +8,20 @@ class epflsti::private::openstack() {
 
   yumrepo { 'openstack-havana':
     ensure => present,
-    descr => "OpenStack Havana Repository",
-    baseurl => "http://repos.fedorapeople.org/repos/openstack/EOL/openstack-havana/epel-6/",
+    descr => "OpenStack Icehouse Repository",
+    baseurl => "https://repos.fedorapeople.org/repos/openstack/openstack-icehouse/epel-6/",
     gpgcheck => 1,
-    gpgkey => "https://raw.githubusercontent.com/stackforge/puppet-openstack/master/files/RPM-GPG-KEY-RDO-Havana",
+    gpgkey => "https://raw.githubusercontent.com/puppetlabs/puppetlabs-openstack/master/files/RPM-GPG-KEY-RDO-Icehouse",
   }
 
   package { 'openstack-packstack':
-    ensure => installed
+    ensure => latest
+  }
+
+  file { '/etc/packstack':
+    ensure => directory
+  } -> file { '/etc/packstack/packstack-answers.txt':
+    ensure => file,
+    content => template("epflsti/packstack-answers.txt.erb")
   }
 }
