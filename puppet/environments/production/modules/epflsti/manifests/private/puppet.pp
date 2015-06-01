@@ -3,13 +3,14 @@
 # === Parameters
 #
 # $is_puppetmaster::      True iff this node acts as the puppet master
+# $src_dir::        The directory where https://github.com/epfl-sti/cluster.foreman/
+#                   has been checked out
 class epflsti::private::puppet(
   $is_puppetmaster         = false,
+  $src_dir = "/opt/src/cluster.foreman"
   ) {
   case $::osfamily {
       'RedHat': {
-	# Testing CentOS 6
-        #if $::operatingsystemmajrelease = '6' {
         case $::operatingsystemmajrelease {
           '6': {
 	    package { 'puppetlabs-release-6':
@@ -40,4 +41,17 @@ class epflsti::private::puppet(
     ensure => 'latest',
     require => Package['puppetlabs-release']
   }
- }
+  if ($is_puppetmaster) {
+      package { 'foreman':
+              ensure => 'present',
+      }
+      exec { 'latest_hammer':
+        command => "${src_dir}/puppet/scripts/install_latest_hammer",
+        unless => "${src_dir}/puppet/scripts/install_latest_hammer --check-only"
+      } ->
+      exec { 'configure_discovery_templates':
+        command => "${src_dir}/puppet/scripts/configure_discovery_templates",
+        unless => "${src_dir}/puppet/scripts/configure_discovery_templates --check-only",
+      }
+  }
+}
