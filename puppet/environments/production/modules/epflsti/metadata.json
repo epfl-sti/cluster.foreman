@@ -37,6 +37,10 @@
     {
       "name": "spiette-selinux",
       "version_requirement": ">= 0.5.4"
+    },
+    {
+      "name": "deric-mesos",
+      "version_requirement": ">= 0.5.3"
     }
   ]
 }

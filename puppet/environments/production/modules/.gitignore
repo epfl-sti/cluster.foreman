@@ -1,5 +1,7 @@
+apt/
 epel/
 epfl_sso/
+mesos/
 openstack/
 selinux/
 sudo/

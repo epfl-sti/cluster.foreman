@@ -1,0 +1,32 @@
+# Class: epflsti::private::mesos
+#
+# Install Mesos on workers and quorum nodes
+#
+# === Parameters
+#
+# $is_compute_node::      True iff VMs can run on this node
+# $is_quorum_node::       True iff this host is dedicated to "rigid" services such
+#                         as RabbitMQ that require a fixed set of IP addresses
+# $quorum_nodes::         List of FQDNs of hosts that have $is_compute_node set
+class epflsti::private::mesos(
+  $is_compute_node       = false,
+  $is_quorum_node        = false,
+  $quorum_nodes          = []
+) {
+    class { "::mesos":
+      repo => "mesosphere",
+      manage_python => true
+    }
+    if ($is_compute_node) {
+      class { "mesos::slave":
+        # Work around https://projects.puppetlabs.com/issues/11989
+        force_provider => "upstart"
+      }
+    }
+    if ($is_quorum_node) {
+      class { "mesos::master":
+        # See above
+        force_provider => "upstart"
+      }
+    }
+}

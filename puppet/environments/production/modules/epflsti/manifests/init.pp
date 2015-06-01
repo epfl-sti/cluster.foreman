@@ -61,4 +61,11 @@ class epflsti(
         quorum_nodes => $quorum_nodes
       }
     }
+    if ($is_mesos_worker or $is_quorum_node) {
+      class { "epflsti::private::mesos":
+        is_compute_node => $is_mesos_worker,
+        is_quorum_node => $is_quorum_node,
+        quorum_nodes => $quorum_nodes
+      }
+    }
 }
