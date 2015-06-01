@@ -1,0 +1,28 @@
+{
+  "name": "domq-epflsti",
+  "version": "0.0.1",
+  "author": "domq",
+  "summary": "ssh from anywhere to anywhere in the Puppet cluster",
+  "license": "MIT",
+  "source": "https://github.com/epfl-sti/cluster.foreman",
+  "project_page": "https://github.com/epfl-sti/cluster.foreman",
+  "issues_url": "https://github.com/epfl-sti/cluster.foreman/issues",
+  "operatingsystem_support": [
+     {
+         "operatingsystem":"RedHat",
+         "operatingsystemrelease":[ "6.5", "6.6", "7.0" ]
+     }
+  ],
+  "dependencies": [
+    {
+        "name":"puppetlabs-stdlib",
+        "version_requirement":">= 1.0.0"
+    },
+    {
+      "name": "domq-clusterssh",
+      "version_requirement": ">= 0.1.0"
+    }
+  ]
+}
+
+

@@ -1,0 +1,6 @@
+epel/
+openstack/
+selinux/
+clusterssh/
+augeasproviders_*/
+name_service/
