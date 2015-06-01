@@ -11,7 +11,11 @@
      {
          "operatingsystem":"RedHat",
          "operatingsystemrelease":[ "6.5", "6.6", "7.0" ]
-     }
+     },
+     {
+         "operatingsystem":"CentOS",
+         "operatingsystemrelease":[ "6.5", "6.6", "7.0", "7.1.1503" ]
+     },
   ],
   "dependencies": [
     {
