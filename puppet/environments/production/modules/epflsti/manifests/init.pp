@@ -1,11 +1,21 @@
 # Class: epflsti
 #
-# Base class for epflsti::puppetmaster, epflsti::computenode
-# and epflsti::quorumnode.
+# Configuration for EPFL-STI cluster members
 #
-# You probably want to use one of the subclasses from Foreman or puppet.conf.
+# === Parameters:
+#
+# $is_puppetmaster::      True iff this node acts as the puppet master
+# $is_compute_node::      True iff computations (VMs and/or Dockers) can run on this
+#                         node
+# $quorum_nodes::         List of FQDNs of hosts that served "rigid" services such
+#                         as ZooKeeper that required a fixed set of IP addresses
+#                         (as opposed to "floating" jobs)
+# $dns_domain::           The DNS domain that all nodes in the cluster live in
 class epflsti(
-  $ensure         = 'present',
+  $is_puppetmaster         = false,
+  $is_compute_node         = false,
+  $quorum_nodes            = [],
+  $dns_domain              = "cloud.epfl.ch"
 ) {
   package { 'puppetlabs-release-6':
     ensure => 'latest',
