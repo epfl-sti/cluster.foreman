@@ -17,16 +17,31 @@ class epflsti::private::mesos(
       repo => "mesosphere",
       manage_python => true
     }
+
+    case $::operatingsystem {
+      'RedHat', 'CentOS': {
+        if ($::operatingsystemrelease =~ /^6/) {
+          # Work around https://projects.puppetlabs.com/issues/11989
+          $force_provider = "upstart"
+        } elsif ($::operatingsystemrelease =~ /^7/) {
+          $force_provider = undef
+        } else {
+          fail "FAIL: operating system release not supported (${::operatingsystem} release ${::operatingsystemrelease})"
+        }
+      }
+      default: {
+        fail "FAIL: operating system not supported (${::operatingsystem})"
+      }
+    }
+
     if ($is_compute_node) {
       class { "mesos::slave":
-        # Work around https://projects.puppetlabs.com/issues/11989
-        force_provider => "upstart"
+        force_provider => $force_provider
       }
     }
     if ($is_quorum_node) {
       class { "mesos::master":
-        # See above
-        force_provider => "upstart"
+        force_provider => $force_provider
       }
     }
 }
