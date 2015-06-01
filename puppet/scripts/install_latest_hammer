@@ -4,7 +4,7 @@
 export HOME=/root
 
 control() {
-    hammer --version 2>&1 | grep -q 'hammer_cli_foreman.*0\.1\.4'
+    hammer --version 2>&1 | grep -q 'hammer_cli_foreman.*0\.2\.0'
 }    
 
 control && exit 0
