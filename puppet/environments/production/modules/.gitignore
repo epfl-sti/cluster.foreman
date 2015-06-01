@@ -1,6 +1,8 @@
 epel/
+epfl_sso/
 openstack/
 selinux/
+sudo/
 clusterssh/
 augeasproviders_*/
 name_service/

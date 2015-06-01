@@ -28,6 +28,10 @@ class epflsti(
     }
     class { "ntp": }
     class { "ipmi": }
+    class { "epflsti::private::unix_access":
+      sudoer_group => "openstack-sti",
+      allowed_users_and_groups => "(openstack-sti)"
+    }
 
     if ($is_openstack_compute_node) {
       class { "epflsti::private::openstack": }
