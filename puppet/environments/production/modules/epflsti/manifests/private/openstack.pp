@@ -13,9 +13,6 @@ class epflsti::private::openstack(
   $is_quorum_node        = false,
   $quorum_nodes          = []
   ) {
-  # https://serverfault.com/questions/111766/adding-a-yum-repo-to-puppet-before-doing-anything-else
-  Yumrepo <| |> -> Package <| provider != 'rpm' |>
-
   case $::operatingsystem {
     'RedHat', 'CentOS': {
       if ($::operatingsystemrelease =~ /^6/) {
