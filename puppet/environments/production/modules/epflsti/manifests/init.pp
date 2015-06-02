@@ -52,6 +52,11 @@ class epflsti(
       allowed_users_and_groups => "(openstack-sti)"
     }
 
+    # Decent shell experience
+    package { ['vim-X11', 'vim-common', 'vim-enhanced', 'vim-minimal', 'mlocate']:
+      ensure => 'present'
+    }
+
     # Puppet masters and slaves
     class { "epflsti::private::puppet":
       is_puppetmaster => $is_puppetmaster,
