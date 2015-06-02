@@ -29,7 +29,7 @@ class epflsti(
 
     # Basic services
     class { "ntp": }
-    class { "ipmi": }
+    class { "epflsti::private::ipmi": }
     if ($is_puppetmaster) {
       # I guess I could be convinced that the puppetmaster doesn't have to
       # be the network gateway. But that's the way things are right now.

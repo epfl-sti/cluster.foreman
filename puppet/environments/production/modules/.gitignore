@@ -2,6 +2,7 @@ apt/
 datacat/
 epel/
 epfl_sso/
+ipmi/
 mesos/
 openstack/
 selinux/
