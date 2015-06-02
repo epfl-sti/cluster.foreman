@@ -62,7 +62,14 @@ class epflsti(
       is_puppetmaster => $is_puppetmaster,
     }
 
-    # High-level services
+    # Infrastructure services
+    if ($is_quorum_node) {
+      class { "epflsti::private::zookeeper":
+        nodes            => $quorum_nodes
+      }
+    }
+
+    # User-facing services
     if ($is_openstack_worker or $is_quorum_node) {
       class { "epflsti::private::openstack":
         is_compute_node => $is_openstack_worker,
