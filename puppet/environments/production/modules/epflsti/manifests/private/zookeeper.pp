@@ -10,9 +10,9 @@ class epflsti::private::zookeeper(
   $nodes = []
 ) {
   $id = 1 + inline_template('<%= @nodes.index(@fqdn) %>')
-  if (false) {
-    class { "::zookeeper":
-      id => $id
-    }
+  class { "::zookeeper":
+    repo => 'cloudera',
+    id => $id,
+    servers => $nodes
   }
 }
