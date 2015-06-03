@@ -1,4 +1,5 @@
 apt/
+concat/
 datacat/
 epel/
 epfl_sso/
@@ -7,6 +8,7 @@ mesos/
 openstack/
 selinux/
 sudo/
+tinyproxy/
 clusterssh/
 augeasproviders_*/
 name_service/

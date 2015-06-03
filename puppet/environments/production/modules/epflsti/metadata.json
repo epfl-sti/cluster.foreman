@@ -22,6 +22,12 @@
         "name":"puppetlabs-stdlib",
         "version_requirement":">= 4.6.0"
     },
+    {        
+        "name":"puppetlabs-concat",
+        "version_requirement": ">= 2.0.1",
+        "__comment": "This is actually an indirect dependency of https://github.com/jlyheden/puppet-tinyproxy which is not (yet) released on Puppet Forge. Except that jlyheden's tinyproxy uses an old (pre-puppetlabs takeover) of that module, so the version_requirement is just the latest version du jour at the time I'm writing this.",
+        "__more_comment": "Commenting a JSON file considered harmful, hence this here workaround - See https://stackoverflow.com/questions/244777/can-i-comment-a-json-file"
+    },
     {
         "name": "jhoblitt-ipmi",
         "version_requirement": ">= 1.2.0"

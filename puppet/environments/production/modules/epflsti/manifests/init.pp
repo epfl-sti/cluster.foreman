@@ -37,7 +37,6 @@ class epflsti(
         nameservers => [ '127.0.0.1' ],
         domain => "cloud.epfl.ch"
       }
-
       # Act as a masquerading proxy, assuming the compute nodes will use us
       # as their default route.
       # https://forge.puppetlabs.com/bashtoni/masq
@@ -46,21 +45,27 @@ class epflsti(
       class { 'masq': }
     }
 
-    # User shell access: for admins only
+    # Puppet masters and slaves
+    class { "epflsti::private::puppet":
+      is_puppetmaster => $is_puppetmaster,
+    }
+
+    # Bare-metal shell access: for admins only
     class { "epflsti::private::unix_access":
       sudoer_group => "openstack-sti",
       allowed_users_and_groups => "(openstack-sti)"
     }
-
     # Decent shell experience
     package { ['vim-X11', 'vim-common', 'vim-enhanced', 'vim-minimal', 'mlocate',
                'strace', 'tcpdump', 'lsof', 'unzip', 'telnet']:
       ensure => 'present'
     }
-
-    # Puppet masters and slaves
-    class { "epflsti::private::puppet":
-      is_puppetmaster => $is_puppetmaster,
+    # Let admins access Web services inside the cluster with
+    # ssh -L 8888:127.0.0.1:8888 <frontend>
+    if ($is_puppetmaster) {   # See comment above
+      class { 'epflsti::private::tinyproxy':
+        port => 8888
+      }
     }
 
     # Infrastructure services
