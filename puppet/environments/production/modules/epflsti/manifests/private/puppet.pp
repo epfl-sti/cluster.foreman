@@ -43,7 +43,7 @@ class epflsti::private::puppet(
   }
   if ($is_puppetmaster) {
       package { 'foreman':
-              ensure => 'present',
+        ensure => 'present'
       }
       exec { 'latest_hammer':
         command => "${src_dir}/puppet/scripts/install_latest_hammer",
@@ -53,5 +53,12 @@ class epflsti::private::puppet(
         command => "${src_dir}/puppet/scripts/configure_discovery_templates",
         unless => "${src_dir}/puppet/scripts/configure_discovery_templates --check-only",
       }
+      package { 'ruby193-rubygem-foreman_column_view':
+        ensure => 'latest'
+      }
+      file { "/etc/foreman/plugins/foreman_column_view.yaml":
+        ensure => "present",
+        content => template("epflsti/foreman_column_view.yaml.erb")
+      }  -> service { 'foreman': }
   }
 }
