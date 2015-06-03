@@ -64,9 +64,14 @@ class epflsti(
     }
 
     # Infrastructure services
+    $java_package = "java-1.8.0-openjdk-headless"
+    package { $java_package:
+      ensure => 'present'
+    }
     if ($is_quorum_node) {
       class { "epflsti::private::zookeeper":
-        nodes            => $quorum_nodes
+        nodes            => $quorum_nodes,
+        require          => Package[$java_package]
       }
     }
 
