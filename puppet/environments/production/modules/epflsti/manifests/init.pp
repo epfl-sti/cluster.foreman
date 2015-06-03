@@ -54,7 +54,7 @@ class epflsti(
 
     # Decent shell experience
     package { ['vim-X11', 'vim-common', 'vim-enhanced', 'vim-minimal', 'mlocate',
-               'strace', 'tcpdump']:
+               'strace', 'tcpdump', 'lsof', 'unzip', 'telnet']:
       ensure => 'present'
     }
 
