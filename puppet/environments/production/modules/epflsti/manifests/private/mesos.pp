@@ -18,15 +18,19 @@ class epflsti::private::mesos(
       manage_python => true
     }
 
-    case $::operatingsystem {
-      'RedHat', 'CentOS': {
-        if ($::operatingsystemrelease =~ /^6/) {
-          # Work around https://projects.puppetlabs.com/issues/11989
-          $force_provider = "upstart"
-        } elsif ($::operatingsystemrelease =~ /^7/) {
-          $force_provider = undef
-        } else {
-          fail "FAIL: operating system release not supported (${::operatingsystem} release ${::operatingsystemrelease})"
+    case $::osfamily {
+      'redhat': {
+        case $::operatingsystemmajrelease {
+          '6': {
+            # Work around https://projects.puppetlabs.com/issues/11989
+            $force_provider = "upstart"
+          }
+          '7': {
+            $force_provider = undef
+          }
+          default: {
+            fail "FAIL: operating system release not supported (${::operatingsystem} release ${::operatingsystemrelease})"
+          }
         }
       }
       default: {
