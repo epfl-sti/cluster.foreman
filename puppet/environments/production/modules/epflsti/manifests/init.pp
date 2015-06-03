@@ -7,6 +7,9 @@
 # === Parameters
 #
 # $is_puppetmaster::      True iff this node acts as the puppet master
+# $is_frontend_node::     True iff this node is directly connected to the outside
+#                         network and shall act as a router / ssh entry point.
+#                         By default, the value is copied from $is_puppetmaster
 # $is_openstack_worker::  True iff OpenStack VMs can run on this node
 # $is_mesos_worker::      True iff Mesos workloads can run on this node
 # $is_quorum_node::       True iff this host is dedicated to "rigid" services such
@@ -17,6 +20,7 @@
 # $dns_domain::           The DNS domain that all nodes in the cluster live in
 class epflsti(
   $is_puppetmaster         = false,
+  $is_frontend_node        = $::epflsti::private::params::is_frontend_node,
   $is_openstack_worker     = false,
   $is_mesos_worker         = false,
   $is_quorum_node          = false,
@@ -30,9 +34,7 @@ class epflsti(
     # Basic services
     class { "ntp": }
     class { "epflsti::private::ipmi": }
-    if ($is_puppetmaster) {
-      # I guess I could be convinced that the puppetmaster doesn't have to
-      # be the network gateway. But that's the way things are right now.
+    if ($is_frontend_node) {
       class { "dnsclient":
         nameservers => [ '127.0.0.1' ],
         domain => "cloud.epfl.ch"
@@ -62,7 +64,7 @@ class epflsti(
     }
     # Let admins access Web services inside the cluster with
     # ssh -L 8888:127.0.0.1:8888 <frontend>
-    if ($is_puppetmaster) {   # See comment above
+    if ($is_frontend_node) {
       class { 'epflsti::private::tinyproxy':
         port => 8888
       }
