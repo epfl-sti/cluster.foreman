@@ -38,14 +38,30 @@ class epflsti::private::mesos(
       }
     }
 
-    if ($is_compute_node) {
-      class { "mesos::slave":
-        force_provider => $force_provider
-      }
-    }
+    $zk_string = inline_template('<%= "zk://" + (@quorum_nodes.map { |host| "#{host}:2181" }.join(",")) + "/mesos" %>')
+
+    # https://github.com/deric/puppet-mesos#user-content-mesos-puppet-module
     if ($is_quorum_node) {
       class { "mesos::master":
-        force_provider => $force_provider
+        force_provider => $force_provider,
+        zookeeper => $zk_string,
+        work_dir => '/var/lib/mesos',
+        options => {
+          quorum => inline_template('<%= (1 + @quorum_nodes.length) / 2 %>')
+        }
+      }
+    }
+    if ($is_compute_node) {
+      class { "mesos::slave":
+        force_provider => $force_provider,
+        zookeeper => $zk_string,
+        listen_address => $::ipaddress,
+        attributes => {
+          'env' => 'production',
+        },
+        resources => {
+          'ports' => '[2000-65535]'
+        }
       }
     }
 }
