@@ -14,8 +14,8 @@
 # $is_mesos_worker::      True iff Mesos workloads can run on this node
 # $is_quorum_node::       True iff this host is dedicated to "rigid" services such
 #                         as ZooKeeper that require a fixed set of IP addresses
-#                         (as opposed to "floating" jobs running under some kind
-#                         of orchestration system on the $is_compute_node nodes)
+#                         (as opposed to "floating" jobs running on the worker nodes
+#                         under an orchestration system of some kind)
 # $quorum_nodes::         List of FQDNs of hosts that have $is_compute_node set
 # $dns_domain::           The DNS domain that all nodes in the cluster live in
 class epflsti(
