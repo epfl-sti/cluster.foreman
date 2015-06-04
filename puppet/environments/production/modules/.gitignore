@@ -12,6 +12,7 @@ epfl_sso/
 file_concat/
 haproxy/
 ipmi/
+logstash/
 marathon/
 mesos/
 name_service/

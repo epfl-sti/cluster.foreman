@@ -1,0 +1,39 @@
+input {
+  file {
+    path => ["/var/log/messages","/var/log/syslog", "/var/log/*.log" ]
+    type => "syslog"
+  }
+  ## Apache
+  file {
+    path => "/var/log/httpd/access_log"
+    type => "apache"
+  }
+  file {
+    type => "apache-error"
+    path => "/var/log/httpd/error_log"
+  }
+  ## Foreman
+  file {
+    type => "foreman"
+    path => "/var/log/foreman/*"
+  }
+  file {
+    type => "foreman-web"
+    path => "/var/log/https/foreman*"
+  }
+  file {
+    type => "foreman-proxy"
+    path => ["/var/log/foreman-proxy/access.log","/var/log/foreman-proxy/proxy.log"]
+  }
+  file {
+    type => "foreman-installer"
+    path => "/var/log/foreman-installer/foreman-installer.log*"
+  }
+}
+output {
+  elasticsearch {
+	host => "localhost"
+	cluster => "ostest"
+ }
+  stdout { codec => rubydebug }
+}

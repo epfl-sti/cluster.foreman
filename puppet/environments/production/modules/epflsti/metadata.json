@@ -49,6 +49,10 @@
       "version_requirement": ">= 0.5.4"
     },
     {
+      "name": "elastisearch-logstash",
+      "version_requirement": ">= 0.5.1"
+    },
+    {
       "name": "garethr-docker",
       "version_requirement": ">= 4.0.0"
     },

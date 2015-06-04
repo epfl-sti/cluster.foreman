@@ -69,7 +69,7 @@ class epflsti(
         port => 8888
       }
     }
-
+  
     # Infrastructure services
     $java_package = "java-1.8.0-openjdk-headless"
     package { $java_package:
@@ -84,6 +84,7 @@ class epflsti(
     # We use Docker also for quorum payloads (i.e. on fixed IPs and
     # ports), so just install it everywhere
     class { 'docker': }
+    class { 'epflsti::private::elk': }
 
     # User-facing services
     if ($is_openstack_worker or $is_quorum_node) {
