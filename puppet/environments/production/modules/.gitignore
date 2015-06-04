@@ -1,6 +1,7 @@
 apt/
 concat/
 datacat/
+docker/
 epel/
 epfl_sso/
 ipmi/

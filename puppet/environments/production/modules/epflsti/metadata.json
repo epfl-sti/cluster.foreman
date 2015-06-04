@@ -49,6 +49,10 @@
       "version_requirement": ">= 0.5.4"
     },
     {
+      "name": "garethr-docker",
+      "version_requirement": ">= 4.0.0"
+    },
+    {
       "name": "deric-zookeeper",
       "version_requirement": ">= 0.5.3"
     },

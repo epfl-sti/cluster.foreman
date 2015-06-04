@@ -81,6 +81,9 @@ class epflsti(
         require          => Package[$java_package]
       }
     }
+    # We use Docker also for quorum payloads (i.e. on fixed IPs and
+    # ports), so just install it everywhere
+    class { 'docker': }
 
     # User-facing services
     if ($is_openstack_worker or $is_quorum_node) {
