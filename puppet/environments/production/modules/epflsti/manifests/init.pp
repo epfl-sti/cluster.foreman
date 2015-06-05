@@ -58,7 +58,7 @@ class epflsti(
     }
     # Decent shell experience
     package { ['vim-X11', 'vim-common', 'vim-enhanced', 'vim-minimal', 'mlocate',
-               'strace', 'tcpdump', 'lsof', 'unzip', 'telnet']:
+               'strace', 'tcpdump', 'lsof', 'unzip', 'telnet', 'rsync','screen']:
       ensure => 'present'
     }
     # Let admins access Web services inside the cluster with
