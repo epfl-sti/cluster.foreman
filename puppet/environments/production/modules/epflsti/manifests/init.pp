@@ -10,6 +10,7 @@
 # $is_frontend_node::     True iff this node is directly connected to the outside
 #                         network and shall act as a router / ssh entry point.
 #                         By default, the value is copied from $is_puppetmaster
+# $network_gateway_interface::  Network interface leading "outside" on the gateway
 # $is_openstack_worker::  True iff OpenStack VMs can run on this node
 # $is_mesos_worker::      True iff Mesos workloads can run on this node
 # $is_quorum_node::       True iff this host is dedicated to "rigid" services such
@@ -19,13 +20,14 @@
 # $quorum_nodes::         List of FQDNs of hosts that have $is_compute_node set
 # $dns_domain::           The DNS domain that all nodes in the cluster live in
 class epflsti(
-  $is_puppetmaster         = false,
-  $is_frontend_node        = $::epflsti::private::params::is_frontend_node,
-  $is_openstack_worker     = false,
-  $is_mesos_worker         = false,
-  $is_quorum_node          = false,
-  $quorum_nodes            = $::epflsti::private::params::quorum_nodes,
-  $dns_domain              = $::epflsti::private::params::dns_domain
+  $is_puppetmaster           = false,
+  $is_frontend_node          = false,
+  $network_gateway_interface = undef,
+  $is_openstack_worker       = false,
+  $is_mesos_worker           = false,
+  $is_quorum_node            = false,
+  $quorum_nodes              = $::epflsti::private::params::quorum_nodes,
+  $dns_domain                = $::epflsti::private::params::dns_domain
 ) inherits epflsti::private::params {
     # Puppet bugware -
     # https://serverfault.com/questions/111766/adding-a-yum-repo-to-puppet-before-doing-anything-else
@@ -37,14 +39,11 @@ class epflsti(
     if ($is_frontend_node) {
       class { "dnsclient":
         nameservers => [ '127.0.0.1' ],
-        domain => "cloud.epfl.ch"
+        domain => $dns_domain
       }
-      # Act as a masquerading proxy, assuming the compute nodes will use us
-      # as their default route.
-      # https://forge.puppetlabs.com/bashtoni/masq
-      # TODO: the fault tolerance story is somewhat lacking here.
-      class { 'firewall': }
-      class { 'masq': }
+      class { "epflsti::private::gateway":
+        network_gateway_interface => $network_gateway_interface
+      }
     }
 
     # Puppet masters and slaves

@@ -1,7 +1,4 @@
 class epflsti::private::params() {
-  # This is the default behavior, but can be overridden
-  $is_frontend_node = $epflsti::is_puppetmaster
-
   # TODO: this list should be auto-computed from scraping the Foreman database
   # for hosts that have $is_compute_node set. This is a bit tricky to do efficiently
   # and correctly, though.
