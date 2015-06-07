@@ -29,9 +29,7 @@ class epflsti(
   $quorum_nodes              = $::epflsti::private::params::quorum_nodes,
   $dns_domain                = $::epflsti::private::params::dns_domain
 ) inherits epflsti::private::params {
-    # Puppet bugware -
-    # https://serverfault.com/questions/111766/adding-a-yum-repo-to-puppet-before-doing-anything-else
-    Yumrepo <| |> -> Package <| provider != 'rpm' |>
+    include "epflsti::private::bugware"
 
     # Basic services
     class { "ntp": }
