@@ -41,21 +41,24 @@ which yum-config-manager || {
   yum -y install yum-utils
 }
 
-case "$(cat /etc/redhat-release)" in
-  "Red Hat"*|CentOS*)
-    foreman_release_url="http://yum.theforeman.org/releases/1.8/el6/x86_64/foreman-release.rpm"
-    rpm -q epel-release-6-8 || \
-      rpm -ivh --force https://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
-    yum-config-manager --enable rhel-6-server-optional-rpms rhel-server-rhscl-6-rpms
-    rpm -qa | grep puppetlabs-release || \
-      rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm
+rpm -q epel-release || yum install epel-release
 
-    ;;
+case "$(cat /etc/redhat-release)" in
+  "Red Hat"*"release 7"*|CentOS*"release 7"*)
+      distmajor=7 ;;
+  "Red Hat"*"release 6"*|CentOS*"release 6"*)
+      distmajor=6 ;;
   *)
-    echo >&2 "Unsupported OS: $(cat /etc/redhat-release)"
-    exit 2
-    ;;
-  esac
+      echo >&2 "Unsupported OS: $(cat /etc/redhat-release)"
+      exit 2
+      ;;
+esac
+
+yum-config-manager --enable rhel-$distmajor-server-optional-rpms rhel-server-rhscl-$distmajor-rpms
+rpm -qa | grep puppetlabs-release || \
+  rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-el-$distmajor.noarch.rpm
+
+foreman_release_url="http://yum.theforeman.org/releases/latest/el$distmajor/x86_64/foreman-release.rpm"
 
 which foreman-installer || {
     rpm -q foreman-release || yum -y install $foreman_release_url
