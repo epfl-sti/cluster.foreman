@@ -134,9 +134,9 @@ sub validate_dns_domain : PreConfigure {
   use Net::Domain qw(hostfqdn hostdomain);
   system("which facter 2>/dev/null") and
     die "facter is not yet installed; please run install-provisioning-server.sh";
-  chomp(my $facter_fqdn = `facter fqdn`);
+  chomp(my $facter_fqdn = lc(`facter fqdn`));
 
-  my $libc_fqdn = hostfqdn;
+  my $libc_fqdn = lc(hostfqdn);
   $libc_fqdn = "<undefined>" if ! defined $libc_fqdn;
   die <<"BAD_SYSTEM_CONFIG" if ($facter_fqdn ne $libc_fqdn);
 
