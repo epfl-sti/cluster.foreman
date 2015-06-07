@@ -132,6 +132,8 @@ everything else.
 
 sub validate_dns_domain : PreConfigure {
   use Net::Domain qw(hostfqdn hostdomain);
+  system("which facter 2>/dev/null") and
+    die "facter is not yet installed; please run install-provisioning-server.sh";
   chomp(my $facter_fqdn = `facter fqdn`);
 
   my $libc_fqdn = hostfqdn;
