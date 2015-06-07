@@ -57,6 +57,7 @@ esac
 yum-config-manager --enable rhel-$distmajor-server-optional-rpms rhel-server-rhscl-$distmajor-rpms
 rpm -qa | grep puppetlabs-release || \
   rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-el-$distmajor.noarch.rpm
+yum -y install puppet  # Make sure it is up to date
 
 foreman_release_url="http://yum.theforeman.org/releases/latest/el$distmajor/x86_64/foreman-release.rpm"
 
