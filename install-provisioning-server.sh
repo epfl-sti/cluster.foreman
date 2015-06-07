@@ -54,7 +54,12 @@ case "$(cat /etc/redhat-release)" in
       ;;
 esac
 
-yum-config-manager --enable rhel-$distmajor-server-optional-rpms rhel-server-rhscl-$distmajor-rpms
+case "$(cat /etc/redhat-release)" in
+    "Red Hat"*)
+        yum-config-manager --enable rhel-$distmajor-server-optional-rpms rhel-server-rhscl-$distmajor-rpms
+        ;;
+esac
+
 rpm -qa | grep puppetlabs-release || \
   rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-el-$distmajor.noarch.rpm
 yum -y install puppet  # Make sure it is up to date
