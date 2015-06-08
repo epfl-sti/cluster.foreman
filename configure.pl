@@ -33,7 +33,9 @@ use Memoize;
 use FindBin; use lib "$FindBin::Bin/lib";
 use GenerateAnswersYaml qw(prompt_yn);
 use NetAddr::IP::Lite;
+use Net::Domain qw(hostfqdn hostdomain);
 use Errno;
+use File::Which qw(which);
 
 =head1 HACKING
 
@@ -121,37 +123,6 @@ sub foreman_proxy__dns_reverse : ToYaml : PromptUser {
 
 sub foreman_proxy__dns_forwarders : ToYaml {
   [qw(128.178.15.227 128.178.15.228)]
-}
-
-=pod
-
-Functions that have a ": PreConfigure" attribute are run before
-everything else.
-
-=cut
-
-sub validate_dns_domain : PreConfigure {
-  use Net::Domain qw(hostfqdn hostdomain);
-  system("which facter 2>/dev/null") and
-    die "facter is not yet installed; please run install-provisioning-server.sh";
-  chomp(my $facter_fqdn = lc(`facter fqdn`));
-
-  my $libc_fqdn = lc(hostfqdn);
-  $libc_fqdn = "<undefined>" if ! defined $libc_fqdn;
-  die <<"BAD_SYSTEM_CONFIG" if ($facter_fqdn ne $libc_fqdn);
-
-Mismatch between "facter fqdn" ($facter_fqdn) and the system hostname
-($libc_fqdn).
-
-Please do any of the following as needed:
-  * change the system hostname with hostname -f as root;
-  * edit /etc/hosts and /etc/sysconfig/network to match;
-  * and re-run $0.
-
-(foreman-installer would complain about exactly this down the line if we
-didn't)
-
-BAD_SYSTEM_CONFIG
 }
 
 =pod
@@ -296,20 +267,47 @@ sub interfaces_and_ips {
 memoize('network_configs');
 sub network_configs {
   my %network_configs;
+  my %bridge_members;
   local *IP_ADDR;
   open(IP_ADDR, "ip addr |");
   my $current_interface;
   while(<IP_ADDR>) {
     if (m/^\d+: (\S+):/) {
       $current_interface = $1;
+      if (m/master (\S+)/) {
+        push @{$bridge_members{$1}}, $current_interface;
+      }
     } elsif (m|inet ([0-9.]+/[0-9]+)|) {
       # In case of multiple IPs for the same interface (i.e., aliases),
       # keep only the first one.
       $network_configs{$current_interface} ||= NetAddr::IP::Lite->new($1);
     }
   }
-  close(IP_ADDR);
+
+  foreach my $bridged_if (keys %bridge_members) {
+    my @real_interfaces = grep {is_physical_interface($_)}
+      (@{$bridge_members{$bridged_if}});
+    if ((@real_interfaces == 1) and
+          exists $network_configs{$bridged_if}) {
+      $network_configs{$real_interfaces[0]} = delete $network_configs{$bridged_if};
+    }
+  }
+
   return %network_configs;
+}
+
+sub is_physical_interface {
+  my ($iface_name) = @_;
+  my $sysfs_link = "/sys/class/net/$iface_name";
+  if (-l $sysfs_link) {
+    return (readlink($sysfs_link) !~ m|devices/virtual|);
+  } elsif ($iface_name =~ m/^(vir|docker|tun|tap|veth)/) {
+    return 0;
+  } elsif ($iface_name =~ m/^(en|wlan|wifi|eth)/) {
+    return 1;
+  } else {
+    die "Unable to guess whether $iface_name is a physical interface";
+  }
 }
 
 sub private_interface_config {
