@@ -56,7 +56,12 @@ esac
 
 case "$(cat /etc/redhat-release)" in
     "Red Hat"*)
+        # From the Foreman docs
         yum-config-manager --enable rhel-$distmajor-server-optional-rpms rhel-server-rhscl-$distmajor-rpms
+        ;;
+    CentOS*"release 7"*)
+        # https://github.com/theforeman/puppet-foreman/issues/327
+        yum -y install rhscl-ruby193-epel-7-x86_64
         ;;
 esac
 
