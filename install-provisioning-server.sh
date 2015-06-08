@@ -2,32 +2,37 @@
 #
 # Turn the local host into an EPFL-STI provisioning server.
 #
-# Usage:
-#   wget -O /tmp/install-provisioning-server.sh https://raw.githubusercontent.com/epfl-sti/cluster.foreman/master/install-provisioning-server.sh
-#   sudo bash /tmp/run.sh
+# Requirements: docker, bridge-utils
 #
-# One unfortunately *cannot* just pipe wget into bash, because
-# foreman-installer wants a tty :(
+# Usage:
+#   wget -O /tmp/install-provisioning-server.sh https://raw.githubusercontent.com/epfl-sti/cluster.foreman/master/install-provisioning-server.sh | sudo bash
 #
 # This script doesn't take flags, but its behavior can be changed using
 # environment variables, e.g.
 #
 #   EPFLSTI_CLUSTER_SOURCE_DIR=/somewhere/else sudo bash /tmp/run.sh
-#
-# Search for EPFLSTI_CLUSTER_ for other variables that can be used in that way.
-#
-# Please keep this script:
-#  * repeatable: it should be okay to run it twice
-#  * readable (with comments in english)
-#  * minimalistic: complicated things should be done with Puppet instead
-#                  (see https://github.com/epfl-sti/cluster.foreman/wiki/Hacking
-#                  for how to do what where)
+
+for tool in docker brctl grep perl; do
+    which "$tool" >/dev/null || {
+        echo >&2 "Please install $tool and try again."
+        exit 1
+    }
+done
+
+docker ps >/dev/null || {
+    echo >&2 "Docker doesn't look like it is configured properly (cannot"
+    echo >&2 "  run \"docker ps\")."
+    echo >&2 "Please fix and try again."
+    exit 1
+}
 
 set -e -x
 
 : ${EPFLSTI_CLUSTER_GITHUB_DEPOT:=epfl-sti/cluster.foreman}
 : ${EPFLSTI_CLUSTER_SOURCE_DIR:=/opt/src}
 : ${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR:=${EPFLSTI_CLUSTER_SOURCE_DIR}/cluster.foreman}
+: ${EPFLSTI_CLUSTER_ANSWERS_YAML:=${EPFLSTI_CLUSTER_SOURCE_DIR}/foreman-installer-answers.yaml}
+
 
 # Check out sources
 test -d "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/.git || (
@@ -37,46 +42,37 @@ test -d "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/.git || (
 )
 (cd "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"; git pull || true)
 
-rpm -q epel-release || yum install epel-release
-
-case "$(cat /etc/redhat-release)" in
-  "Red Hat"*"release 7"*|CentOS*"release 7"*)
-      distmajor=7 ;;
-  "Red Hat"*"release 6"*|CentOS*"release 6"*)
-      distmajor=6 ;;
-  *)
-      echo >&2 "Unsupported OS: $(cat /etc/redhat-release)"
-      exit 2
-      ;;
-esac
-
-case "$(cat /etc/redhat-release)" in
-    "Red Hat"*)
-        which yum-config-manager || yum -y install yum-utils
-        # From the Foreman docs:
-        yum-config-manager --enable rhel-$distmajor-server-optional-rpms rhel-server-rhscl-$distmajor-rpms
-        ;;
-    CentOS*"release 7"*)
-        # https://github.com/theforeman/puppet-foreman/issues/327
-        yum -y install rhscl-ruby193-epel-7-x86_64
-        ;;
-esac
-
-rpm -qa | grep puppetlabs-release || \
-  rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-el-$distmajor.noarch.rpm
-yum -y install puppet  # Make sure it is up to date
-
-foreman_release_url="http://yum.theforeman.org/releases/latest/el$distmajor/x86_64/foreman-release.rpm"
-
-which foreman-installer || {
-    rpm -q foreman-release || yum -y install $foreman_release_url
-    yum -y install foreman-installer
+"${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/configure.pl --target-file "${EPFLSTI_CLUSTER_ANSWERS_YAML}"
+getyaml() {
+    (set +x
+    perl -Mlib="${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}/lib" \
+         -MYAML::Tiny -e 'my $struct = YAML::Tiny->read($ARGV[0])->[0]; for(split m/::/, $ARGV[1]) {$struct = $struct->{$_}}; print $struct, "\n"' \
+         "${EPFLSTI_CLUSTER_ANSWERS_YAML}" "$1"
+    )
 }
 
-[ -n "$EPFLSTI_CLUSTER_INSTALL_PREREQS_ONLY" ] && exit 0
+# Set up bridging so that the Dockerized Foreman may have its own IP address.
+: ${EPFLSTI_INTERNAL_DOCKER_BRIDGE:=docker.ipv4.int}
+iface_orig="$(getyaml foreman_provisioning::interface)"
+ipaddr="$(getyaml epflsti::configure_answers::private_ip_address)"
+netmask="$(getyaml foreman_provisioning::netmask)"
+if ip addr show dev "${EPFLSTI_INTERNAL_DOCKER_BRIDGE}" >/dev/null 2>&1; then
+    (set +x
+    echo >&2 "It looks like the bridge ${EPFLSTI_INTERNAL_DOCKER_BRIDGE} was configured already."
+    echo >&2 "If this is not the case, please delete the bridge and try again:"
+    echo >&2
+    echo >&2 "  brctl delbr ${EPFLSTI_INTERNAL_DOCKER_BRIDGE}"
+    echo >&2
+    )
+else
+    echo >&2 "Configuring bridge ${EPFLSTI_INTERNAL_DOCKER_BRIDGE}"
+    brctl addbr "${EPFLSTI_INTERNAL_DOCKER_BRIDGE}"
+    brctl addif "${EPFLSTI_INTERNAL_DOCKER_BRIDGE}" "$iface_orig"
+    ip addr del "$ipaddr"/"$netmask" dev "$iface_orig"
+    if ! ip addr show "${EPFLSTI_INTERNAL_DOCKER_BRIDGE}" 2>/dev/null | grep -q "$ipaddr"; then
+        ip addr add "$ipaddr" dev "${EPFLSTI_INTERNAL_DOCKER_BRIDGE}"
+    fi
+fi
 
-# Write (or update) /etc/foreman/foreman-installer-answers.yaml:
-./configure.pl $EPFLSTI_CLUSTER_CONFIGURE_FLAGS
-# Read same, and thus not needing any command-line flags; please
-# keep it that way
-foreman-installer
+exit  # XXX
+docker run 
