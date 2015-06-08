@@ -37,10 +37,6 @@ test -d "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/.git || (
 )
 (cd "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"; git pull || true)
 
-which yum-config-manager || {
-  yum -y install yum-utils
-}
-
 rpm -q epel-release || yum install epel-release
 
 case "$(cat /etc/redhat-release)" in
@@ -56,7 +52,8 @@ esac
 
 case "$(cat /etc/redhat-release)" in
     "Red Hat"*)
-        # From the Foreman docs
+        which yum-config-manager || yum -y install yum-utils
+        # From the Foreman docs:
         yum-config-manager --enable rhel-$distmajor-server-optional-rpms rhel-server-rhscl-$distmajor-rpms
         ;;
     CentOS*"release 7"*)
