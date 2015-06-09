@@ -2,7 +2,7 @@
 FROM ubuntu:latest
 MAINTAINER Nicolas Borboën <nicolas.borboen@epfl.ch>
 
-RUN apt-get update && apt-get -y install wget
+RUN apt-get update && apt-get -y dist-upgrade && apt-get -y install wget
 
 # http://theforeman.org/manuals/1.8/index.html#2.1Installation
 RUN apt-get -y install ca-certificates
@@ -11,20 +11,27 @@ RUN dpkg -i puppetlabs-release-trusty.deb
 RUN echo "deb http://deb.theforeman.org/ trusty 1.8" > /etc/apt/sources.list.d/foreman.list
 RUN echo "deb http://deb.theforeman.org/ plugins 1.8" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
-RUN apt-get update && apt-get -y install foreman-installer
-
-RUN apt-get -qy install iptables
-
-RUN wget --no-check-certificate https://raw.github.com/jpetazzo/pipework/master/pipework
-RUN chmod +x pipework
+RUN apt-get update && \
+    apt-get -y install foreman-installer \
+                       ruby-foreman-discovery ruby-foreman-column-view
 
 # Run foreman-installer a first time, just to drag in as many packages as possible
 # With tricks from
 # https://github.com/riskable/docker-foreman/blob/master/install_foreman.sh
 RUN rm /usr/share/foreman-installer/checks/hostname.rb
-RUN env FACTER_fqdn=$(hostname) foreman-installer || true
+RUN env FACTER_fqdn=$(hostname) foreman-installer \
+    --enable-foreman-proxy \
+    --enable-foreman-plugin-setup \
+    --enable-foreman-plugin-discovery \
+    --foreman-plugin-discovery-install-images \
+    --enable-foreman-plugin-column-view \
+    || true
 RUN rm /etc/foreman/foreman-installer-answers.yaml
 
+RUN apt-get -qy install iptables
+
+RUN wget --no-check-certificate https://raw.github.com/jpetazzo/pipework/master/pipework
+RUN chmod +x pipework
 
 RUN apt-get install libyaml-tiny-perl
 RUN mkdir /docker-build
