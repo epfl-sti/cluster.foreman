@@ -18,9 +18,23 @@ RUN apt-get -qy install iptables
 RUN wget --no-check-certificate https://raw.github.com/jpetazzo/pipework/master/pipework
 RUN chmod +x pipework
 
+# Run foreman-installer a first time, just to drag in as many packages as possible
+# With tricks from
+# https://github.com/riskable/docker-foreman/blob/master/install_foreman.sh
+RUN rm /usr/share/foreman-installer/checks/hostname.rb
+RUN env FACTER_fqdn=$(hostname) foreman-installer || true
+RUN rm /etc/foreman/foreman-installer-answers.yaml
+
+
+RUN apt-get install libyaml-tiny-perl
+RUN mkdir /docker-build
+ADD run-foreman-installer.pl /docker-build/run-foreman-installer.pl
+
 # This needs to be done as late as possible, otherwise each reconfiguration entails
 # a large amount of duplicate work
 ADD foreman-installer-answers.yaml /etc/foreman/foreman-installer-answers.yaml
+
+RUN perl /docker-build/run-foreman-installer.pl
 
 RUN /bin/false  # XXX
 
