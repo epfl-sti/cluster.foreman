@@ -201,7 +201,7 @@ sub foreman_provisioning__dhcp_range: ToYaml {
 =head3 Plugins
 
 Plugins are an exception to the above rule: because they are listed section
-C<:mapping:> of file /etc/foreman/foreman-installer.yaml, their
+C<:mapping:> of the foreman-installer-answers.yaml file, their
 foreman-installer configuration is read from a different set of files. As a
 consequence, only those plugins that are known to the stock foreman-installer
 may be configured with configure.pl. To install and configure third-party
@@ -229,7 +229,7 @@ cogs or others.
 
 =head2 C<epflsti> module
 
-The C<epflsti> section in /etc/foreman/foreman-installer.yaml is used
+The C<epflsti> section in foreman-installer-answers.yaml is used
 for bona fide Puppet parameters for the like-named module, but also to
 persist all the interactive answers to "PromptUser" functions that
 don't have a "ToYaml" place of persistence of their own (see details
