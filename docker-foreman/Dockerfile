@@ -15,9 +15,12 @@ RUN apt-get update && apt-get -y install foreman-installer
 
 RUN apt-get -qy install iptables
 
-
 RUN wget --no-check-certificate https://raw.github.com/jpetazzo/pipework/master/pipework
 RUN chmod +x pipework
+
+# This needs to be done as late as possible, otherwise each reconfiguration entails
+# a large amount of duplicate work
+ADD foreman-installer-answers.yaml /etc/foreman/foreman-installer-answers.yaml
 
 RUN /bin/false  # XXX
 

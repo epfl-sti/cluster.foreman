@@ -31,7 +31,6 @@ set -e -x
 : ${EPFLSTI_CLUSTER_GITHUB_DEPOT:=epfl-sti/cluster.foreman}
 : ${EPFLSTI_CLUSTER_SOURCE_DIR:=/opt/src}
 : ${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR:=${EPFLSTI_CLUSTER_SOURCE_DIR}/cluster.foreman}
-: ${EPFLSTI_CLUSTER_ANSWERS_YAML:=${EPFLSTI_CLUSTER_SOURCE_DIR}/foreman-installer-answers.yaml}
 
 
 # Check out sources
@@ -40,14 +39,15 @@ test -d "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/.git || (
     git clone https://github.com/${EPFLSTI_CLUSTER_GITHUB_DEPOT}.git \
         "$(basename "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}")"
 )
-(cd "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"; git pull || true)
+cd "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"
+git pull || true
 
-"${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/configure.pl --target-file "${EPFLSTI_CLUSTER_ANSWERS_YAML}"
+"${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/configure.pl --target-file docker-foreman/foreman-installer-answers.yaml
 getyaml() {
     (set +x
     perl -Mlib="${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}/lib" \
          -MYAML::Tiny -e 'my $struct = YAML::Tiny->read($ARGV[0])->[0]; for(split m/::/, $ARGV[1]) {$struct = $struct->{$_}}; print $struct, "\n"' \
-         "${EPFLSTI_CLUSTER_ANSWERS_YAML}" "$1"
+         docker-foreman/foreman-installer-answers.yaml "$1"
     )
 }
 
@@ -74,5 +74,24 @@ else
     fi
 fi
 
+# Install piperwork 
+# https://github.com/jpetazzo/pipework
+which pipework || {
+    wget -N https://raw.githubusercontent.com/jpetazzo/pipework/master/pipework
+    install -m 755 pipework /usr/local/bin/pipework
+    rm pipework
+}
+
+docker build -t epflsti/foreman docker-foreman/
+
+
 exit  # XXX
-docker run 
+
+STI_FOREMAN_DOCKER=$(docker run -d \
+    -v "$GIT_TOPDIR":/opt/src/cluster.foreman \
+    -h ostest0.cloud.epfl.ch \
+    -p $FOREMAN_PORT:443 -p 69:69/udp \
+    -it epflsti/foreman:${DOCKER_TAG:-latest} /bin/bash)
+
+pipework br0 $STI_FOREMAN_DOCKER 192.168.101.1/24
+
