@@ -80,14 +80,14 @@ command-line switch.
 =cut
 
 sub private_ip_address : PromptUser {
-  my %interfaces_and_ips = interfaces_and_ips();
+  my %interfaces_and_ips = physical_interfaces_and_ips();
   my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
     (values %interfaces_and_ips);
   return $private_ips[0];
 }
 
 sub private_interface : PromptUser {
-  my %ips_to_interfaces = reverse(interfaces_and_ips());
+  my %ips_to_interfaces = reverse(physical_interfaces_and_ips());
   return $ips_to_interfaces{private_ip_address()};
 }
 
@@ -262,6 +262,17 @@ functions with attributes.
 sub interfaces_and_ips {
   my %network_configs = network_configs();
   return map { ($_, $network_configs{$_}->addr) } (keys %network_configs);
+}
+
+sub physical_interfaces_and_ips {
+  my %interfaces_and_ips = interfaces_and_ips();
+  my %physical_interfaaces_and_ips;
+  while(my ($iface, $ip) = each %interfaces_and_ips) {
+    if (is_physical_interface($iface)) {
+      $physical_interfaaces_and_ips{$iface} = $ip;
+    }
+  }
+  return %physical_interfaaces_and_ips;
 }
 
 memoize('network_configs');
