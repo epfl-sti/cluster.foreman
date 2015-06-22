@@ -34,6 +34,10 @@ class epflsti(
     # Basic services
     class { "ntp": }
     class { "epflsti::private::ipmi": }
+    class { 'locales':
+      default_locale  => 'fr_CH.UTF-8',
+      locales         => ['en_US.UTF-8 UTF-8', 'fr_CH.UTF-8 UTF-8'],
+    }
     if ($is_frontend_node) {
       class { "dnsclient":
         nameservers => [ '127.0.0.1' ],

@@ -42,6 +42,9 @@ rpm -q epel-release || yum install epel-release
 case "$(cat /etc/redhat-release)" in
   "Red Hat"*"release 7"*|CentOS*"release 7"*)
       distmajor=7 ;;
+      # http://www.rackspace.com/knowledge_center/article/install-epel-and-additional-repositories-on-centos-and-red-hat
+      # wget -N -q http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
+      # rpm -Uvh epel-release-7*.rpm
   "Red Hat"*"release 6"*|CentOS*"release 6"*)
       distmajor=6 ;;
   *)
