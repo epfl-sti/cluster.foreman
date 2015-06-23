@@ -1,0 +1,24 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+=head1 NAME
+
+dockerer - Build and install things under docker/
+
+=head1 SYNOPSIS
+
+   ./dockerer build foreman-base
+
+=head1 DESCRIPTION
+
+=head2 build
+
+=cut
+
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
+use Docopt;
+use Pod::Usage;
+
+pod2usage();
