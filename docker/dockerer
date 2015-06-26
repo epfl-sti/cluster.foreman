@@ -8,7 +8,10 @@ dockerer - Build and install things under docker/
 
 =head1 SYNOPSIS
 
-   ./dockerer build foreman-base
+   dockerer build <target>
+   dockerer run <target>
+
+Where C<target> is one of "foreman-base" or "foreman"
 
 =head1 DESCRIPTION
 
@@ -20,5 +23,48 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib";
 use Docopt;
 use Pod::Usage;
+use Try::Tiny;
+use Net::Domain qw(hostfqdn hostdomain);
+use autodie qw(:all);
 
-pod2usage();
+my $opts;
+try {
+  $opts = docopt();
+} catch {
+  pod2usage();
+};
+
+my $target = $opts->{"<target>"};
+die unless $target;
+
+if ($opts->{run}) {
+  build($target);
+  run($target);
+} elsif ($opts->{build}) {
+  build($target);
+} else {
+  pod2usage();
+}
+
+sub plan {
+}
+
+sub build {
+  my ($target) = @_;
+  die "unknown build target: $target\n" unless ($target eq "foreman-base");
+  system("cd '$Bin/$target' && docker build -t epflsti/$target .");
+}
+
+sub run {
+  my ($target) = @_;
+  die "unknown run target: $target\n" unless ($target eq "foreman");
+  build("foreman-base");
+
+  my $hostname = hostfqdn;
+  system(<<"DOCKER_RUN");
+set -e -x
+cd '$Bin/$target'
+docker run --name=foreman -h $hostname -it \
+   -p 8443:443 -p 8080:80 epflsti/foreman-base foreman-installer
+DOCKER_RUN
+}
