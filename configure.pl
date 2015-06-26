@@ -86,10 +86,8 @@ sub private_ip_address : PromptUser {
   return $private_ips[0];
 }
 
-sub private_interface : PromptUser {
-  my %ips_to_interfaces = reverse(physical_interfaces_and_ips());
-  return $ips_to_interfaces{private_ip_address()};
-}
+# Foreman is running inside Docker, where the network is ad-hoc:
+sub private_interface { return "eth0" }
 
 sub public_ip_address : PromptUser {
   use IO::Socket::INET;
@@ -132,27 +130,6 @@ a validation function.
 
 =cut
 
-sub foreman_provisioning__domain_name : ToYaml
-  : PromptUser(validate => \&_check_foreman_provisioning_domain_name) {
-    hostdomain()
-}
-sub _check_foreman_provisioning_domain_name {
-  my ($domainref) = @_;
-  my $domain = $$domainref;
-  return if ($domain ne "epfl.ch");
-  warn <<"DNS_CLASH";
-You selected $domain for the domain to provision into.
-
-WARNING: THIS IS NOT A GOOD THING.
-
-There is (of course) already a DNS server for epfl.ch.
-
-DNS_CLASH
-
-  prompt_yn("Do you still want to proceed?", 0) and return $domain;
-  die "Bailing out.\n";
-}
-
 =head2 YAML Structure
 
 Every top-level entry in the YAML file corresponds to a directory with
@@ -161,42 +138,7 @@ in the C<foreman-installer/modules> subdirectory in the sources get
 grafted (using a symlink) into the foreman-installer machinery when
 running this script.
 
-Also, you can probably guess what a ": PostConfigure" annotation is for.
-
 =cut
-
-sub symlink_modules : PostConfigure {
-  my $foreman_installer_module_path = "/usr/share/foreman-installer/modules";
-  my $src_modules_dir = "$FindBin::Bin/foreman-installer/modules";
-  opendir(my $dirhandle, $src_modules_dir) ||
-    die "can't opendir $src_modules_dir: $!";
-  foreach my $subdir (readdir($dirhandle)) {
-    next if ($subdir eq "." or $subdir eq "..");
-    next unless -d (my $src_module_dir = "$src_modules_dir/$subdir");
-    my $symlink = "$foreman_installer_module_path/$subdir";
-    warn "Creating symlink $symlink => $src_module_dir\n";
-    unless (symlink($src_module_dir, $symlink)) {
-      die "symlink($src_module_dir, $symlink): $!" unless $! == Errno::EEXIST;
-    }
-  }
-  closedir($dirhandle);
-  warn "\n";
-}
-
-sub foreman_provisioning__interface : ToYaml { private_interface }
-sub foreman_provisioning__network_address: ToYaml {
-  return private_interface_config()->network->addr;
-}
-sub foreman_provisioning__netmask: ToYaml {
-  return private_interface_config()->mask;
-}
-sub foreman_provisioning__gateway: ToYaml { private_ip_address }
-sub foreman_provisioning__dns: ToYaml : PromptUser { private_ip_address }
-sub foreman_provisioning__dhcp_range: ToYaml {
-  my $range = foreman_proxy__dhcp_range;
-  $range =~ s/\s+/-/g;
-  return $range;
-}
 
 =head3 Plugins
 
@@ -229,8 +171,7 @@ cogs or others.
 
 =head2 C<epflsti> module
 
-The C<epflsti> section in foreman-installer-answers.yaml is used
-for bona fide Puppet parameters for the like-named module, but also to
+The C<epflsti> section in foreman-installer-answers.yaml is used to
 persist all the interactive answers to "PromptUser" functions that
 don't have a "ToYaml" place of persistence of their own (see details
 in L<GenerateAnswersYaml>),

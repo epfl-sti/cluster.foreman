@@ -9,7 +9,7 @@ dockerer - Build and install things under docker/
 =head1 SYNOPSIS
 
    dockerer build <target>
-   dockerer run <target>
+   dockerer run --name=<clustername> <target>
 
 Where C<target> is one of "foreman-base" or "foreman"
 
@@ -27,7 +27,7 @@ use Try::Tiny;
 use Net::Domain qw(hostfqdn hostdomain);
 use autodie qw(:all);
 
-my $opts;
+our $opts;
 try {
   $opts = docopt();
 } catch {
@@ -38,7 +38,6 @@ my $target = $opts->{"<target>"};
 die unless $target;
 
 if ($opts->{run}) {
-  build($target);
   run($target);
 } elsif ($opts->{build}) {
   build($target);
@@ -60,11 +59,21 @@ sub run {
   die "unknown run target: $target\n" unless ($target eq "foreman");
   build("foreman-base");
 
-  my $hostname = hostfqdn;
+  my $answers_yaml = "$Bin/../foreman-installer-answers.yaml";
+  if (! -f $answers_yaml) {
+    system("$Bin/../configure.pl --target-file=$answers_yaml");
+  }
+
+  die unless defined(my $clustername = $opts->{'--name'});
+  my $foreman_hostname;
+  if ($clustername =~ m/\./) {
+    $foreman_hostname = $clustername;
+  } else {
+    $foreman_hostname = "${clustername}." . hostdomain;
+  }
   system(<<"DOCKER_RUN");
 set -e -x
-cd '$Bin/$target'
-docker run --name=foreman -h $hostname -it \
-   -p 8443:443 -p 8080:80 epflsti/foreman-base foreman-installer
+docker rm $foreman_hostname || true
+docker run --name=$foreman_hostname -h $foreman_hostname -v "$Bin/..":/cluster.foreman -p 8443:443 -p 8080:80 -it epflsti/foreman-base
 DOCKER_RUN
 }

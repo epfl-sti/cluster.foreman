@@ -75,3 +75,12 @@ RUN find / -xdev -type f \
     -print0 | \
     xargs -0 grep -l $(cat /etc/hostname) | \
     perl -ne 'if ($. == 1) { warn "Still some files containing the forbidden hostname:\n"}; print STDERR $_; END { die if $. }'
+
+# Customizations for EPFLSTI-specific code
+RUN mkdir /cluster.foreman
+RUN set -e -x; for module in epflsti foreman_provisioning; do rm -f /usr/share/foreman-installer/modules/$module; done; ln -s /cluster.foreman/foreman-installer/modules/epflsti /usr/share/foreman-installer/modules/
+
+ADD run-foreman /run-foreman
+RUN chmod 755 /run-foreman
+VOLUME /cluster.foreman
+ENTRYPOINT /run-foreman
