@@ -10,7 +10,7 @@ MAINTAINER STIIT Dev <stiitdev@groupes.epfl.ch>
 RUN apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get -qy dist-upgrade && DEBIAN_FRONTEND=noninteractive apt-get -qy install wget tftp tftpd-hpa vim
 
 # Get a "docker" PS1 prompt
-RUN echo "PS1='[\t]⚠DOCKER! \u@\h:\w\$ '" >> /root/.bashrc
+RUN echo "PS1='⚠DOCKER! \u@\h:\w\$ '" >> /root/.bashrc
 
 # http://theforeman.org/manuals/1.8/index.html#2.1Installation
 RUN DEBIAN_FRONTEND=noninteractive apt-get -qy install ca-certificates
@@ -24,39 +24,35 @@ RUN apt-get -q update && \
                        ruby-foreman-discovery ruby-foreman-column-view
 
 
-# enable => true doesn't work on Ubuntu:
-RUN sed -i s/"enable    => true,"/"#enable    => true,"/g  /usr/share/foreman-installer/modules/tftp/manifests/service.pp
+# enable => true doesn't work in an Ubuntu-based container:
+RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
+   /usr/share/foreman-installer/modules/tftp/manifests/service.pp \
+   /usr/share/foreman-installer/modules/dhcp/manifests/init.pp \
+   /usr/share/foreman-installer/modules/puppet/manifests/agent/service.pp \
+   /usr/share/foreman-installer/modules/puppet/manifests/server/service.pp
 
 # Run foreman-installer a first time, just to drag in as many packages as possible
 # With tricks from
 # https://github.com/riskable/docker-foreman/blob/master/install_foreman.sh
 # TODO: speed this up somehow (e.g. find a way to not attempt to start daemons)
-RUN rm /usr/share/foreman-installer/checks/hostname.rb
+RUN mv /usr/share/foreman-installer/checks/hostname.rb /usr/share/foreman-installer/checks_hostname.rb.BAK
+ADD foreman-installer-answers-stub.yaml /etc/foreman/foreman-installer-answers.yaml
 RUN env FACTER_fqdn=$(hostname) foreman-installer -v \
     --enable-foreman-proxy \
     --enable-foreman-plugin-setup \
     --enable-foreman-plugin-discovery \
-    --foreman-plugin-discovery-install-images \
-    || true
-
-RUN DEBIAN_FRONTEND=noninteractive apt-get -qy install iptables
-
-RUN wget https://raw.github.com/jpetazzo/pipework/master/pipework
-RUN chmod +x pipework
-
+    --foreman-plugin-discovery-install-images
+RUN mv /usr/share/foreman-installer/checks_hostname.rb.BAK /usr/share/foreman-installer/checks/hostname.rb
 
 # Remove all traces of the random hostname that was in use during the build;
 # and then double-check that they are all gone.
 RUN service postgresql start && echo "drop database foreman" | sudo -u foreman psql template1 && service postgresql stop
 RUN sudo -u postgres /usr/lib/postgresql/*/bin/pg_resetxlog /var/lib/postgresql/*/main/
-RUN find /etc -type f | xargs grep -l 'File managed with puppet' | xargs rm
 RUN find /var/lib/puppet \
-    /var/log/apache2 \
-    /var/log/foreman* \
     /var/cache/foreman \
+    /var/cache/bind/zones \
     -type f -delete
-# Careful with blanket rm's of directories; those may contain important metadata
-# (e.g. subdirectories with permissions)
+RUN find /etc -type f | xargs grep -l 'File managed with puppet' | xargs rm
 RUN rm -rf /var/lib/puppet/concat/* \
     /etc/puppet/puppet.conf \
     /etc/hammer/cli.modules.d/foreman.yml \
@@ -67,18 +63,25 @@ RUN rm -rf /var/lib/puppet/concat/* \
     /etc/apache2/sites-available/05-foreman-ssl.conf        \
     /etc/foreman-proxy/settings.d/templates.yml             \
     /etc/foreman-proxy/settings.d/puppet.yml                \  
-    /etc/puppet/foreman.yaml
+    /etc/puppet/foreman.yaml \
+    /etc/puppet/hiera.yaml
     
-RUN find / -xdev -type f \
-    -not -path /etc/hostname \
-    -not -path /etc/hosts \
-    -print0 | \
+RUN find / -xdev \
+     -path /var/log -prune -false -o -type f \
+     -not -path /etc/hostname \
+     -not -path /etc/hosts \
+     -print0 | \
     xargs -0 grep -l $(cat /etc/hostname) | \
     perl -ne 'if ($. == 1) { warn "Still some files containing the forbidden hostname:\n"}; print STDERR $_; END { die if $. }'
 
+RUN DEBIAN_FRONTEND=noninteractive apt-get -qy install iptables
+
+RUN wget https://raw.github.com/jpetazzo/pipework/master/pipework
+RUN chmod +x pipework
+
+
 # Customizations for EPFLSTI-specific code
 RUN mkdir /cluster.foreman
-RUN set -e -x; for module in epflsti foreman_provisioning; do rm -f /usr/share/foreman-installer/modules/$module; done; ln -s /cluster.foreman/foreman-installer/modules/epflsti /usr/share/foreman-installer/modules/
 
 ADD run-foreman /run-foreman
 RUN chmod 755 /run-foreman
