@@ -1059,7 +1059,7 @@ sub docopt {
 
         open my $fh, '>', \$doc
             or die $!;
-        my $parser = Pod::Usage->new(USAGE_OPTIONS => +{});
+        my $parser = Pod::Usage->new(USAGE_OPTIONS => {-verbose => 0});
         $parser->select('(?:SYNOPSIS|USAGE)\s*');
         $parser->parse_from_file($0, $fh);
 #       my $parser = Pod::Simple::Text->new();
