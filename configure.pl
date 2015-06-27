@@ -169,17 +169,6 @@ sub discovery_config : ToYaml("foreman::plugin::discovery") {
 Here we document a number of special-purpose settings that oil some
 cogs or others.
 
-=head2 C<epflsti> module
-
-The C<epflsti> section in foreman-installer-answers.yaml is used to
-persist all the interactive answers to "PromptUser" functions that
-don't have a "ToYaml" place of persistence of their own (see details
-in L<GenerateAnswersYaml>),
-
-=cut
-
-sub epflsti__src_path : ToYaml { $FindBin::Bin }
-
 =head2 server_environments
 
 Hijacked so that foreman-installer doesn't create (and re-create)
