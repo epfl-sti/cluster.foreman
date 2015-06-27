@@ -81,8 +81,10 @@ RUN chmod +x pipework
 
 
 # Customizations for EPFLSTI-specific code
-RUN mkdir /cluster.foreman
 
+ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
+
+RUN mkdir /cluster.foreman
 ADD run-foreman /run-foreman
 RUN chmod 755 /run-foreman
 VOLUME /cluster.foreman

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e -x
+
+{
+    cp /cluster.foreman/foreman-installer-answers.yaml /etc/foreman/
+    foreman-installer
+    rm -rf /etc/puppet/environments/*
+    ln -s /cluster.foreman/puppet/environments/production /etc/puppet/environments/production
+} || exec bash  # XXX
