@@ -33,7 +33,9 @@ use Memoize;
 use FindBin; use lib "$FindBin::Bin/lib";
 use GenerateAnswersYaml qw(prompt_yn);
 use NetAddr::IP::Lite;
+use Net::Domain qw(hostfqdn hostdomain);
 use Errno;
+use File::Which qw(which);
 
 =head1 HACKING
 
@@ -78,16 +80,14 @@ command-line switch.
 =cut
 
 sub private_ip_address : PromptUser {
-  my %interfaces_and_ips = interfaces_and_ips();
+  my %interfaces_and_ips = physical_interfaces_and_ips();
   my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
     (values %interfaces_and_ips);
   return $private_ips[0];
 }
 
-sub private_interface : PromptUser {
-  my %ips_to_interfaces = reverse(interfaces_and_ips());
-  return $ips_to_interfaces{private_ip_address()};
-}
+# Foreman is running inside Docker, where the network is ad-hoc:
+sub private_interface { return "eth0" }
 
 sub public_ip_address : PromptUser {
   use IO::Socket::INET;
@@ -123,157 +123,33 @@ sub foreman_proxy__dns_forwarders : ToYaml {
   [qw(128.178.15.227 128.178.15.228)]
 }
 
-=pod
 
-Functions that have a ": PreConfigure" attribute are run before
-everything else.
-
-=cut
-
-sub validate_dns_domain : PreConfigure {
-  use Net::Domain qw(hostfqdn hostdomain);
-  system("which facter 2>/dev/null") and
-    die "facter is not yet installed; please run install-provisioning-server.sh";
-  chomp(my $facter_fqdn = lc(`facter fqdn`));
-
-  my $libc_fqdn = lc(hostfqdn);
-  $libc_fqdn = "<undefined>" if ! defined $libc_fqdn;
-  die <<"BAD_SYSTEM_CONFIG" if ($facter_fqdn ne $libc_fqdn);
-
-Mismatch between "facter fqdn" ($facter_fqdn) and the system hostname
-($libc_fqdn).
-
-Please do any of the following as needed:
-  * change the system hostname with hostname -f as root;
-  * edit /etc/hosts and /etc/sysconfig/network to match;
-  * and re-run $0.
-
-(foreman-installer would complain about exactly this down the line if we
-didn't)
-
-BAD_SYSTEM_CONFIG
-}
-
-=pod
-
-C<PromptUser> can take arguments, in particular C<< validate => >> for
-a validation function.
-
-=cut
-
-sub foreman_provisioning__domain_name : ToYaml
-  : PromptUser(validate => \&_check_foreman_provisioning_domain_name) {
-    hostdomain()
-}
-sub _check_foreman_provisioning_domain_name {
-  my ($domainref) = @_;
-  my $domain = $$domainref;
-  return if ($domain ne "epfl.ch");
-  warn <<"DNS_CLASH";
-You selected $domain for the domain to provision into.
-
-WARNING: THIS IS NOT A GOOD THING.
-
-There is (of course) already a DNS server for epfl.ch.
-
-DNS_CLASH
-
-  prompt_yn("Do you still want to proceed?", 0) and return $domain;
-  die "Bailing out.\n";
-}
-
-=head2 YAML Structure
-
-Every top-level entry in the YAML file corresponds to a directory with
-the same name in C</usr/share/foreman-installer/modules>. All modules
-in the C<foreman-installer/modules> subdirectory in the sources get
-grafted (using a symlink) into the foreman-installer machinery when
-running this script.
-
-Also, you can probably guess what a ": PostConfigure" annotation is for.
-
-=cut
-
-sub symlink_modules : PostConfigure {
-  my $foreman_installer_module_path = "/usr/share/foreman-installer/modules";
-  my $src_modules_dir = "$FindBin::Bin/foreman-installer/modules";
-  opendir(my $dirhandle, $src_modules_dir) ||
-    die "can't opendir $src_modules_dir: $!";
-  foreach my $subdir (readdir($dirhandle)) {
-    next if ($subdir eq "." or $subdir eq "..");
-    next unless -d (my $src_module_dir = "$src_modules_dir/$subdir");
-    my $symlink = "$foreman_installer_module_path/$subdir";
-    warn "Creating symlink $symlink => $src_module_dir\n";
-    unless (symlink($src_module_dir, $symlink)) {
-      die "symlink($src_module_dir, $symlink): $!" unless $! == Errno::EEXIST;
-    }
-  }
-  closedir($dirhandle);
-  warn "\n";
-}
-
-sub foreman_provisioning__interface : ToYaml { private_interface }
-sub foreman_provisioning__network_address: ToYaml {
-  return private_interface_config()->network->addr;
-}
-sub foreman_provisioning__netmask: ToYaml {
-  return private_interface_config()->mask;
-}
-sub foreman_provisioning__gateway: ToYaml { private_ip_address }
-sub foreman_provisioning__dns: ToYaml : PromptUser { private_ip_address }
-sub foreman_provisioning__dhcp_range: ToYaml {
-  my $range = foreman_proxy__dhcp_range;
-  $range =~ s/\s+/-/g;
-  return $range;
-}
-
-=head3 Plugins
-
-Plugins are an exception to the above rule: because they are listed section
-C<:mapping:> of file /etc/foreman/foreman-installer.yaml, their
-foreman-installer configuration is read from a different set of files. As a
-consequence, only those plugins that are known to the stock foreman-installer
-may be configured with configure.pl. To install and configure third-party
-plugins, take a look at the 'column_view' example in
-foreman-installer/modules/epflsti/manifests/init.pp
-
-One can conveniently override the default path deduction by passing
-parameters to the ToYaml annotation, e.g.
-
-   sub discovery_config : ToYaml("foreman::plugin::discovery")  { ... }
-
-=cut
-
-sub discovery_config : ToYaml("foreman::plugin::discovery") {
-  {
-    install_images => "true",
-    tftp_root => "/var/lib/tftpboot/",
-  }
-}
-
-=head1 QUIRKS
+=head1 FIXED CONFIGURATION
 
 Here we document a number of special-purpose settings that oil some
 cogs or others.
 
-=head2 C<epflsti> module
+=head2 puppet → server
 
-The C<epflsti> section in /etc/foreman/foreman-installer.yaml is used
-for bona fide Puppet parameters for the like-named module, but also to
-persist all the interactive answers to "PromptUser" functions that
-don't have a "ToYaml" place of persistence of their own (see details
-in L<GenerateAnswersYaml>),
+Set to true, so that foreman-installer wrangles the puppetmaster,
+including its CA.
+
+=head2 foreman_proxy → puppetca
+
+Set to true, so that you can later sign certificates from the Foreman
+web UI.
 
 =cut
 
-sub epflsti__src_path : ToYaml { $FindBin::Bin }
+sub puppet__server : ToYaml { "true" }
 
-=head2 server_environments
+sub foreman_proxy__puppetca : ToYaml { "true" }
 
-Hijacked so that foreman-installer doesn't create (and re-create)
+=head2 puppet → server_environments
+
+Set to the empty list so that foreman-installer doesn't try to create
 /etc/puppet/environments and its subdirectories (we want a symlink to
-our source tree here instead; see
-foreman-installer/modules/epflsti/manifests/puppetconfig.pp).
+our source tree here instead).
 
 =cut
 
@@ -293,23 +169,61 @@ sub interfaces_and_ips {
   return map { ($_, $network_configs{$_}->addr) } (keys %network_configs);
 }
 
+sub physical_interfaces_and_ips {
+  my %interfaces_and_ips = interfaces_and_ips();
+  my %physical_interfaaces_and_ips;
+  while(my ($iface, $ip) = each %interfaces_and_ips) {
+    if (is_physical_interface($iface)) {
+      $physical_interfaaces_and_ips{$iface} = $ip;
+    }
+  }
+  return %physical_interfaaces_and_ips;
+}
+
 memoize('network_configs');
 sub network_configs {
   my %network_configs;
+  my %bridge_members;
   local *IP_ADDR;
   open(IP_ADDR, "ip addr |");
   my $current_interface;
   while(<IP_ADDR>) {
     if (m/^\d+: (\S+):/) {
       $current_interface = $1;
+      if (m/master (\S+)/) {
+        push @{$bridge_members{$1}}, $current_interface;
+      }
     } elsif (m|inet ([0-9.]+/[0-9]+)|) {
       # In case of multiple IPs for the same interface (i.e., aliases),
       # keep only the first one.
       $network_configs{$current_interface} ||= NetAddr::IP::Lite->new($1);
     }
   }
-  close(IP_ADDR);
+
+  foreach my $bridged_if (keys %bridge_members) {
+    my @real_interfaces = grep {is_physical_interface($_)}
+      (@{$bridge_members{$bridged_if}});
+    if ((@real_interfaces == 1) and
+          exists $network_configs{$bridged_if}) {
+      $network_configs{$real_interfaces[0]} = delete $network_configs{$bridged_if};
+    }
+  }
+
   return %network_configs;
+}
+
+sub is_physical_interface {
+  my ($iface_name) = @_;
+  my $sysfs_link = "/sys/class/net/$iface_name";
+  if (-l $sysfs_link) {
+    return (readlink($sysfs_link) !~ m|devices/virtual|);
+  } elsif ($iface_name =~ m/^(vir|docker|tun|tap|veth)/) {
+    return 0;
+  } elsif ($iface_name =~ m/^(en|wlan|wifi|eth)/) {
+    return 1;
+  } else {
+    die "Unable to guess whether $iface_name is a physical interface";
+  }
 }
 
 sub private_interface_config {

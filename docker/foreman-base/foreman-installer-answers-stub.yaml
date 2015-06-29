@@ -1,0 +1,25 @@
+---
+# Minimalistic Foreman config - The point is to download as much stuff
+# as possible, not to get the configuration right as it will be thrown
+# away and re-done at personalization time.
+  foreman::plugin::setup: {}
+# Download the images now:
+  foreman::plugin::discovery:
+    install_images: true
+    tftp_root: /var/lib/tftpboot
+  foreman:
+    custom_repo: true
+  puppet:
+    server: true
+    custom_repo: true
+    server_environments: []
+  foreman::cli:
+    manage_root_config: true
+  foreman_proxy: 
+    custom_repo: true
+    version: present
+    tftp: true
+    puppetca: true
+    dhcp: true
+    dns: true
+    bmc: true

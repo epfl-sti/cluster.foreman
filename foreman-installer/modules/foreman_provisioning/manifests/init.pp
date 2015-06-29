@@ -93,7 +93,7 @@ class foreman_provisioning(
   exec { "upload ${puppet_facts_file}" :
     command => "/bin/rm ${facts_push_stamp_dir}/${::fqdn}-push-facts.yaml ; ${node_rb} --push-facts",
     unless => "/usr/bin/test -f '${breadcrumb_files[upload_facts]}'",
-    require => File["/etc/puppet/node.rb"]
+    require => Service["puppet"]
   } ->
   file { "${breadcrumb_files[upload_facts]}":
     ensure => "present",
@@ -120,8 +120,8 @@ class foreman_provisioning(
     user => "foreman",
     require => [
                 File["${state_dir}/setup-provisioning.rb"],
-                Class["foreman::database"],
-                Class["foreman::plugin::setup"],
+                # Service["postgres"],
+                # Class["foreman::plugin::setup"],
                 # This ensures prerequisite #2 in step 1 of the Web wizard:
                 Class["::foreman_proxy::register"],
                 ],
