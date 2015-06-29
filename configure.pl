@@ -47,8 +47,6 @@ other function decorations.
 sub foreman_proxy__tftp_severname : ToYaml    { private_ip_address() }
 sub foreman_proxy__dhcp_gateway : ToYaml      { private_ip_address() }
 sub foreman_proxy__dhcp_nameservers : ToYaml  { private_ip_address() }
-sub foreman_proxy__dns_interface : ToYaml    { private_interface() }
-sub foreman_proxy__dhcp_interface : ToYaml   { private_interface() }
 
 =pod
 
@@ -60,20 +58,20 @@ to Ruby, one uses "true" and "false" as strings.
 sub foreman_proxy__tftp: ToYaml    { "true" }
 sub foreman_proxy__dhcp: ToYaml    { "true" }
 sub foreman_proxy__dns: ToYaml     { "true" }
-sub foreman_proxy__puppetca : ToYaml { "true" }
 sub foreman_proxy__bmc: ToYaml     { "true" }
 
 sub foreman_proxy__bmc_default_provider: ToYaml { "ipmitool" }
 
 sub private_ip_address : PromptUser {
+  # TODO: This should be *on the same subnet* as the "best" physical
+  # interface, but on an *unused* IP.
   my %interfaces_and_ips = physical_interfaces_and_ips();
   my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
     (values %interfaces_and_ips);
   return $private_ips[0];
 }
 
-# Foreman is running inside Docker, where the network is ad-hoc:
-sub private_interface { return "eth0" }
+sub private_interface { return "eth1" }
 
 sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
   my $ip = private_ip_address();
@@ -105,11 +103,6 @@ cogs or others.
 Set to true, so that foreman-installer wrangles the puppetmaster,
 including its CA.
 
-=head2 foreman_proxy → puppetca
-
-Set to true, so that you can later sign certificates from the Foreman
-web UI.
-
 =cut
 
 sub puppet__server : ToYaml { "true" }
@@ -123,6 +116,21 @@ our source tree here instead).
 =cut
 
 sub puppet__server_environments : ToYaml { [] }
+
+=head2 foreman_proxy → dns_interface
+
+=head2 foreman_proxy → dhcp_interface
+
+Foreman is running inside Docker, where the network is ad-hoc; so this
+is always eth1 (eth0 being reserved to reach the Internet through
+Docker's NAT).
+
+=cut
+
+sub foreman_proxy__dns_interface : ToYaml { "eth1" }
+sub foreman_proxy__dhcp_interface : ToYaml { "eth1" }
+
+
 
 =head2 I<>
 
@@ -193,11 +201,6 @@ sub is_physical_interface {
   } else {
     die "Unable to guess whether $iface_name is a physical interface";
   }
-}
-
-sub private_interface_config {
-  my %network_configs = network_configs();
-  return $network_configs{private_interface()};
 }
 
 sub is_rfc1918_ip {

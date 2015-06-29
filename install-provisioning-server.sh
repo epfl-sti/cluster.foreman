@@ -41,6 +41,10 @@ test -d "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/.git || (
 )
 cd "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"
 git pull || true
+test -d docker/foreman-base/pipework || \
+  (cd docker; git clone https://github.com/jpetazzo/pipework.git)
+(cd docker/foreman-base/pipework; git pull || true)
+chmod +x docker/foreman-base/pipework/pipework
 
 "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/configure.pl --target-file foreman-installer-answers.yaml
 getyaml() {
@@ -74,7 +78,7 @@ else
     fi
 fi
 
-# Install piperwork 
+# Install pipework 
 # https://github.com/jpetazzo/pipework
 which pipework || {
     wget -N https://raw.githubusercontent.com/jpetazzo/pipework/master/pipework
@@ -82,16 +86,15 @@ which pipework || {
     rm pipework
 }
 
-docker build -t epflsti/foreman docker-foreman/
+# TODO: set up br.privil4 (the bridge that gives access to privileged
+# IPv4 VIPs)
+# Steal any and all IP addresses that the physical interface might have
+# Stick them on the bridge, e.g.
+## ip addr add 192.168.10.100/24 dev br.privil4
+## ip addr add 192.168.10.1/24 dev br.privil4
+# Keep the Foreman-in-Docker VIP out of the bridge though (pipework will
+# claim that IP)
 
-
-exit  # XXX
-
-STI_FOREMAN_DOCKER=$(docker run -d \
-    -v "$GIT_TOPDIR":/opt/src/cluster.foreman \
-    -h ostest0.cloud.epfl.ch \
-    -p $FOREMAN_PORT:443 -p 69:69/udp \
-    -it epflsti/foreman:${DOCKER_TAG:-latest} /bin/bash)
-
-pipework br0 $STI_FOREMAN_DOCKER 192.168.101.1/24
-
+./configure.pl
+# TODO: run docker/dockerer build w/ a target name drawn from
+# foreman-installer-answers.yaml

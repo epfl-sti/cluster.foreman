@@ -4,7 +4,7 @@ use strict;
 
 =head1 NAME
 
-dockerer - Build and install things under docker/
+dockerer - Build and run the things under docker/
 
 =head1 SYNOPSIS
 
@@ -57,18 +57,29 @@ sub build {
     system("$Bin/../configure.pl");
   }
   my $foreman_hostname = foreman_hostname($clustername);
-  system(sprintf(<<'DOCKER_PERSONALIZE', $clustername, $foreman_hostname, $Bin));
+
+  my @shellvars = ($Bin, $clustername,
+                   $foreman_hostname, foreman_phys_internal_iface(),
+                   foreman_ipaddr(), foreman_netmask());
+  system(sprintf(<<'DOCKER_PERSONALIZE', @shellvars));
+Bin=%s
 clustername=%s
 foreman_hostname=%s
-Bin=%s
+foreman_phys_internal_iface=%s
+foreman_ipaddr=%s
+foreman_netmask=%s
 docker rm $foreman_hostname-INITIAL >/dev/null 2>&1
 set -e -x
+(sleep 10; $Bin/foreman-base/pipework/pipework br.privil4 \
+           $foreman_hostname-INITIAL $foreman_ipaddr/$foreman_netmask) &
 docker run --name=$foreman_hostname-INITIAL -h $foreman_hostname \
     -v "$Bin/..":/cluster.foreman \
     --label=ch.epfl.sti.foreman.built_for_clustername=$clustername \
     -it epflsti/foreman-base \
     bash -c 'cp /cluster.foreman/foreman-installer-answers.yaml /etc/foreman/ && \
-             foreman-installer'
+             /usr/local/bin/pipework --wait -i eth1 && \
+             foreman-installer && \
+             /cluster.foreman/docker/scripts/post-build'
 containerid=$(docker ps -q -a \
   --filter="label=ch.epfl.sti.foreman.built_for_clustername=$clustername" \
 | head -1)
@@ -82,15 +93,25 @@ sub run {
   my ($clustername) = @_;
 
   my $foreman_hostname = foreman_hostname($clustername);
-  system(<<"DOCKER_RUN");
+  my $foreman_ipaddr = foreman_ipaddr();
+  my $foreman_netmask = foreman_netmask();
+  my $foreman_phys_internal_iface = foreman_phys_internal_iface();
+
+  # Ensuring that br.privil4 is set up correctly is done by Puppet
+  # (in fully operational mode) and by install-provisioning-server.sh
+  # (during install)
+  system(<<"BRIDGE_AND_DOCKER_RUN");
 docker rm $foreman_hostname >/dev/null 2>&1
 set -e -x
+# TODO: This is just ugly.
+(sleep 10; $Bin/foreman-base/pipework/pipework br.privil4 \\
+           $foreman_hostname $foreman_ipaddr/$foreman_netmask) & \\
 docker run -it --volumes-from=$foreman_hostname-INITIAL \\
     --name=$foreman_hostname -h $foreman_hostname \\
-    --dns=127.0.0.1 -p 8443:443 -p 8080:80 \\
+    --dns=127.0.0.1 \\
     -v "$Bin/..":/cluster.foreman \\
     epflsti/foreman-$foreman_hostname
-DOCKER_RUN
+BRIDGE_AND_DOCKER_RUN
 }
 
 sub foreman_hostname {
@@ -101,3 +122,8 @@ sub foreman_hostname {
     return "${clustername}." . hostdomain;
   }
 }
+
+# TODO: parse foreman-installer-answers.yaml to figure out these:
+sub foreman_ipaddr { "192.168.10.2" }
+sub foreman_netmask { "24" }
+sub foreman_phys_internal_iface { "eth1" }

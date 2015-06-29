@@ -7,13 +7,16 @@ MAINTAINER STIIT Dev <stiitdev@groupes.epfl.ch>
 
 # DEBIAN_FRONTEND=noninteractive avoids debconf trying to ask questions and erroring out:
 # http://askubuntu.com/questions/506158/unable-to-initialize-frontend-dialog-when-using-ssh
-RUN apt-get -q update && DEBIAN_FRONTEND=noninteractive apt-get -qy dist-upgrade && DEBIAN_FRONTEND=noninteractive apt-get -qy install wget tftp tftpd-hpa vim
+ENV DEBIAN_FRONTEND=noninteractive 
 
+RUN apt-get -q update && apt-get -qy dist-upgrade && apt-get -qy install wget ca-certificates
+
+# Comfort items for debugging
+RUN apt-get -qy install vim strace tcpdump lsof
 # Get a "docker" PS1 prompt
 RUN echo "PS1='⚠DOCKER! \u@\h:\w\$ '" >> /root/.bashrc
 
 # http://theforeman.org/manuals/1.8/index.html#2.1Installation
-RUN DEBIAN_FRONTEND=noninteractive apt-get -qy install ca-certificates
 RUN wget -q https://apt.puppetlabs.com/puppetlabs-release-trusty.deb
 RUN dpkg -i puppetlabs-release-trusty.deb
 RUN echo "deb http://deb.theforeman.org/ trusty 1.8" > /etc/apt/sources.list.d/foreman.list
@@ -21,8 +24,8 @@ RUN echo "deb http://deb.theforeman.org/ plugins 1.8" >> /etc/apt/sources.list.d
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt-get -q update && \
     DEBIAN_FRONTEND=noninteractive apt-get -qy install foreman-installer \
-                       ruby-foreman-discovery ruby-foreman-column-view
-
+                       ruby-foreman-discovery ruby-foreman-column-view \
+                       tftp tftpd-hpa
 
 # enable => true doesn't work in an Ubuntu-based container:
 RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
@@ -65,6 +68,9 @@ RUN rm -rf /var/lib/puppet/concat/* \
     /etc/foreman-proxy/settings.d/puppet.yml                \  
     /etc/puppet/foreman.yaml \
     /etc/puppet/hiera.yaml
+
+# In case you were idly tampering with the container while it was being built:
+RUN rm -f /root/.bash_history
     
 RUN find / -xdev \
      -path /var/log -prune -false -o -type f \
@@ -75,11 +81,10 @@ RUN find / -xdev \
     perl -ne 'if ($. == 1) { warn "Still some files containing the forbidden hostname:\n"}; print STDERR $_; END { die if $. }'
 
 # Install networking stuff:
+RUN apt-get -qy install iptables
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get -qy install iptables
-
-RUN wget https://raw.github.com/jpetazzo/pipework/master/pipework
-RUN chmod +x pipework
+ADD pipework/pipework /usr/local/bin/pipework
+RUN chmod +x /usr/local/bin/pipework
 
 # Install supervisord for the "run" phase:
 RUN apt-get -y install supervisor
