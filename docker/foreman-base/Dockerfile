@@ -83,6 +83,7 @@ RUN chmod +x pipework
 
 # Install supervisord for the "run" phase:
 RUN apt-get -y install supervisor
+ADD supervisord.conf /etc/supervisor/
 
 # Customizations for EPFLSTI-specific code
 ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
