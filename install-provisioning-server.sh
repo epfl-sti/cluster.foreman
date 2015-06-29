@@ -42,7 +42,7 @@ test -d "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/.git || (
 cd "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"
 git pull || true
 
-"${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/configure.pl --target-file docker-foreman/foreman-installer-answers.yaml
+"${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/configure.pl --target-file foreman-installer-answers.yaml
 getyaml() {
     (set +x
     perl -Mlib="${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}/lib" \

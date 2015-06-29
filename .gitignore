@@ -1,3 +1,4 @@
 # ignore the project's configuration files
 *.cfg
 *.cfg.*
+foreman-installer-answers.yaml

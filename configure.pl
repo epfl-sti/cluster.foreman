@@ -13,13 +13,8 @@ configure.pl - Your friendly configure script
 
 =head1 DESCRIPTION
 
-This script computes some of the values for
-/etc/foreman/foreman-installer-answers.yaml. Running foreman-installer
-thereafter will make use of the values in that file.
-
-foreman-installer is designed to support being run multiple times, and
-configure.pl follows suit; it should also be fine to run configure.pl
-multiple times, even after foreman-installer has run.
+This script computes key configuration values for Foreman, and uses
+them to prepare a foreman-installer-answers.yaml file.
 
 =head1 OPTIONS
 

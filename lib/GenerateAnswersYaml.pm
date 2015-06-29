@@ -33,10 +33,11 @@ use Attribute::Handlers;
 use Getopt::Long;
 use YAML::Tiny;
 use Tie::IxHash;
+use FindBin qw($Bin);
 
 # Both of these can be changed with L</parse_argv>.
 
-our $target_file = "/etc/foreman/foreman-installer-answers.yaml";
+our $target_file = "$Bin/foreman-installer-answers.yaml";
 
 sub debug {
   warn @_ if $ENV{DEBUG};

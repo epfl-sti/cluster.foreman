@@ -54,7 +54,7 @@ sub build {
   plan();
   my $answers_yaml = "$Bin/../foreman-installer-answers.yaml";
   if (! -f $answers_yaml) {
-    system("$Bin/../configure.pl --target-file=$answers_yaml");
+    system("$Bin/../configure.pl");
   }
   my $foreman_hostname = foreman_hostname($clustername);
   system(sprintf(<<'DOCKER_PERSONALIZE', $clustername, $foreman_hostname, $Bin));
