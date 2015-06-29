@@ -1,10 +1,19 @@
 #!/bin/bash
+#
+# Run foreman-installer to start things, then stay up forever
 
 set -e -x
 
-{
+trap /bin/bash EXIT
+
+if [ ! -f /etc/foreman/foreman-installer-answers.yaml ]; then
     cp /cluster.foreman/foreman-installer-answers.yaml /etc/foreman/
     foreman-installer
-    rm -rf /etc/puppet/environments/*
-    ln -s /cluster.foreman/puppet/environments/production /etc/puppet/environments/production
-} || exec bash  # XXX
+else
+    /etc/init.d/apache2 start
+    /etc/init.d/foreman start
+    /etc/init.d/puppet start
+fi
+
+wait
+

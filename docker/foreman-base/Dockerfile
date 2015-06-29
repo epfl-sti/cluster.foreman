@@ -83,6 +83,9 @@ RUN chmod +x pipework
 # Customizations for EPFLSTI-specific code
 
 ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
+RUN rm -rf /etc/puppet/environments/*
+RUN ln -s /cluster.foreman/puppet/environments/production /etc/puppet/environments/production
+
 
 RUN mkdir /cluster.foreman
 ADD run-foreman /run-foreman

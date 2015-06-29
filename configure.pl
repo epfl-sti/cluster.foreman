@@ -123,58 +123,33 @@ sub foreman_proxy__dns_forwarders : ToYaml {
   [qw(128.178.15.227 128.178.15.228)]
 }
 
-=pod
 
-C<PromptUser> can take arguments, in particular C<< validate => >> for
-a validation function.
-
-=cut
-
-=head2 YAML Structure
-
-Every top-level entry in the YAML file corresponds to a directory with
-the same name in C</usr/share/foreman-installer/modules>. All modules
-in the C<foreman-installer/modules> subdirectory in the sources get
-grafted (using a symlink) into the foreman-installer machinery when
-running this script.
-
-=cut
-
-=head3 Plugins
-
-Plugins are an exception to the above rule: because they are listed section
-C<:mapping:> of the foreman-installer-answers.yaml file, their
-foreman-installer configuration is read from a different set of files. As a
-consequence, only those plugins that are known to the stock foreman-installer
-may be configured with configure.pl. To install and configure third-party
-plugins, take a look at the 'column_view' example in
-foreman-installer/modules/epflsti/manifests/init.pp
-
-One can conveniently override the default path deduction by passing
-parameters to the ToYaml annotation, e.g.
-
-   sub discovery_config : ToYaml("foreman::plugin::discovery")  { ... }
-
-=cut
-
-sub discovery_config : ToYaml("foreman::plugin::discovery") {
-  {
-    install_images => "true",
-    tftp_root => "/var/lib/tftpboot/",
-  }
-}
-
-=head1 QUIRKS
+=head1 FIXED CONFIGURATION
 
 Here we document a number of special-purpose settings that oil some
 cogs or others.
 
-=head2 server_environments
+=head2 puppet → server
 
-Hijacked so that foreman-installer doesn't create (and re-create)
+Set to true, so that foreman-installer wrangles the puppetmaster,
+including its CA.
+
+=head2 foreman_proxy → puppetca
+
+Set to true, so that you can later sign certificates from the Foreman
+web UI.
+
+=cut
+
+sub puppet__server : ToYaml { "true" }
+
+sub foreman_proxy__puppetca : ToYaml { "true" }
+
+=head2 puppet → server_environments
+
+Set to the empty list so that foreman-installer doesn't try to create
 /etc/puppet/environments and its subdirectories (we want a symlink to
-our source tree here instead; see
-foreman-installer/modules/epflsti/manifests/puppetconfig.pp).
+our source tree here instead).
 
 =cut
 
