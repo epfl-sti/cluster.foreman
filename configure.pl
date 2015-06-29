@@ -31,11 +31,8 @@ To see the list of all options, try
 
 use Memoize;
 use FindBin; use lib "$FindBin::Bin/lib";
-use GenerateAnswersYaml qw(prompt_yn);
+use GenerateAnswersYaml;
 use NetAddr::IP::Lite;
-use Net::Domain qw(hostfqdn hostdomain);
-use Errno;
-use File::Which qw(which);
 
 =head1 HACKING
 
@@ -81,15 +78,6 @@ sub private_ip_address : PromptUser {
 
 # Foreman is running inside Docker, where the network is ad-hoc:
 sub private_interface { return "eth0" }
-
-sub public_ip_address : PromptUser {
-  use IO::Socket::INET;
-  use Socket;
-  my $sock = new IO::Socket::INET(
-    PeerHost => "8.8.8.8", PeerPort => 80, Blocking => 0);
-  my (undef, $myaddr) = sockaddr_in(getsockname($sock));
-  return inet_ntoa($myaddr);
-}
 
 sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
   my $ip = private_ip_address();
