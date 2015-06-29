@@ -61,9 +61,9 @@ sub build {
 clustername=%s
 foreman_hostname=%s
 Bin=%s
-docker rm $foreman_hostname >/dev/null 2>&1
+docker rm $foreman_hostname-INITIAL >/dev/null 2>&1
 set -e -x
-docker run --name=$foreman_hostname -h $foreman_hostname \
+docker run --name=$foreman_hostname-INITIAL -h $foreman_hostname \
     -v "$Bin/..":/cluster.foreman \
     --label=ch.epfl.sti.foreman.built_for_clustername=$clustername \
     -it epflsti/foreman-base \
@@ -85,7 +85,9 @@ sub run {
   system(<<"DOCKER_RUN");
 docker rm $foreman_hostname >/dev/null 2>&1
 set -e -x
-docker run -it -h $foreman_hostname -p 8443:443 -p 8080:80 \\
+docker run -it --volumes-from=$foreman_hostname-INITIAL \\
+    --name=$foreman_hostname -h $foreman_hostname \\
+    --dns=127.0.0.1 -p 8443:443 -p 8080:80 \\
     -v "$Bin/..":/cluster.foreman \\
     epflsti/foreman-$foreman_hostname
 DOCKER_RUN

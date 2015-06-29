@@ -92,4 +92,4 @@ RUN ln -s /cluster.foreman/puppet/environments/production /etc/puppet/environmen
 
 
 RUN mkdir /cluster.foreman
-VOLUME /cluster.foreman
+VOLUME /var
