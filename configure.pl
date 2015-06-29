@@ -39,15 +39,16 @@ use File::Which qw(which);
 
 =head1 HACKING
 
-This script is very easy to hack.
-
-Functions that have a ": ToYaml" annotation return the value for a
-YAML configuration item, whose path is deducted from the function name.
-For instance,
+This script is very easy to hack. For instance, functions that have a
+": ToYaml" annotation return the value for a YAML configuration item,
+whose path is deducted from the function name. For instance,
 
    sub foreman_proxy__tftp_servername : ToYaml  { ... }
 
 computes the value for the C<tftp_servername> entry in C<foreman_proxy>.
+
+Take a look at lib/GenerateAnswersYaml.pm for more about ToYaml and
+other function decorations.
 
 =cut
 
@@ -71,14 +72,6 @@ sub foreman_proxy__bmc: ToYaml     { "true" }
 
 sub foreman_proxy__bmc_default_provider: ToYaml { "ipmitool" }
 
-=pod
-
-Functions that have a ": PromptUser" attribute compute a value, and
-leave the option for the user to override it interactively or with a
-command-line switch.
-
-=cut
-
 sub private_ip_address : PromptUser {
   my %interfaces_and_ips = physical_interfaces_and_ips();
   my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
@@ -97,12 +90,6 @@ sub public_ip_address : PromptUser {
   my (undef, $myaddr) = sockaddr_in(getsockname($sock));
   return inet_ntoa($myaddr);
 }
-
-=pod
-
-Functions can also have multiple attributes.
-
-=cut
 
 sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
   my $ip = private_ip_address();
@@ -171,13 +158,13 @@ sub interfaces_and_ips {
 
 sub physical_interfaces_and_ips {
   my %interfaces_and_ips = interfaces_and_ips();
-  my %physical_interfaaces_and_ips;
+  my %physical_interfaces_and_ips;
   while(my ($iface, $ip) = each %interfaces_and_ips) {
     if (is_physical_interface($iface)) {
-      $physical_interfaaces_and_ips{$iface} = $ip;
+      $physical_interfaces_and_ips{$iface} = $ip;
     }
   }
-  return %physical_interfaaces_and_ips;
+  return %physical_interfaces_and_ips;
 }
 
 memoize('network_configs');
@@ -247,8 +234,7 @@ sub is_rfc1918_ip {
 
 =pod
 
-Finally, the magic with function attributes happens in the
-L<GenerateAnswersYaml> module.
+All the magic happens in the L<GenerateAnswersYaml> module.
 
 =cut
 

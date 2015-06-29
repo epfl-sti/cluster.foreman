@@ -7,6 +7,22 @@ use warnings;
 
 GenerateAnswersYaml - The engine behind ../configure.pl
 
+=head1 SYNOPSIS
+
+The following declares the function that computes the value for the
+C<tftp_servername> entry in C<foreman_proxy>:
+
+   sub foreman_proxy__tftp_servername : ToYaml  { ... }
+
+The following computes only a default value; the actual value will be
+asked interactively from the user.
+
+   sub private_ip_address : PromptUser { ... }
+
+Functions can also have multiple attributes:
+
+  sub foreman_proxy__dhcp_range : ToYaml : PromptUser { ... }
+
 =head1 DESCRIPTION
 
 =cut
