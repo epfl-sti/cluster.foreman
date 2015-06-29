@@ -60,6 +60,7 @@ to Ruby, one uses "true" and "false" as strings.
 sub foreman_proxy__tftp: ToYaml    { "true" }
 sub foreman_proxy__dhcp: ToYaml    { "true" }
 sub foreman_proxy__dns: ToYaml     { "true" }
+sub foreman_proxy__puppetca : ToYaml { "true" }
 sub foreman_proxy__bmc: ToYaml     { "true" }
 
 sub foreman_proxy__bmc_default_provider: ToYaml { "ipmitool" }
@@ -112,8 +113,6 @@ web UI.
 =cut
 
 sub puppet__server : ToYaml { "true" }
-
-sub foreman_proxy__puppetca : ToYaml { "true" }
 
 =head2 puppet → server_environments
 
