@@ -74,21 +74,21 @@ RUN find / -xdev \
     xargs -0 grep -l $(cat /etc/hostname) | \
     perl -ne 'if ($. == 1) { warn "Still some files containing the forbidden hostname:\n"}; print STDERR $_; END { die if $. }'
 
+# Install networking stuff:
+
 RUN DEBIAN_FRONTEND=noninteractive apt-get -qy install iptables
 
 RUN wget https://raw.github.com/jpetazzo/pipework/master/pipework
 RUN chmod +x pipework
 
+# Install supervisord for the "run" phase:
+RUN apt-get -y install supervisor
 
 # Customizations for EPFLSTI-specific code
-
 ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
 RUN rm -rf /etc/puppet/environments/*
 RUN ln -s /cluster.foreman/puppet/environments/production /etc/puppet/environments/production
 
 
 RUN mkdir /cluster.foreman
-ADD run-foreman /run-foreman
-RUN chmod 755 /run-foreman
 VOLUME /cluster.foreman
-ENTRYPOINT /run-foreman

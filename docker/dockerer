@@ -8,8 +8,9 @@ dockerer - Build and install things under docker/
 
 =head1 SYNOPSIS
 
-   dockerer build <target>
-   dockerer run --name=<clustername> <target>
+   dockerer plan
+   dockerer build <clustername>
+   dockerer run <clustername>
 
 Where C<target> is one of "foreman-base" or "foreman"
 
@@ -34,46 +35,67 @@ try {
   pod2usage();
 };
 
-my $target = $opts->{"<target>"};
-die unless $target;
-
-if ($opts->{run}) {
-  run($target);
+if ($opts->{plan}) {
+  plan();
 } elsif ($opts->{build}) {
-  build($target);
+  build($opts->{'<clustername>'});
+} elsif ($opts->{run}) {
+  run($opts->{'<clustername>'});
 } else {
   pod2usage();
 }
 
 sub plan {
+  system("cd '$Bin/foreman-base' && docker build -t epflsti/foreman-base .");
 }
 
 sub build {
-  my ($target) = @_;
-  die "unknown build target: $target\n" unless ($target eq "foreman-base");
-  system("cd '$Bin/$target' && docker build -t epflsti/$target .");
-}
-
-sub run {
-  my ($target) = @_;
-  die "unknown run target: $target\n" unless ($target eq "foreman");
-  build("foreman-base");
-
+  my ($clustername) = @_;
+  plan();
   my $answers_yaml = "$Bin/../foreman-installer-answers.yaml";
   if (! -f $answers_yaml) {
     system("$Bin/../configure.pl --target-file=$answers_yaml");
   }
-
-  die unless defined(my $clustername = $opts->{'--name'});
-  my $foreman_hostname;
-  if ($clustername =~ m/\./) {
-    $foreman_hostname = $clustername;
-  } else {
-    $foreman_hostname = "${clustername}." . hostdomain;
-  }
-  system(<<"DOCKER_RUN");
+  my $foreman_hostname = foreman_hostname($clustername);
+  system(sprintf(<<'DOCKER_PERSONALIZE', $clustername, $foreman_hostname, $Bin));
+clustername=%s
+foreman_hostname=%s
+Bin=%s
+docker rm $foreman_hostname >/dev/null 2>&1
 set -e -x
-docker rm $foreman_hostname || true
-docker run --name=$foreman_hostname -h $foreman_hostname -v "$Bin/..":/cluster.foreman -p 8443:443 -p 8080:80 -it epflsti/foreman-base
+docker run --name=$foreman_hostname -h $foreman_hostname \
+    -v "$Bin/..":/cluster.foreman \
+    --label=ch.epfl.sti.foreman.built_for_clustername=$clustername \
+    -it epflsti/foreman-base \
+    bash -c 'cp /cluster.foreman/foreman-installer-answers.yaml /etc/foreman/ && \
+             foreman-installer'
+containerid=$(docker ps -q -a \
+  --filter="label=ch.epfl.sti.foreman.built_for_clustername=$clustername" \
+| head -1)
+imageid=$(docker commit $containerid)
+containerid2=$(docker create --entrypoint=/usr/bin/supervisord $imageid)
+docker commit $containerid2 epflsti/foreman-$foreman_hostname
+DOCKER_PERSONALIZE
+}
+
+sub run {
+  my ($clustername) = @_;
+
+  my $foreman_hostname = foreman_hostname($clustername);
+  system(<<"DOCKER_RUN");
+docker rm $foreman_hostname >/dev/null 2>&1
+set -e -x
+docker run -it -h $foreman_hostname -p 8443:443 -p 8080:80 \\
+    -v "$Bin/..":/cluster.foreman \\
+    epflsti/foreman-$foreman_hostname
 DOCKER_RUN
+}
+
+sub foreman_hostname {
+  my ($clustername) = @_;
+  if ($clustername =~ m/\./) {
+    return $clustername;
+  } else {
+    return "${clustername}." . hostdomain;
+  }
 }
