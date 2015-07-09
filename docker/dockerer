@@ -9,7 +9,7 @@ dockerer - Build and run the things under docker/
 =head1 SYNOPSIS
 
    dockerer plan
-   dockerer build <clustername>
+   dockerer build [--scratch] <clustername>
    dockerer run <clustername>
 
 Where C<target> is one of "foreman-base" or "foreman"
@@ -32,23 +32,30 @@ The "build" phase consists of personalizing the "plan" image to suit a
 particular cluster and network environment. Personalization
 information comes from the previous image if any, and the
 C<foreman-installer-answers.yaml> file produced by C<../configure.pl>.
-The result is a pair of containers, called respectively
-${hostname}-data and ${hostname}, where ${hostname} is the FQDN
-of the Foreman container in its own DNS server.
+The result is an image called epflsti/foreman-$FQDN, where $FQDN is
+the fully-qualified host name of the Foreman instance (as seen from
+within the container's own DNS server).
 
 =head2 Run
 
-The "run" phase consists
+The "run" phase consists of instantiating epflsti/foreman-$FQDN and
+ running supervisord inside the container so created.
+
+=head2 Data Upgrade
+
+Unless the C<--scratch> flag is passed, the L</Build> operation
+attempts to save and re-use the data of any existing, L</Run>ning
+Docker container.
 
 =cut
 
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
+use autodie qw(:all);
 use Docopt;
 use Pod::Usage;
 use Try::Tiny;
-use Net::Domain qw(hostfqdn hostdomain);
-use autodie qw(:all);
+use EPFLSTI::Interactive;
 
 our $opts;
 try {
@@ -60,9 +67,9 @@ try {
 if ($opts->{plan}) {
   plan();
 } elsif ($opts->{build}) {
-  build($opts->{'<clustername>'});
+  build(Foreman->load($opts->{'<clustername>'}));
 } elsif ($opts->{run}) {
-  run($opts->{'<clustername>'});
+  run(Foreman->load($opts->{'<clustername>'}));
 } else {
   pod2usage();
 }
@@ -72,29 +79,30 @@ sub plan {
 }
 
 sub build {
-  my ($clustername) = @_;
+  my ($foreman) = @_;
   plan();
   my $answers_yaml = "$Bin/../foreman-installer-answers.yaml";
   if (! -f $answers_yaml) {
     system("$Bin/../configure.pl");
   }
-  my $foreman_hostname = foreman_hostname($clustername);
+  my $container_name = $foreman->container_name();
+  my $image_name = $foreman->image_name();
 
-  my @shellvars = ($Bin, $clustername,
-                   $foreman_hostname, foreman_phys_internal_iface(),
+  my @shellvars = ($Bin, $foreman->cluster_name(),
+                   $container_name, foreman_phys_internal_iface(),
                    foreman_ipaddr(), foreman_netmask());
   system(sprintf(<<'DOCKER_PERSONALIZE', @shellvars));
 Bin=%s
 clustername=%s
-foreman_hostname=%s
+container_name=%s
 foreman_phys_internal_iface=%s
 foreman_ipaddr=%s
 foreman_netmask=%s
-docker rm $foreman_hostname-INITIAL >/dev/null 2>&1
+docker rm $container_name-INITIAL >/dev/null 2>&1
 set -e -x
 (sleep 10; $Bin/foreman-base/pipework/pipework br.privil4 \
-           $foreman_hostname-INITIAL $foreman_ipaddr/$foreman_netmask) &
-docker run --name=$foreman_hostname-INITIAL -h $foreman_hostname \
+           $container_name-INITIAL $foreman_ipaddr/$foreman_netmask) &
+docker run --name=$container_name-INITIAL -h $container_name \
     -v "$Bin/..":/cluster.foreman \
     --label=ch.epfl.sti.foreman.built_for_clustername=$clustername \
     -it epflsti/foreman-base \
@@ -107,37 +115,87 @@ containerid=$(docker ps -q -a \
 | head -1)
 imageid=$(docker commit $containerid)
 containerid2=$(docker create --entrypoint=/usr/bin/supervisord $imageid)
-docker commit $containerid2 epflsti/foreman-$foreman_hostname
+docker commit $containerid2 $image_name
 DOCKER_PERSONALIZE
 }
 
 sub run {
-  my ($clustername) = @_;
+  my ($foreman) = @_;
 
-  my $foreman_hostname = foreman_hostname($clustername);
+  my $cluster_name = $foreman->cluster_name();
+  my $container_name = $foreman->container_name();
+  my $image_name = $foreman->image_name();
   my $foreman_ipaddr = foreman_ipaddr();
   my $foreman_netmask = foreman_netmask();
   my $foreman_phys_internal_iface = foreman_phys_internal_iface();
+
+  if (my $container_details = $foreman->container_details) {
+    my $container_created = $container_details->[0]->{Created};
+    my $image_created = $foreman->image_details->[0]->{Created};
+    if ($image_created ge $container_created) {
+      return unless prompt_yn(<<"CONFIRM");
+
+About to resume from image $image_name, created $image_created.
+
+All changes since that date will be lost.
+
+Are you sure?
+CONFIRM
+    } else {
+      return unless "Yes, I want to lose data" eq prompt_user(<<"CONFIRM");
+
+About to resume from image $image_name, created $image_created.
+
+WARNING: This image was created AFTER container $container_name, itself
+dated $container_created.
+
+It is HIGHLY RECOMMENDED to first run
+
+  $0 build ${cluster_name}
+
+IF YOU PROCEED NOW, THE FOREMAN STATE WILL BE LOST!
+
+Please confirm by typing "Yes, I want to lose data" and pressing Return.
+CONFIRM
+    }
+  }
 
   # Ensuring that br.privil4 is set up correctly is done by Puppet
   # (in fully operational mode) and by install-provisioning-server.sh
   # (during install)
   system(<<"BRIDGE_AND_DOCKER_RUN");
-docker rm $foreman_hostname >/dev/null 2>&1
 set -e -x
 # TODO: This is just ugly.
 (sleep 10; $Bin/foreman-base/pipework/pipework br.privil4 \\
-           $foreman_hostname $foreman_ipaddr/$foreman_netmask) & \\
-docker run -it --volumes-from=$foreman_hostname-INITIAL \\
-    --name=$foreman_hostname -h $foreman_hostname \\
+           $container_name $foreman_ipaddr/$foreman_netmask) & \\
+docker run -it --volumes-from=$container_name-INITIAL \\
+    --name=$container_name -h $container_name \\
     --dns=127.0.0.1 \\
     -v "$Bin/..":/cluster.foreman \\
-    epflsti/foreman-$foreman_hostname
+    $image_name
 BRIDGE_AND_DOCKER_RUN
 }
 
-sub foreman_hostname {
-  my ($clustername) = @_;
+# TODO: parse foreman-installer-answers.yaml to figure out these:
+sub foreman_ipaddr { "192.168.10.2" }
+sub foreman_netmask { "24" }
+sub foreman_phys_internal_iface { "eth1" }
+
+package Foreman;
+
+use Net::Domain qw(hostdomain);
+use JSON;
+
+sub load {
+  my ($class, $clustername) = @_;
+  return bless { clustername => $clustername }, $class;
+}
+
+sub cluster_name { shift->{clustername} }
+
+sub container_name {
+  my ($self) = @_;
+  my $clustername = $self->cluster_name();
   if ($clustername =~ m/\./) {
     return $clustername;
   } else {
@@ -145,7 +203,27 @@ sub foreman_hostname {
   }
 }
 
-# TODO: parse foreman-installer-answers.yaml to figure out these:
-sub foreman_ipaddr { "192.168.10.2" }
-sub foreman_netmask { "24" }
-sub foreman_phys_internal_iface { "eth1" }
+sub image_name {
+  my ($self) = @_;
+  my $container_name = $self->container_name();
+  return "epflsti/foreman-$container_name";
+}
+
+sub _exists {
+  my ($self) = @_;
+
+  my $container_name = $self->container_name;
+  return `docker ps -q --filter='name=$container_name'`;
+}
+
+sub container_details {
+  my ($self) = @_;
+  return unless (my $id = $self->_exists);
+  return decode_json(scalar(`docker inspect $id`));
+}
+
+sub image_details {
+  my ($self) = @_;
+  my $image_name = $self->image_name();
+  return decode_json(scalar(`docker inspect $image_name`));
+}
