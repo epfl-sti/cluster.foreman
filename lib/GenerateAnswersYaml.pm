@@ -34,6 +34,7 @@ use Getopt::Long;
 use YAML::Tiny;
 use Tie::IxHash;
 use FindBin qw($Bin);
+use EPFLSTI::Interactive qw(prompt_user prompt_yn);
 
 # Both of these can be changed with L</parse_argv>.
 
@@ -91,35 +92,6 @@ exception if the user-specified value is unacceptable.
 sub UNIVERSAL::PromptUser : ATTR(CODE) {
   debug(_function_name($_[2]) . " is supposed to prompt the user");
   GenerateAnswersYaml::_MagicSub->decorate(@_);
-}
-
-sub prompt_user {
-  my ($question, $default) = @_;
-  print "$question [$default]:\n";
-  my $answer = <>;
-  chomp($answer);
-  if ($answer eq "") {
-    return $default;
-  } elsif ($answer eq ".") {
-    return "";  # OpenSSL-style
-  } else {
-    return $answer;
-  }
-}
-
-sub prompt_yn {
-  my ($question, $default_bool) = @_;
-  my $prompt = $default_bool ? "Yn" : "yN";
-  print "$question [$prompt]:\n";
-  my $answer = <>;
-  chomp($answer);
-  if ($answer eq "") {
-    return $default_bool;
-  } elsif (lc($answer) =~ m/^y/) {
-    return 1;
-  } else {
-    return undef;
-  }
 }
 
 sub _function_name {
