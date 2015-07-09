@@ -222,11 +222,10 @@ sub cluster_name { shift->{clustername} }
 sub container_name {
   my ($self) = @_;
   my $clustername = $self->cluster_name();
-  if ($clustername =~ m/\./) {
-    return $clustername;
-  } else {
-    return "${clustername}." . hostdomain;
+  if ($clustername !~ m/\./) {
+    $clustername .= "." . hostdomain;
   }
+  return "puppetmaster.$clustername";
 }
 
 sub image_name {
