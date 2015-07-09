@@ -9,8 +9,9 @@ dockerer - Build and run the things under docker/
 =head1 SYNOPSIS
 
    dockerer plan
-   dockerer build [--scratch] <clustername>
+   dockerer build [--scratch|--saved=<tarname>] <clustername>
    dockerer run <clustername>
+   dockerer backup <clustername>
 
 Where C<target> is one of "foreman-base" or "foreman"
 
@@ -57,6 +58,8 @@ use Pod::Usage;
 use Try::Tiny;
 use EPFLSTI::Interactive;
 
+chdir("$Bin/..");
+
 our $opts;
 try {
   $opts = docopt();
@@ -70,6 +73,8 @@ if ($opts->{plan}) {
   build(Foreman->load($opts->{'<clustername>'}));
 } elsif ($opts->{run}) {
   run(Foreman->load($opts->{'<clustername>'}));
+} elsif ($opts->{backup}) {
+  backup(Foreman->load($opts->{'<clustername>'}));
 } else {
   pod2usage();
 }
@@ -82,37 +87,46 @@ sub build {
   my ($foreman) = @_;
   plan();
   my $answers_yaml = "$Bin/../foreman-installer-answers.yaml";
-  if (! -f $answers_yaml) {
+
+  my $tarname_to_restore="";
+  if ($opts->{"--saved"}) {
+    die "--saved must be a relative path (no slashes)" if
+      ($opts->{"--saved"} =~ m|/|);
+    $tarname_to_restore = $opts->{"--saved"};
+    die "File does not exist: $tarname_to_restore" unless (-f $tarname_to_restore);
+  } elsif ($foreman->container_exists) {
+    $tarname_to_restore = backup($foreman);
+    system("set -x; tar --to-stdout -xvf $tarname_to_restore etc/foreman/foreman-installer-answers.yaml > foreman-installer-answers.yaml");
+  } elsif (! -f $answers_yaml) {
     system("$Bin/../configure.pl");
   }
-  my $container_name = $foreman->container_name();
-  my $image_name = $foreman->image_name();
 
-  my @shellvars = ($Bin, $foreman->cluster_name(),
-                   $container_name, foreman_phys_internal_iface(),
-                   foreman_ipaddr(), foreman_netmask());
+  my @shellvars = ($Bin,
+                   $foreman->cluster_name(),
+                   $foreman->container_name(), $foreman->image_name(),
+                   foreman_phys_internal_iface(),
+                   foreman_ipaddr(), foreman_netmask(), $tarname_to_restore);
   system(sprintf(<<'DOCKER_PERSONALIZE', @shellvars));
 Bin=%s
 clustername=%s
 container_name=%s
+image_name=%s
 foreman_phys_internal_iface=%s
 foreman_ipaddr=%s
 foreman_netmask=%s
 docker rm $container_name-INITIAL >/dev/null 2>&1
 set -e -x
-(sleep 10; $Bin/foreman-base/pipework/pipework br.privil4 \
+(sleep 10; $Bin/foreman-base/pipework/pipework br.4priv \
            $container_name-INITIAL $foreman_ipaddr/$foreman_netmask) &
 docker run --name=$container_name-INITIAL -h $container_name \
     -v "$Bin/..":/cluster.foreman \
     --label=ch.epfl.sti.foreman.built_for_clustername=$clustername \
     -it epflsti/foreman-base \
-    bash -c 'cp /cluster.foreman/foreman-installer-answers.yaml /etc/foreman/ && \
-             /usr/local/bin/pipework --wait -i eth1 && \
-             foreman-installer && \
-             /cluster.foreman/docker/scripts/post-build'
+    bash -c 'tarname=%s; set -e -x; /usr/local/bin/pipework --wait -i eth1 && \
+             . /cluster.foreman/docker/scripts/build'
 containerid=$(docker ps -q -a \
   --filter="label=ch.epfl.sti.foreman.built_for_clustername=$clustername" \
-| head -1)
+  | head -1)
 imageid=$(docker commit $containerid)
 containerid2=$(docker create --entrypoint=/usr/bin/supervisord $imageid)
 docker commit $containerid2 $image_name
@@ -160,13 +174,13 @@ CONFIRM
     }
   }
 
-  # Ensuring that br.privil4 is set up correctly is done by Puppet
+  # Ensuring that br.4priv is set up correctly is done by Puppet
   # (in fully operational mode) and by install-provisioning-server.sh
   # (during install)
   system(<<"BRIDGE_AND_DOCKER_RUN");
 set -e -x
 # TODO: This is just ugly.
-(sleep 10; $Bin/foreman-base/pipework/pipework br.privil4 \\
+(sleep 10; $Bin/foreman-base/pipework/pipework br.4priv \\
            $container_name $foreman_ipaddr/$foreman_netmask) & \\
 docker run -it --volumes-from=$container_name-INITIAL \\
     --name=$container_name -h $container_name \\
@@ -174,6 +188,18 @@ docker run -it --volumes-from=$container_name-INITIAL \\
     -v "$Bin/..":/cluster.foreman \\
     $image_name
 BRIDGE_AND_DOCKER_RUN
+}
+
+sub backup {
+  my ($foreman) = @_;
+  my $container_name = $foreman->container_name();
+
+  require POSIX;
+  my $date = POSIX::strftime("%Y%m%d%H%M%S", localtime(time));
+  my $tarname = "backup-${container_name}-$date.tar";
+  system("set -x; docker export $container_name > $tarname");
+  warn("Backup to $tarname successful.\n");
+  return $tarname;
 }
 
 # TODO: parse foreman-installer-answers.yaml to figure out these:
@@ -209,7 +235,7 @@ sub image_name {
   return "epflsti/foreman-$container_name";
 }
 
-sub _exists {
+sub container_exists {
   my ($self) = @_;
 
   my $container_name = $self->container_name;
@@ -218,7 +244,7 @@ sub _exists {
 
 sub container_details {
   my ($self) = @_;
-  return unless (my $id = $self->_exists);
+  return unless (my $id = $self->container_exists);
   return decode_json(scalar(`docker inspect $id`));
 }
 

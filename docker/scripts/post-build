@@ -1,7 +1,0 @@
-#!/bin/bash
-
-# Straighten out whatever foreman-installer missed.
-# Run by dockerer in the "build" stage
-
-echo 'listen-on { any; };' >>/etc/bind/named.conf.options
-

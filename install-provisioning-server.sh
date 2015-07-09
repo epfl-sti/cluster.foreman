@@ -56,7 +56,7 @@ getyaml() {
 }
 
 # Set up bridging so that the Dockerized Foreman may have its own IP address.
-: ${EPFLSTI_INTERNAL_DOCKER_BRIDGE:=docker.ipv4.int}
+: ${EPFLSTI_INTERNAL_DOCKER_BRIDGE:=br.4priv}
 iface_orig="$(getyaml foreman_provisioning::interface)"
 ipaddr="$(getyaml epflsti::configure_answers::private_ip_address)"
 netmask="$(getyaml foreman_provisioning::netmask)"
@@ -85,15 +85,6 @@ which pipework || {
     install -m 755 pipework /usr/local/bin/pipework
     rm pipework
 }
-
-# TODO: set up br.privil4 (the bridge that gives access to privileged
-# IPv4 VIPs)
-# Steal any and all IP addresses that the physical interface might have
-# Stick them on the bridge, e.g.
-## ip addr add 192.168.10.100/24 dev br.privil4
-## ip addr add 192.168.10.1/24 dev br.privil4
-# Keep the Foreman-in-Docker VIP out of the bridge though (pipework will
-# claim that IP)
 
 ./configure.pl
 # TODO: run docker/dockerer build w/ a target name drawn from

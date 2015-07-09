@@ -1,0 +1,16 @@
+# Run foreman-installer, mostly.
+#
+# As a prelude, restore from backup if any (if $tarname is set).
+# As a postlude, fix up whatever needs be.
+
+echo "Personalizing Docker container..."
+
+cp /cluster.foreman/foreman-installer-answers.yaml /etc/foreman/
+
+if [ -n "$tarname" ]; then
+   tar xvf /cluster.foreman/$tarname var/lib/ var/cache/bind/
+fi
+foreman-installer
+
+echo 'listen-on { any; };' >>/etc/bind/named.conf.options
+
