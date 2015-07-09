@@ -16,7 +16,29 @@ Where C<target> is one of "foreman-base" or "foreman"
 
 =head1 DESCRIPTION
 
-=head2 build
+Dockerer runs docker, as the name implies, and also handles the moving
+parts that are close by (specifically, networking and persistent data).
+
+=head2 Plan
+
+The "plan" phase consists of downloading as much things as can be. The
+result is a Docker image called C<epflsti/foreman-base> that has no
+personalization built-in and can be re-used in any number of clusters,
+uploaded to a private Docker registry and so on.
+
+=head2 Build
+
+The "build" phase consists of personalizing the "plan" image to suit a
+particular cluster and network environment. Personalization
+information comes from the previous image if any, and the
+C<foreman-installer-answers.yaml> file produced by C<../configure.pl>.
+The result is a pair of containers, called respectively
+${hostname}-data and ${hostname}, where ${hostname} is the FQDN
+of the Foreman container in its own DNS server.
+
+=head2 Run
+
+The "run" phase consists
 
 =cut
 
