@@ -98,11 +98,9 @@ sub build {
   } elsif ($foreman->container_exists) {
     $tarname_to_restore = backup($foreman);
     system("set -x; tar --to-stdout -xvf $tarname_to_restore etc/foreman/foreman-installer-answers.yaml > foreman-installer-answers.yaml");
-    # TODO: should re-run configure.pl here, but first we need to fix
-    # the "memory loss" problem again - Interactive answers were lost in the
-    # first build().
+    system("./configure.pl");
   } elsif (! -f $answers_yaml) {
-    system("$Bin/../configure.pl");
+    system("./configure.pl");
   }
 
   my @shellvars = ($Bin,
@@ -121,8 +119,11 @@ docker rm -f $container_name-INITIAL >/dev/null 2>&1 || true
 
 # TODO: We don't really need to run pipework here; all that matters is that
 # an interface with the right name appear inside the build container.
-(sleep 10; $Bin/foreman-base/pipework/pipework br.4priv \
-           $container_name-INITIAL $foreman_ipaddr/$foreman_netmask) &
+(for try in $(seq 1 6); do \
+ $Bin/foreman-base/pipework/pipework br.4priv \
+         $container_name-INITIAL $foreman_ipaddr/$foreman_netmask \
+    && break; \
+sleep 5; done) &
 docker run --name=$container_name-INITIAL -h $container_name \
     -v "$Bin/..":/cluster.foreman \
     --label=ch.epfl.sti.foreman.built_for_clustername=$clustername \
@@ -160,8 +161,8 @@ All changes since that date will be lost.
 
 Are you sure?
 CONFIRM
-      system("docker rm -f $container_name");
-    } else {
+      system("docker rm -f $container_name || true");
+    } elsif (! $foreman->container_running) {
       warn <<"MESSAGE";
 
 Restarting container $container_name
@@ -170,9 +171,12 @@ MESSAGE
       system(<<"BRIDGE_AND_DOCKER_START");
 set -e -x
 docker start $container_name
-$Bin/foreman-base/pipework/pipework br.4priv
-           $container_name $foreman_ipaddr/$foreman_netmask) & \\
+$Bin/foreman-base/pipework/pipework br.4priv \\
+           $container_name $foreman_ipaddr/$foreman_netmask
 BRIDGE_AND_DOCKER_START
+      return;
+    } else {
+      warn "Container $container_name is already running.\n";
       return;
     }
   }
@@ -183,8 +187,11 @@ BRIDGE_AND_DOCKER_START
   system(<<"BRIDGE_AND_DOCKER_RUN");
 set -e -x
 # TODO: This is just ugly.
-(sleep 10; $Bin/foreman-base/pipework/pipework br.4priv \\
-           $container_name $foreman_ipaddr/$foreman_netmask) & \\
+(for try in \$(seq 1 6); do \\
+ $Bin/foreman-base/pipework/pipework br.4priv \\
+         $container_name $foreman_ipaddr/$foreman_netmask \\
+    && break; \\
+sleep 5; done) &
 docker run -it --volumes-from=$container_name-INITIAL \\
     --name=$container_name -h $container_name \\
     --dns=127.0.0.1 \\
@@ -199,6 +206,8 @@ sub backup {
 
   my $date = strftime("%Y%m%d%H%M%S", localtime(time));
   my $tarname = "backup-${container_name}-$date.tar";
+  # TODO: we might want to post-process that tar file, and keep only
+  # whatever docker/scripts/build actually cares about
   system("set -x; docker export $container_name > $tarname");
   warn("Backup to $tarname successful.\n");
   return $tarname;
@@ -237,6 +246,16 @@ sub container_exists {
 
   my $container_name = $self->container_name;
   return `docker ps -a -q --filter='name=$container_name' |head -1`;
+}
+
+sub container_running {
+  my ($self) = @_;
+  my $container_name = $self->container_name;
+  return try {
+    return 0 + qx(docker ps -q --filter='name=$container_name' | wc -l);
+  } catch {
+    return undef;
+  }
 }
 
 sub container_details {
