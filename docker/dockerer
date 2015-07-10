@@ -53,9 +53,10 @@ Docker container.
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 use autodie qw(:all);
+use Try::Tiny;
 use Docopt;
 use Pod::Usage;
-use Try::Tiny;
+use POSIX qw(strftime);
 use EPFLSTI::Interactive;
 
 chdir("$Bin/..");
@@ -97,6 +98,9 @@ sub build {
   } elsif ($foreman->container_exists) {
     $tarname_to_restore = backup($foreman);
     system("set -x; tar --to-stdout -xvf $tarname_to_restore etc/foreman/foreman-installer-answers.yaml > foreman-installer-answers.yaml");
+    # TODO: should re-run configure.pl here, but first we need to fix
+    # the "memory loss" problem again - Interactive answers were lost in the
+    # first build().
   } elsif (! -f $answers_yaml) {
     system("$Bin/../configure.pl");
   }
@@ -104,26 +108,28 @@ sub build {
   my @shellvars = ($Bin,
                    $foreman->cluster_name(),
                    $foreman->container_name(), $foreman->image_name(),
-                   foreman_phys_internal_iface(),
-                   foreman_ipaddr(), foreman_netmask(), $tarname_to_restore);
+                   $foreman->vip(), $foreman->vip_netmask(), $tarname_to_restore);
   system(sprintf(<<'DOCKER_PERSONALIZE', @shellvars));
 Bin=%s
 clustername=%s
 container_name=%s
 image_name=%s
-foreman_phys_internal_iface=%s
 foreman_ipaddr=%s
 foreman_netmask=%s
-docker rm $container_name-INITIAL >/dev/null 2>&1
 set -e -x
+docker rm -f $container_name-INITIAL >/dev/null 2>&1 || true
+
+# TODO: We don't really need to run pipework here; all that matters is that
+# an interface with the right name appear inside the build container.
 (sleep 10; $Bin/foreman-base/pipework/pipework br.4priv \
            $container_name-INITIAL $foreman_ipaddr/$foreman_netmask) &
 docker run --name=$container_name-INITIAL -h $container_name \
     -v "$Bin/..":/cluster.foreman \
     --label=ch.epfl.sti.foreman.built_for_clustername=$clustername \
     -it epflsti/foreman-base \
-    bash -c 'tarname=%s; set -e -x; /usr/local/bin/pipework --wait -i eth1 && \
+    bash -c 'tarname="%s"; set -e -x; /usr/local/bin/pipework --wait -i eth1 && \
              . /cluster.foreman/docker/scripts/build'
+
 containerid=$(docker ps -q -a \
   --filter="label=ch.epfl.sti.foreman.built_for_clustername=$clustername" \
   | head -1)
@@ -139,9 +145,8 @@ sub run {
   my $cluster_name = $foreman->cluster_name();
   my $container_name = $foreman->container_name();
   my $image_name = $foreman->image_name();
-  my $foreman_ipaddr = foreman_ipaddr();
-  my $foreman_netmask = foreman_netmask();
-  my $foreman_phys_internal_iface = foreman_phys_internal_iface();
+  my $foreman_ipaddr = $foreman->vip();
+  my $foreman_netmask = $foreman->vip_netmask();
 
   if (my $container_details = $foreman->container_details) {
     my $container_created = $container_details->[0]->{Created};
@@ -155,22 +160,20 @@ All changes since that date will be lost.
 
 Are you sure?
 CONFIRM
+      system("docker rm -f $container_name");
     } else {
-      return unless "Yes, I want to lose data" eq prompt_user(<<"CONFIRM");
+      warn <<"MESSAGE";
 
-About to resume from image $image_name, created $image_created.
+Restarting container $container_name
 
-WARNING: This image was created AFTER container $container_name, itself
-dated $container_created.
-
-It is HIGHLY RECOMMENDED to first run
-
-  $0 build ${cluster_name}
-
-IF YOU PROCEED NOW, THE FOREMAN STATE WILL BE LOST!
-
-Please confirm by typing "Yes, I want to lose data" and pressing Return.
-CONFIRM
+MESSAGE
+      system(<<"BRIDGE_AND_DOCKER_START");
+set -e -x
+docker start $container_name
+$Bin/foreman-base/pipework/pipework br.4priv
+           $container_name $foreman_ipaddr/$foreman_netmask) & \\
+BRIDGE_AND_DOCKER_START
+      return;
     }
   }
 
@@ -194,23 +197,18 @@ sub backup {
   my ($foreman) = @_;
   my $container_name = $foreman->container_name();
 
-  require POSIX;
-  my $date = POSIX::strftime("%Y%m%d%H%M%S", localtime(time));
+  my $date = strftime("%Y%m%d%H%M%S", localtime(time));
   my $tarname = "backup-${container_name}-$date.tar";
   system("set -x; docker export $container_name > $tarname");
   warn("Backup to $tarname successful.\n");
   return $tarname;
 }
 
-# TODO: parse foreman-installer-answers.yaml to figure out these:
-sub foreman_ipaddr { "192.168.10.2" }
-sub foreman_netmask { "24" }
-sub foreman_phys_internal_iface { "eth1" }
-
 package Foreman;
 
 use Net::Domain qw(hostdomain);
 use JSON;
+use YAML::Tiny;
 
 sub load {
   my ($class, $clustername) = @_;
@@ -238,7 +236,7 @@ sub container_exists {
   my ($self) = @_;
 
   my $container_name = $self->container_name;
-  return `docker ps -q --filter='name=$container_name'`;
+  return `docker ps -a -q --filter='name=$container_name' |head -1`;
 }
 
 sub container_details {
@@ -251,4 +249,22 @@ sub image_details {
   my ($self) = @_;
   my $image_name = $self->image_name();
   return decode_json(scalar(`docker inspect $image_name`));
+}
+
+sub yaml_config_path { "./foreman-installer-answers.yaml" }
+
+sub yaml_config {
+  my ($self) = @_;
+  $self->{yaml_config} ||= $self->_load_yaml_config();
+}
+
+sub _load_yaml_config {
+  my ($self) = @_;
+  return YAML::Tiny->read($self->yaml_config_path)->[0];
+}
+
+sub vip { shift->yaml_config->{foreman_proxy}->{dhcp_nameservers} }
+
+sub vip_netmask {
+  return 24;  # TODO: read this from e.g. epflsti-configure-answers.yaml
 }
