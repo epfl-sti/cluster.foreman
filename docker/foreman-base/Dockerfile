@@ -92,6 +92,8 @@ ADD supervisord.conf /etc/supervisor/
 
 # Customizations for EPFLSTI-specific code
 ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
+RUN mkdir -p /usr/share/foreman-installer/modules/interactive_configure/manifests
+ADD interactive_configure.pp /usr/share/foreman-installer/modules/interactive_configure/manifests/init.pp
 RUN rm -rf /etc/puppet/environments/*
 RUN ln -s /cluster.foreman/puppet/environments/production /etc/puppet/environments/production
 

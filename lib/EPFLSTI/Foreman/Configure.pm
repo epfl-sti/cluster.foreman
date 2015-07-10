@@ -364,8 +364,9 @@ sub yaml_key {
     }
   } elsif ($self->has_PromptUser) {
     # We can't pick our own top-level name, lest foreman-installer believe
-    # that it references a module. Hide our data under foreman.
-    return ("foreman", "epflsti_configure_answers", $self->{name});
+    # that it references a module. Hide our data under a dud foreman-installer
+    # module (see docker/foreman-base/interactive_configure.pp).
+    return ("interactive_configure", "answers", $self->{name});
   } else {
     die "$self->{name} is not persistent";
   }
