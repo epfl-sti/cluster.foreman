@@ -25,7 +25,7 @@ RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt-get -q update && \
     DEBIAN_FRONTEND=noninteractive apt-get -qy install foreman-installer \
                        ruby-foreman-discovery ruby-foreman-column-view \
-                       tftp tftpd-hpa
+                       tftp tftpd-hpa xinetd
 
 # enable => true doesn't work in an Ubuntu-based container:
 RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
