@@ -29,6 +29,15 @@ class epflsti::private::unix_access(
     }
   }
 
+  # It's easy enough these days to blow through the default 6,
+  # what with multiple combinations of cryptosystems and auth
+  # mechanisms that use them
+  sshd_config { "MaxAuthTries 20":
+      ensure => present,
+      key    => "MaxAuthTries",
+      value  => 20,
+  }
+
   if ($sudoer_group != "") {
     class { 'sudo':
       # Don't nuke /etc/sudoers.d/foreman-proxy
