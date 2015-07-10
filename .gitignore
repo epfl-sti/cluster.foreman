@@ -3,3 +3,5 @@
 *.cfg.*
 foreman-installer-answers.yaml
 docker/foreman-base/pipework/
+backup-*.tar
+
