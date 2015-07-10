@@ -1,11 +1,11 @@
-package GenerateAnswersYaml;
+package EPFLSTI::Foreman::Configure;
 
 use strict;
 use warnings;
 
 =head1 NAME
 
-GenerateAnswersYaml - The engine behind ../configure.pl
+EPFLSTI::Foreman::Configure - The engine behind configure.pl
 
 =head1 SYNOPSIS
 
@@ -34,7 +34,7 @@ use Getopt::Long;
 use YAML::Tiny;
 use Tie::IxHash;
 use FindBin qw($Bin);
-use EPFLSTI::Interactive qw(prompt_user prompt_yn);
+use EPFLSTI::Interactive qw(prompt_yn);
 
 # Both of these can be changed with L</parse_argv>.
 
@@ -54,7 +54,7 @@ derived from their name.
 
 sub UNIVERSAL::ToYaml : ATTR(CODE) {
   debug(_function_name($_[2]) . " produces YAML");
-  GenerateAnswersYaml::_MagicSub->decorate(@_);
+  EPFLSTI::Foreman::Configure::_MagicSub->decorate(@_);
 }
 
 =head2 Flag
@@ -68,7 +68,7 @@ lowercase and replacing underscores with dashes.
 
 sub UNIVERSAL::Flag : ATTR(CODE) {
   debug(_function_name($_[2]) . "? There's a flag for that!");
-  GenerateAnswersYaml::_MagicSub->decorate(@_);
+  EPFLSTI::Foreman::Configure::_MagicSub->decorate(@_);
 }
 
 =head2 PromptUser
@@ -91,7 +91,7 @@ exception if the user-specified value is unacceptable.
 
 sub UNIVERSAL::PromptUser : ATTR(CODE) {
   debug(_function_name($_[2]) . " is supposed to prompt the user");
-  GenerateAnswersYaml::_MagicSub->decorate(@_);
+  EPFLSTI::Foreman::Configure::_MagicSub->decorate(@_);
 }
 
 sub _function_name {
@@ -109,7 +109,7 @@ Functions annotated with this attribute are run first.
 
 sub UNIVERSAL::PreConfigure : ATTR(CODE) {
   debug(_function_name($_[2]) . " will run at the beginning");
-  GenerateAnswersYaml::_MagicSub->decorate(@_);
+  EPFLSTI::Foreman::Configure::_MagicSub->decorate(@_);
 }
 
 =head2 PostConfigure
@@ -121,7 +121,7 @@ side effects) after foreman-installer-answers.yaml is written.
 
 sub UNIVERSAL::PostConfigure : ATTR(CODE) {
   debug(_function_name($_[2]) . " will run at the end");
-  GenerateAnswersYaml::_MagicSub->decorate(@_);
+  EPFLSTI::Foreman::Configure::_MagicSub->decorate(@_);
 }
 
 =head2 get_yaml_state
@@ -147,7 +147,7 @@ sub parse_argv {
       my $flagname = $_->flag_name;
       "  --$flagname\n"
     } (grep {$_->is_settable_from_flag}
-       GenerateAnswersYaml::_MagicSub->all));
+       EPFLSTI::Foreman::Configure::_MagicSub->all));
 
     die <<"USAGE";
 Tune $target_file prior to (re-)running foreman-installer.
@@ -161,19 +161,19 @@ USAGE
   }
   die "Bad flags" unless GetOptions(
     "target-file=s" => sub { my ($opt, $value) = @_; $target_file = $value },
-    GenerateAnswersYaml::_MagicSub->getopt_spec);
+    EPFLSTI::Foreman::Configure::_MagicSub->getopt_spec);
 }
 
-=head2 Generate
+=head2 generate
 
-Perform the update on /etc/foreman/foreman-installer-answers.yaml,
+Perform the update on foreman-installer-answers.yaml,
 then run any L<PostConfigure> subs in the order they were seen.
 
 =cut
 
-sub Generate {
+sub generate {
   parse_argv;
-  foreach my $magicsub (GenerateAnswersYaml::_MagicSub->all) {
+  foreach my $magicsub (EPFLSTI::Foreman::Configure::_MagicSub->all) {
     next unless ($magicsub->has_PreConfigure);
     $magicsub->{code_orig}->();
   }
@@ -181,7 +181,7 @@ sub Generate {
   if (-f $target_file) {
     warn "$target_file already exists.\n\n";
   }
-  my $state = GenerateAnswersYaml::_YamlState->load($target_file);
+  my $state = EPFLSTI::Foreman::Configure::_YamlState->load($target_file);
   $state->compute_all;
   do {
     open(OUT, ">", "$target_file.new") &&
@@ -191,19 +191,19 @@ sub Generate {
   rename("$target_file.new", $target_file) or
     die "Cannot rename $target_file.new to $target_file: $!";
   warn "Configuration updated in $target_file.\n\n";
-  foreach my $magicsub (GenerateAnswersYaml::_MagicSub->all) {
+  foreach my $magicsub (EPFLSTI::Foreman::Configure::_MagicSub->all) {
     next unless ($magicsub->has_PostConfigure);
     $magicsub->{code_orig}->();
   }
 }
 
-=head1 GenerateAnswersYaml::_YamlState
+=head1 EPFLSTI::Foreman::Configure::_YamlState
 
 Models the entire state of the script.
 
 =cut
 
-package GenerateAnswersYaml::_YamlState;
+package EPFLSTI::Foreman::Configure::_YamlState;
 
 sub load {
   my ($class, $filename) = @_;
@@ -220,7 +220,7 @@ sub load {
     state => $state
   }, $class;
   # Read default values for : PromptUser subs
-  foreach my $magicsub (GenerateAnswersYaml::_MagicSub->all) {
+  foreach my $magicsub (EPFLSTI::Foreman::Configure::_MagicSub->all) {
     next unless ($magicsub->has_PromptUser);
     my @key = $magicsub->yaml_key;
     next unless $self->exists(@key);
@@ -270,7 +270,7 @@ sub update {
 
 sub compute_all {
   my ($self) = @_;
-  my @all = GenerateAnswersYaml::_MagicSub->all;
+  my @all = EPFLSTI::Foreman::Configure::_MagicSub->all;
   foreach my $magicsub (@all) {
     if ($magicsub->has_ToYaml) {
       $self->update($magicsub);
@@ -288,7 +288,7 @@ sub dump {
   my ($self) = @_;
   if ($ENV{DEBUG} && $ENV{DEBUG} >= 9) {
     require Data::Dumper;
-    GenerateAnswersYaml::debug(Data::Dumper::Dumper($self->{state}));
+    EPFLSTI::Foreman::Configure::debug(Data::Dumper::Dumper($self->{state}));
   }
   my $yaml = YAML::Tiny->new([$self->{state}])->write_string;
   # Mimic the real foreman-installer format even though I'm not sure
@@ -301,21 +301,22 @@ sub dump {
   return $yaml;
 }
 
-=head1 GenerateAnswersYaml::_MagicSub
+=head1 EPFLSTI::Foreman::Configure::_MagicSub
 
 Models a sub decorated with L</ToYaml>, L</PromptUser> and/or
 L</Flag>.
 
 =cut
 
-package GenerateAnswersYaml::_MagicSub;
+package EPFLSTI::Foreman::Configure::_MagicSub;
+use EPFLSTI::Interactive qw(prompt_user);
 
 use vars qw(%known);
 tie(%known, "Tie::IxHash");
 
 sub _find {
   my ($class, $coderef) = @_;
-  my $name = GenerateAnswersYaml::_function_name($coderef);
+  my $name = EPFLSTI::Foreman::Configure::_function_name($coderef);
   return ($known{$name} ||=
             bless { name => $name, code_orig => $coderef }, $class);
 }
@@ -327,7 +328,8 @@ sub decorate {
   unless ($attr eq "ToYaml") {
     # Set one and the same wrapper for all annotations that require one.
     # This guarantees that said annotations are commutative.
-    GenerateAnswersYaml::debug($self->{name} . " is being wrapped");
+    EPFLSTI::Foreman::Configure::debug(
+      $self->{name} . " is being wrapped");
     no warnings "redefine";
     *$glob = sub { $self->value() };
   }
@@ -414,7 +416,7 @@ sub value {
     return $self->{interactive_value};
   } elsif ($self->has_PromptUser) {
     my $default_value = $self->{interactive_default_value} || $self->{code_orig}->();
-    my $answer = GenerateAnswersYaml::prompt_user(
+    my $answer = prompt_user(
       $self->human_name, $default_value);
     if (my $validator = $self->param_PromptUser("validate")) {
       $validator->(\$answer);

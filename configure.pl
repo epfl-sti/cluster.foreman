@@ -26,7 +26,7 @@ To see the list of all options, try
 
 use Memoize;
 use FindBin; use lib "$FindBin::Bin/lib";
-use GenerateAnswersYaml;
+use EPFLSTI::Foreman::Configure;
 use NetAddr::IP::Lite;
 
 =head1 HACKING
@@ -39,14 +39,14 @@ whose path is deducted from the function name. For instance,
 
 computes the value for the C<tftp_servername> entry in C<foreman_proxy>.
 
-Take a look at lib/GenerateAnswersYaml.pm for more about ToYaml and
-other function decorations.
+Take a look at lib/EPFLSTI/Foreman/Configure.pm for more
+about ToYaml and other function decorations.
 
 =cut
 
-sub foreman_proxy__tftp_severname : ToYaml    { private_ip_address() }
-sub foreman_proxy__dhcp_gateway : ToYaml      { private_ip_address() }
-sub foreman_proxy__dhcp_nameservers : ToYaml  { private_ip_address() }
+sub foreman_proxy__tftp_severname : ToYaml    { puppetmaster_vip() }
+sub foreman_proxy__dhcp_gateway : ToYaml      { gateway_vip() }
+sub foreman_proxy__dhcp_nameservers : ToYaml  { puppetmaster_vip() }
 
 =pod
 
@@ -62,19 +62,21 @@ sub foreman_proxy__bmc: ToYaml     { "true" }
 
 sub foreman_proxy__bmc_default_provider: ToYaml { "ipmitool" }
 
-sub private_ip_address : PromptUser {
-  # TODO: This should be *on the same subnet* as the "best" physical
-  # interface, but on an *unused* IP.
+sub gateway_vip : PromptUser {
   my %interfaces_and_ips = physical_interfaces_and_ips();
   my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
     (values %interfaces_and_ips);
   return $private_ips[0];
 }
 
-sub private_interface { return "eth1" }
+sub puppetmaster_vip : PromptUser {
+  my @quad = split m/\./, gateway_vip();
+  $quad[3] += 1;
+  return join(".", @quad);
+}
 
 sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
-  my $ip = private_ip_address();
+  my $ip = puppetmaster_vip();
   # We might want to be smarter here.
   my $net = $ip; $net =~ s/\.[0-9]+$//;
   my $begin_dhcp_range = "$net.32";
@@ -83,7 +85,7 @@ sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
 }
 
 sub foreman_proxy__dns_reverse : ToYaml : PromptUser {
-  my @arpa = (reverse(split m/\./, private_ip_address()), qw(in-addr arpa));
+  my @arpa = (reverse(split m/\./, puppetmaster_vip()), qw(in-addr arpa));
   shift @arpa;
   return join(".", @arpa);
 }
@@ -130,9 +132,6 @@ Docker's NAT).
 sub foreman_proxy__dns_interface : ToYaml { "eth1" }
 sub foreman_proxy__dhcp_interface : ToYaml { "eth1" }
 
-
-
-=head2 I<>
 
 =head1 UTILITY FUNCTIONS
 
@@ -219,8 +218,8 @@ sub is_rfc1918_ip {
 
 =pod
 
-All the magic happens in the L<GenerateAnswersYaml> module.
+All the magic happens in the L<EPFLSTI::Foreman::Configure> module.
 
 =cut
 
-GenerateAnswersYaml::Generate();
+EPFLSTI::Foreman::Configure->generate();
