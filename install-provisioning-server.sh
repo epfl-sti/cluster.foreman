@@ -78,14 +78,8 @@ else
     fi
 fi
 
-# Install pipework 
-# https://github.com/jpetazzo/pipework
-which pipework || {
-    wget -N https://raw.githubusercontent.com/jpetazzo/pipework/master/pipework
-    install -m 755 pipework /usr/local/bin/pipework
-    rm pipework
-}
-
 ./configure.pl
-# TODO: run docker/dockerer build w/ a target name drawn from
-# foreman-installer-answers.yaml
+./docker/dockerer plan
+# TODO: have configure.pl pick a domain name, and use that for dockerer build and dockerer run.
+
+# TODO: set up puppet on the head node.
