@@ -1,14 +1,7 @@
-# Puppet configuration (master and slaves)
+# Puppet configuration for slaves
 #
-# === Parameters
-#
-# $is_puppetmaster::      True iff this node acts as the puppet master
-# $src_dir::        The directory where https://github.com/epfl-sti/cluster.foreman/
-#                   has been checked out
-class epflsti::private::puppet(
-  $is_puppetmaster         = false,
-  $src_dir = "/opt/src/cluster.foreman"
-  ) {
+# The puppetmaster is in a Docker file, and is not configured with Puppet.
+class epflsti::private::puppet() {
   case $::osfamily {
       'RedHat': {
         case $::operatingsystemmajrelease {
@@ -40,25 +33,5 @@ class epflsti::private::puppet(
   package { ['puppet', 'facter']:
     ensure => 'latest',
     require => Package['puppetlabs-release']
-  }
-  if ($is_puppetmaster) {
-      package { 'foreman':
-        ensure => 'present'
-      }
-      exec { 'latest_hammer':
-        command => "${src_dir}/puppet/scripts/install_latest_hammer",
-        unless => "${src_dir}/puppet/scripts/install_latest_hammer --check-only"
-      } ->
-      exec { 'configure_discovery_templates':
-        command => "${src_dir}/puppet/scripts/configure_discovery_templates",
-        unless => "${src_dir}/puppet/scripts/configure_discovery_templates --check-only",
-      }
-      package { 'ruby193-rubygem-foreman_column_view':
-        ensure => 'latest'
-      }
-      file { "/etc/foreman/plugins/foreman_column_view.yaml":
-        ensure => "present",
-        content => template("epflsti/foreman_column_view.yaml.erb")
-      }  -> service { 'foreman': }
   }
 }

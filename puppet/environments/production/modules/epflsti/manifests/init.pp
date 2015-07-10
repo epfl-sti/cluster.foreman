@@ -6,10 +6,10 @@
 #
 # === Parameters
 #
-# $is_puppetmaster::      True iff this node acts as the puppet master
 # $is_frontend_node::     True iff this node is directly connected to the outside
 #                         network and shall act as a router / ssh entry point.
-#                         By default, the value is copied from $is_puppetmaster
+# $network_gateway_ip::   VIP of the network gateway (must not be assigned to
+#                         any node, not even the gateway itself)
 # $network_gateway_interface::  Network interface leading "outside" on the gateway
 # $is_openstack_worker::  True iff OpenStack VMs can run on this node
 # $is_mesos_worker::      True iff Mesos workloads can run on this node
@@ -19,17 +19,32 @@
 #                         under an orchestration system of some kind)
 # $quorum_nodes::         List of FQDNs of hosts that have $is_compute_node set
 # $dns_domain::           The DNS domain that all nodes in the cluster live in
+# $dns_server_ip::        The IP of the DNS server, i.e. typically the VIP of
+#                         the Foreman docker container
 class epflsti(
-  $is_puppetmaster           = false,
   $is_frontend_node          = false,
+  $network_gateway_ip        = undef,
   $network_gateway_interface = undef,
   $is_openstack_worker       = false,
   $is_mesos_worker           = false,
   $is_quorum_node            = false,
   $quorum_nodes              = $::epflsti::private::params::quorum_nodes,
-  $dns_domain                = $::epflsti::private::params::dns_domain
+  $dns_domain                = $::epflsti::private::params::dns_domain,
+  $dns_server_ip             = $::epflsti::private::params::dns_server_ip
 ) inherits epflsti::private::params {
+    validate_string($network_gateway)
+    if ($is_frontend_node) {
+      validate_string($network_gatewayinterface)
+    }
     include "epflsti::private::bugware"
+
+    # Networking configuration
+    class { "epflsti::private::networking":
+      network_role => $is_frontend_node ? {
+        true: "gateway",
+        default: "internal"},
+      network_gateway_ip => $network_gateway_ip,
+    }
 
     # Basic services
     class { "ntp": }

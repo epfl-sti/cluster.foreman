@@ -8,4 +8,5 @@ class epflsti::private::params() {
   # TODO: every physical location should use its own DNS server and ad-hoc domain
   # (e.g. .bm.cloud.epfl.ch, .nemesis.cloud.epfl.ch)
   $dns_domain = "cloud.epfl.ch"
+  $dns_server_ip = "192.168.10.2"
 }
