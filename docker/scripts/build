@@ -13,6 +13,6 @@ if [ -n "$tarname" ]; then
    tar xvf /cluster.foreman/$tarname var/lib/postgresql/ var/lib/puppet/ var/cache/bind/ etc/foreman/foreman-installer-answers.yaml || true
 fi
 
-foreman-installer
+foreman-installer || bash
 
 echo 'listen-on { any; };' >>/etc/bind/named.conf.options
