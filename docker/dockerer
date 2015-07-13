@@ -155,9 +155,11 @@ sub run {
     if ($image_created ge $container_created) {
       return unless prompt_yn(<<"CONFIRM");
 
-About to resume from image $image_name, created $image_created.
+About to upgrade to image $image_name, created
+$image_created.
 
-All changes since that date will be lost.
+All changes in the running instance since last "dockerer backup" or
+"dockerer build" will be lost.
 
 Are you sure?
 CONFIRM
@@ -206,10 +208,11 @@ sub backup {
 
   my $date = strftime("%Y%m%d%H%M%S", localtime(time));
   my $tarname = "backup-${container_name}-$date.tar";
-  # TODO: we might want to post-process that tar file, and keep only
-  # whatever docker/scripts/build actually cares about
-  system("set -x; docker export $container_name > $tarname");
-  warn("Backup to $tarname successful.\n");
+  # https://stackoverflow.com/questions/21597463
+  system("set -x; docker run -it --rm --volumes-from $container_name \\
+            -v \$(pwd):/backup busybox \\
+            tar cvf /backup/$tarname /var/lib/puppet /var/lib/postgresql \\
+                   /var/cache/bind /etc/puppet /etc/foreman");
   return $tarname;
 }
 

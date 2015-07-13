@@ -23,7 +23,7 @@ RUN echo "deb http://deb.theforeman.org/ trusty 1.8" > /etc/apt/sources.list.d/f
 RUN echo "deb http://deb.theforeman.org/ plugins 1.8" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt-get -q update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -qy install foreman-installer \
+    apt-get -qy install foreman-installer \
                        ruby-foreman-discovery ruby-foreman-column-view \
                        tftp tftpd-hpa xinetd
 
@@ -33,6 +33,9 @@ RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
    /usr/share/foreman-installer/modules/dhcp/manifests/init.pp \
    /usr/share/foreman-installer/modules/puppet/manifests/agent/service.pp \
    /usr/share/foreman-installer/modules/puppet/manifests/server/service.pp
+
+# http://librarian-puppet.com/
+RUN gem install librarian-puppet
 
 # Run foreman-installer a first time, just to drag in as many packages as possible
 # With tricks from
@@ -99,4 +102,8 @@ RUN ln -s /cluster.foreman/puppet/environments/production /etc/puppet/environmen
 
 
 RUN mkdir /cluster.foreman
-VOLUME /var
+VOLUME /var/lib/puppet
+VOLUME /var/lib/postgresql
+VOLUME /var/cache/bind
+VOLUME /etc/puppet
+VOLUME /etc/foreman
