@@ -117,13 +117,9 @@ foreman_netmask=%s
 set -e -x
 docker rm -f $container_name-INITIAL >/dev/null 2>&1 || true
 
-# TODO: We don't really need to run pipework here; all that matters is that
-# an interface with the right name appear inside the build container.
 (for try in $(seq 1 6); do \
- $Bin/foreman-base/pipework/pipework br.4priv \
-         $container_name-INITIAL $foreman_ipaddr/$foreman_netmask \
-    && break; \
-sleep 5; done) &
+ $Bin/scripts/pipework-dummy $container_name-INITIAL $foreman_ipaddr/$foreman_netmask && break; \
+ sleep 5; done) &
 docker run --name=$container_name-INITIAL -h $container_name \
     -v "$Bin/..":/cluster.foreman \
     --label=ch.epfl.sti.foreman.built_for_clustername=$clustername \
