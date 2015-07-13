@@ -8,9 +8,10 @@
 #   wget -O /tmp/install-provisioning-server.sh https://raw.githubusercontent.com/epfl-sti/cluster.foreman/master/install-provisioning-server.sh | sudo bash
 #
 # This script doesn't take flags, but its behavior can be changed using
-# environment variables, e.g.
+# environment variables, e.g. replace the final "| sudo bash" with something
+# along the lines of
 #
-#   EPFLSTI_CLUSTER_SOURCE_DIR=/somewhere/else sudo bash /tmp/run.sh
+#   | sudo env EPFLSTI_CLUSTER_SOURCE_DIR=/somewhere/else bash
 
 for tool in docker brctl grep perl; do
     which "$tool" >/dev/null || {
@@ -35,6 +36,7 @@ set -e -x
 
 # Check out sources
 test -d "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}"/.git || (
+    mkdir -p "$(dirname "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}")"
     cd "$(dirname "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}")"
     git clone https://github.com/${EPFLSTI_CLUSTER_GITHUB_DEPOT}.git \
         "$(basename "${EPFLSTI_CLUSTER_GIT_CHECKOUT_DIR}")"
