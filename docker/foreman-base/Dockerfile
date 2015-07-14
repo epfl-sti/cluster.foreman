@@ -23,7 +23,7 @@ RUN echo "deb http://deb.theforeman.org/ trusty 1.8" > /etc/apt/sources.list.d/f
 RUN echo "deb http://deb.theforeman.org/ plugins 1.8" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt-get -q update && \
-    apt-get -qy install foreman-installer \
+    apt-get -qy install foreman-installer ruby \
                        ruby-foreman-discovery ruby-foreman-column-view \
                        tftp tftpd-hpa xinetd git
 
@@ -36,6 +36,9 @@ RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
 
 # http://librarian-puppet.com/
 RUN gem install librarian-puppet
+
+# Moar debugging tools
+RUN gem install debugger
 
 # Run foreman-installer a first time, just to drag in as many packages as possible
 # With tricks from
