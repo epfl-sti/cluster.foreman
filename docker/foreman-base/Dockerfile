@@ -102,8 +102,8 @@ ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
 RUN mkdir -p /usr/share/foreman-installer/modules/interactive_configure/manifests
 ADD interactive_configure.pp /usr/share/foreman-installer/modules/interactive_configure/manifests/init.pp
 RUN rm -rf /etc/puppet/environments/*
-RUN mkdir -p /etc/puppet/environment/production/modules
-WORKDIR /etc/puppet/environment/production/modules
+RUN mkdir -p /etc/puppet/environments/production/modules
+WORKDIR /etc/puppet/environments/production/modules
 RUN ln -s /cluster.foreman/puppet/environments/production/modules/epflsti .
 # Add puppet-ipmi module with our own patch to autodetect IPMI interfaces:
 RUN set -e -x; git clone https://github.com/epfl-sti/puppet-ipmi.git ipmi; cd ipmi; ln -s .. modules; librarian-puppet install --verbose
