@@ -23,3 +23,10 @@ fi
 foreman-installer || bash
 
 echo 'listen-on { any; };' >>/etc/bind/named.conf.options
+# Under Debian, foreman-installer may create duplicate sources.list.d,
+# producing annoying messages in apt-get commands:
+for shadupe in $(sha1sum /etc/apt/sources.list.d/*.list | sort \
+              | cut -f1 -d\  |uniq -d); do
+    sha1sum /etc/apt/sources.list.d/*.list | grep $shadupe | sed '1d' \
+        | cut -c43- | xargs rm
+done
