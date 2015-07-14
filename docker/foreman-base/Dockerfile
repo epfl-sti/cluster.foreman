@@ -14,6 +14,7 @@ RUN apt-get -q update && apt-get -qy dist-upgrade && apt-get -qy install wget ca
 # Comfort items for debugging
 RUN apt-get -qy install vim strace tcpdump lsof
 # Get a "docker" PS1 prompt
+RUN echo 'export "LANG=C.UTF-8"' >> /root/.bashrc
 RUN echo "PS1='⚠DOCKER! \u@\h:\w\$ '" >> /root/.bashrc
 
 # http://theforeman.org/manuals/1.8/index.html#2.1Installation
