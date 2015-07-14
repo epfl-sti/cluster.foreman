@@ -104,8 +104,10 @@ RUN ln -s /cluster.foreman/puppet/environments/production/modules/epflsti .
 
 WORKDIR /
 RUN mkdir /cluster.foreman
+# Keep this list in sync with dockerer and ../scripts/build
 VOLUME /var/lib/puppet
 VOLUME /var/lib/postgresql
+VOLUME /var/lib/dhcp
 VOLUME /var/cache/bind
 VOLUME /etc/puppet
 VOLUME /etc/foreman

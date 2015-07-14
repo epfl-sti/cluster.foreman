@@ -205,10 +205,11 @@ sub backup {
   my $date = strftime("%Y%m%d%H%M%S", localtime(time));
   my $tarname = "backup-${container_name}-$date.tar";
   # https://stackoverflow.com/questions/21597463
+  # Keep the backup list in sync with scripts/build and the Dockerfile
   system("set -x; docker run -it --rm --volumes-from $container_name \\
             -v \$(pwd):/backup busybox \\
-            tar cvf /backup/$tarname /var/lib/puppet /var/lib/postgresql \\
-                   /var/cache/bind /etc/puppet /etc/foreman");
+            tar cf /backup/$tarname /var/lib/puppet /var/lib/postgresql \\
+                   /var/lib/dhcp /var/cache/bind /etc/puppet /etc/foreman");
   return $tarname;
 }
 

@@ -10,7 +10,14 @@ echo "Personalizing Docker container..."
 cp /cluster.foreman/foreman-installer-answers.yaml /etc/foreman/
 
 if [ -n "$tarname" ]; then
-   tar xvf /cluster.foreman/$tarname var/lib/postgresql/ var/lib/puppet/ var/cache/bind/ etc/foreman/foreman-installer-answers.yaml || true
+    # Untar the contents of all volumes.
+    # Keep this list in sync with Dockerfile and dockerer
+    tar xvf /cluster.foreman/$tarname \
+        var/lib/puppet/ \
+        var/lib/postgresql/ \
+        var/lib/dhcp/ \
+        var/cache/bind/ \
+        etc/foreman/foreman-installer-answers.yaml || true
 fi
 
 foreman-installer || bash
