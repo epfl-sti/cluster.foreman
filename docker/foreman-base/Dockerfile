@@ -25,7 +25,7 @@ RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt-get -q update && \
     apt-get -qy install foreman-installer \
                        ruby-foreman-discovery ruby-foreman-column-view \
-                       tftp tftpd-hpa xinetd
+                       tftp tftpd-hpa xinetd git
 
 # enable => true doesn't work in an Ubuntu-based container:
 RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
@@ -93,7 +93,11 @@ RUN chmod +x /usr/local/bin/pipework
 RUN apt-get -y install supervisor
 ADD supervisord.conf /etc/supervisor/
 
-# Customizations for EPFLSTI-specific code
+# Add dependencies for IPMI (foreman-installer only takes care of them
+# in part)
+RUN apt-get -qy install ruby-rubyipmi
+
+# EPFLSTI-specific customizations
 ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
 RUN mkdir -p /usr/share/foreman-installer/modules/interactive_configure/manifests
 ADD interactive_configure.pp /usr/share/foreman-installer/modules/interactive_configure/manifests/init.pp
@@ -101,6 +105,8 @@ RUN rm -rf /etc/puppet/environments/*
 RUN mkdir -p /etc/puppet/environment/production/modules
 WORKDIR /etc/puppet/environment/production/modules
 RUN ln -s /cluster.foreman/puppet/environments/production/modules/epflsti .
+# Add puppet-ipmi module with our own patch to autodetect IPMI interfaces:
+RUN set -e -x; git clone https://github.com/epfl-sti/puppet-ipmi.git ipmi; cd ipmi; ln -s .. modules; librarian-puppet install --verbose
 
 WORKDIR /
 RUN mkdir /cluster.foreman
