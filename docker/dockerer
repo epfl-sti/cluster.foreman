@@ -56,7 +56,7 @@ use autodie qw(:all);
 use Try::Tiny;
 use Docopt;
 use Pod::Usage;
-use POSIX qw(strftime);
+use POSIX qw(strftime getcwd);
 use EPFLSTI::Interactive;
 
 chdir("$Bin/..");
@@ -195,10 +195,11 @@ sub backup {
   my $tarname = "backup-${container_name}-$date.tar";
   # https://stackoverflow.com/questions/21597463
   # Keep the backup list in sync with scripts/build and the Dockerfile
-  system("set -x; docker run -it --rm --volumes-from $container_name \\
+  system("set -x; docker run -i --rm --volumes-from $container_name \\
             -v \$(pwd):/backup busybox \\
-            tar cf /backup/$tarname /var/lib/puppet /var/lib/postgresql \\
-                   /var/lib/dhcp /var/cache/bind /etc/puppet /etc/foreman");
+            tar cf - /var/lib/puppet /var/lib/postgresql \\
+                   /var/lib/dhcp /var/cache/bind /etc/puppet /etc/foreman > $tarname");
+  warn("Backup saved as " . getcwd() . "/$tarname\n");
   return $tarname;
 }
 
