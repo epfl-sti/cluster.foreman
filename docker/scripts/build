@@ -17,6 +17,7 @@ if [ -n "$tarname" ]; then
         var/lib/postgresql/ \
         var/lib/dhcp/ \
         var/cache/bind/ \
+        etc/puppet/environments/production/ \
         etc/foreman/foreman-installer-answers.yaml || true
 fi
 
