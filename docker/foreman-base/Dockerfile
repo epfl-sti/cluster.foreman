@@ -24,7 +24,7 @@ RUN echo "deb http://deb.theforeman.org/ trusty 1.8" > /etc/apt/sources.list.d/f
 RUN echo "deb http://deb.theforeman.org/ plugins 1.8" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt-get -q update && \
-    apt-get -qy install foreman-installer ruby \
+    apt-get -qy install foreman foreman-installer ruby \
                        ruby-foreman-discovery ruby-foreman-column-view \
                        tftp tftpd-hpa xinetd git
 
@@ -34,6 +34,11 @@ RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
    /usr/share/foreman-installer/modules/dhcp/manifests/init.pp \
    /usr/share/foreman-installer/modules/puppet/manifests/agent/service.pp \
    /usr/share/foreman-installer/modules/puppet/manifests/server/service.pp
+
+# Hack so that "foreman-rake console -- --sandbox" works.
+RUN perl -i -pe 's/(\[ -f Gemfile \] &&)/$1 . q( [ $1 != 'console' ] &&)/e' /usr/sbin/foreman-rake
+# Hack so that veth interfaces don't clog up the "interfaces" view
+RUN perl -i -ne 'if (m/^(.*)def ignored_interfaces/) { <>; <>; print $1, qq(def ignored_interfaces\n), $1, q{  /\A(lo(?!cal_area_connection)|usb|vnet|veth)/}, qq(\n), $1, qq(end\n) } else { print }' /usr/share/foreman/app/services/fact_parser.rb
 
 # http://librarian-puppet.com/
 RUN gem install librarian-puppet
