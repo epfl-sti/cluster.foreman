@@ -142,8 +142,6 @@ sub run {
   my $cluster_name = $foreman->cluster_name();
   my $container_name = $foreman->container_name();
   my $image_name = $foreman->image_name();
-  my $foreman_ipaddr = $foreman->vip();
-  my $foreman_netmask = $foreman->vip_netmask();
 
   if (my $container_details = $foreman->container_details) {
     my $container_created = $container_details->[0]->{Created};
@@ -169,9 +167,8 @@ MESSAGE
       system(<<"BRIDGE_AND_DOCKER_START");
 set -e -x
 docker start $container_name
-$Bin/foreman-base/pipework/pipework br.4priv \\
-           $container_name $foreman_ipaddr/$foreman_netmask
 BRIDGE_AND_DOCKER_START
+      do_pipework($foreman);
       return;
     } else {
       warn "Container $container_name is already running.\n";
@@ -179,17 +176,9 @@ BRIDGE_AND_DOCKER_START
     }
   }
 
-  # Ensuring that br.4priv is set up correctly is done by Puppet
-  # (in fully operational mode) and by install-provisioning-server.sh
-  # (during install)
+  do_pipework($foreman, "async");
   system(<<"BRIDGE_AND_DOCKER_RUN");
 set -e -x
-# TODO: This is just ugly.
-(for try in \$(seq 1 6); do \\
- $Bin/foreman-base/pipework/pipework br.4priv \\
-         $container_name $foreman_ipaddr/$foreman_netmask \\
-    && break; \\
-sleep 5; done) &
 docker run -it --volumes-from=$container_name-INITIAL \\
     --name=$container_name -h $container_name \\
     --dns=127.0.0.1 \\
@@ -211,6 +200,40 @@ sub backup {
             tar cf /backup/$tarname /var/lib/puppet /var/lib/postgresql \\
                    /var/lib/dhcp /var/cache/bind /etc/puppet /etc/foreman");
   return $tarname;
+}
+
+# Ensuring that ->private_ipv4_bridge_name() is set up correctly is
+# done by Puppet (in fully operational mode) and by
+# install-provisioning-server.sh (during install) TODO: This whole
+# thing is just ugly.
+sub do_pipework {
+  my ($foreman, $is_async) = @_;
+  my $container_name = $foreman->container_name();
+  my $foreman_ipaddr = $foreman->vip();
+  my $foreman_netmask = $foreman->vip_netmask();
+  my $foreman_ipmi_alias_ipaddr = $foreman->ipmi_alias_ipaddr();
+  my $foreman_ipmi_alias_netmask = $foreman->ipmi_alias_netmask();
+  my $bridgename = $foreman->private_ipv4_bridge_name();
+
+  my $cmd_core = <<"DO_PIPEWORK";
+$Bin/foreman-base/pipework/pipework $bridgename \\
+         $container_name $foreman_ipaddr/$foreman_netmask
+$Bin/foreman-base/pipework/pipework $bridgename -i eth2 \\
+         $container_name $foreman_ipmi_alias_ipaddr/$foreman_ipmi_alias_netmask
+DO_PIPEWORK
+  if (! $is_async) {
+    system("set -e -x\n" . $cmd_core);
+  } else {
+    system(<<"DO_PIPEWORK_ASYNC");
+set -e -x
+for try in \$(seq 1 6); do
+  (
+    $cmd_core
+  ) && break
+sleep 5
+done &
+DO_PIPEWORK_ASYNC
+  }
 }
 
 package Foreman;
@@ -287,3 +310,9 @@ sub vip { shift->yaml_config->{foreman_proxy}->{dhcp_nameservers} }
 sub vip_netmask {
   return 24;  # TODO: read this from e.g. epflsti-configure-answers.yaml
 }
+
+# TODO: pick this up from live config or foreman-installer-answers.yaml
+sub private_ipv4_bridge_name { "ethbr4" }
+sub ipmi_alias_ipaddr { "192.168.10.253" }
+sub ipmi_alias_netmask { "24" }
+

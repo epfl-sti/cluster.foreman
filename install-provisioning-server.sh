@@ -57,8 +57,13 @@ getyaml() {
     )
 }
 
-# Set up bridging so that the Dockerized Foreman may have its own IP address.
-: ${EPFLSTI_INTERNAL_DOCKER_BRIDGE:=br.4priv}
+# Bridging is required for the Dockerized Foreman to have its own IP
+# address(es). Note: Foreman is quite finicky about the names of
+# interfaces that it deigns shows in its Edit host → Interfaces view.
+# We found ethbr4 by trial and error (conversely, "br.4priv" or even
+# "b4priv" don't work — Ubuntu Trusty's foreman 1.8.2-1 from
+# http://deb.theforeman.org/)
+: ${EPFLSTI_INTERNAL_DOCKER_BRIDGE:=ethbr4}
 iface_orig="$(getyaml foreman_provisioning::interface)"
 ipaddr="$(getyaml epflsti::configure_answers::private_ip_address)"
 netmask="$(getyaml foreman_provisioning::netmask)"
