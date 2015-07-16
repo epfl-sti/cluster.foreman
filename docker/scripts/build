@@ -16,6 +16,7 @@ if [ -n "$tarname" ]; then
         var/lib/puppet/ \
         var/lib/postgresql/ \
         var/lib/dhcp/ \
+        var/lib/tftpboot/ \
         var/cache/bind/ \
         etc/puppet/environments/production/ \
         etc/foreman/foreman-installer-answers.yaml || true

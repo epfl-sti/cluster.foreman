@@ -123,6 +123,7 @@ RUN mkdir /cluster.foreman
 VOLUME /var/lib/puppet
 VOLUME /var/lib/postgresql
 VOLUME /var/lib/dhcp
+VOLUME /var/lib/tftpboot
 VOLUME /var/cache/bind
 VOLUME /etc/puppet
 VOLUME /etc/foreman

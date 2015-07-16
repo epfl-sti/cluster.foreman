@@ -198,7 +198,8 @@ sub backup {
   system("set -x; docker run -i --rm --volumes-from $container_name \\
             -v \$(pwd):/backup busybox \\
             tar cf - /var/lib/puppet /var/lib/postgresql \\
-                   /var/lib/dhcp /var/cache/bind /etc/puppet /etc/foreman > $tarname");
+                   /var/lib/dhcp /var/lib/tftpboot \\
+                   /var/cache/bind /etc/puppet /etc/foreman > $tarname");
   warn("Backup saved as " . getcwd() . "/$tarname\n");
   return $tarname;
 }
