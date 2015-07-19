@@ -46,7 +46,7 @@ about ToYaml and other function decorations.
 
 sub foreman_proxy__tftp_severname : ToYaml    { puppetmaster_vip() }
 sub foreman_proxy__dhcp_gateway : ToYaml      { gateway_vip() }
-sub foreman_proxy__dhcp_nameservers : ToYaml  { puppetmaster_vip() }
+sub foreman_proxy__dhcp_nameservers : ToYaml  { dns_vip() }
 
 =pod
 
@@ -62,37 +62,134 @@ sub foreman_proxy__bmc: ToYaml     { "true" }
 
 sub foreman_proxy__bmc_default_provider: ToYaml { "ipmitool" }
 
+sub foreman_proxy__dns_forwarders : ToYaml {
+  [qw(128.178.15.227 128.178.15.228)]
+}
+
+=head1 VIP CONFIGURATION
+
+B<configure.pl> reserves a number of so-called Virtual IPs (VIPs),
+which belong to a service, rather than a physical host; in case of a
+failover, services and their VIPs are allowed to move about in the
+cluster.
+
+In the case of a VIP for a Docker container, the way to do that is
+bridging. Thus, C<configure.pl> expects to find the physical interface
+for the cluster's internal network to be part of a bridge (which under
+Linux bears the IP address in the C<ifconfig> or C<ip addr show>
+sense, rather than the physical interface; see
+https://unix.stackexchange.com/questions/86056/).
+
+=cut
+
+sub physical_internal_ip : PromptUser {
+  my %network_configs = network_configs();
+  my @phybridges = grep {
+    my $iface = $network_configs{$_};
+    (@{$iface->{ips}} >= 1) &&
+      (grep {is_physical_interface($_)} @{$iface->{bridged}});
+  } (keys %network_configs);
+  if (@phybridges) {
+    return $phybridges[0]->{ips}->[0];
+  } else {
+    warn <<GRIPE;
+WARNING: Could not detect a bridge tied to a physical interface.
+
+In order for Docker VIPs (most prominently, the Puppetmaster's) to work,
+you will need to:
+   1. set up a bridge (e.g. brctl addbr ethbr4),
+   2. bridge the internal physical interface to it (e.g. brctl addif ethbr4 eth1),
+   3. unset the host's internal IP address on the physical interface, and
+      set it on the bridge using ifconfig or ip addr.
+
+Trying to resume configuration with guesswork.
+
+GRIPE
+    my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
+      (map {@{$_->{ips}}} (values %network_configs));
+    return $private_ips[0];
+  }
+}
+
 sub gateway_vip : PromptUser {
-  my %interfaces_and_ips = physical_interfaces_and_ips();
-  my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
-    (values %interfaces_and_ips);
-  return $private_ips[0];
+  my @quad = split m/\./, physical_internal_ip();
+  $quad[3] = 254;
+  return join(".", @quad);
 }
 
 sub puppetmaster_vip : PromptUser {
   my @quad = split m/\./, gateway_vip();
-  $quad[3] += 1;
+  $quad[3] = 225;
   return join(".", @quad);
 }
 
-sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
-  my $ip = puppetmaster_vip();
-  # We might want to be smarter here.
-  my $net = $ip; $net =~ s/\.[0-9]+$//;
-  my $begin_dhcp_range = "$net.32";
-  my $end_dhcp_range = "$net.127";
-  return "$begin_dhcp_range $end_dhcp_range";
+sub dns_vip : PromptUser {
+  my @quad = split m/\./, gateway_vip();
+  $quad[3] -= 1;
+  if ($quad[3] eq 0) {
+    $quad[3] = 254;
+  }
+  return join(".", @quad);
 }
 
-sub foreman_proxy__dns_reverse : ToYaml : PromptUser {
-  my @arpa = (reverse(split m/\./, puppetmaster_vip()), qw(in-addr arpa));
-  shift @arpa;
-  return join(".", @arpa);
+memoize('network_configs');
+sub network_configs {
+  my %network_configs;
+  local *IP_ADDR;
+  open(IP_ADDR, "ip addr |");
+  my ($current_interface, $current_interface_name);
+  while(<IP_ADDR>) {
+    if (m/^\d+: (\S+):/) {
+      $current_interface_name = $1;
+      $current_interface = ($network_configs{$1} ||= {name => $1});
+      if (m/master (\S+)/) {
+        my $master_interface = ($network_configs{$1} ||= { name => $1});
+        push @{$master_interface->{bridged}}, $current_interface_name;
+      }
+    } elsif (m|inet ([0-9.]+/[0-9]+)|) {
+      push @{$current_interface->{ips}}, NetAddr::IP::Lite->new($1);
+    }
+  }
+
+  return %network_configs;
 }
 
-sub foreman_proxy__dns_forwarders : ToYaml {
-  [qw(128.178.15.227 128.178.15.228)]
+sub interface_type {
+  my ($iface_name) = @_;
+  my $sysfs_link = "/sys/class/net/$iface_name";
+  if (-l $sysfs_link) {
+    if  (readlink($sysfs_link) !~ m|devices/virtual|) {
+      return "physical";
+    } elsif (-d "$sysfs_link/bridge") {
+      return "bridge";
+    } else {
+      return "virtual";
+    }
+  } elsif ($iface_name =~ m/^(vir|tun|tap|veth)/) {
+    return "virtual";
+  } elsif ($iface_name =~ m/br|docker/) {
+    return "bridge",
+  } elsif ($iface_name =~ m/^(en|wlan|wifi|eth)/) {
+    return "physical";
+  } else {
+    die "Unable to guess whether $iface_name is a physical interface";
+  }
 }
+
+sub is_rfc1918_ip {
+  my ($byte1, $byte2) = split m/\./, shift;
+  # Actually returns a "credibility score", 192.168 coming first:
+  if ("$byte1.$byte2" == "192.168") {
+    return 3;
+  } elsif ($byte1 eq "10") {
+    return 2;
+  } elsif ($byte1 == 172 && $byte2 >= 16 && $byte2 <= 31) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
 
 
 =head1 FIXED CONFIGURATION
@@ -139,82 +236,6 @@ A number of helper functions are available for calling from the magic
 functions with attributes.
 
 =cut
-
-sub interfaces_and_ips {
-  my %network_configs = network_configs();
-  return map { ($_, $network_configs{$_}->addr) } (keys %network_configs);
-}
-
-sub physical_interfaces_and_ips {
-  my %interfaces_and_ips = interfaces_and_ips();
-  my %physical_interfaces_and_ips;
-  while(my ($iface, $ip) = each %interfaces_and_ips) {
-    if (is_physical_interface($iface)) {
-      $physical_interfaces_and_ips{$iface} = $ip;
-    }
-  }
-  return %physical_interfaces_and_ips;
-}
-
-memoize('network_configs');
-sub network_configs {
-  my %network_configs;
-  my %bridge_members;
-  local *IP_ADDR;
-  open(IP_ADDR, "ip addr |");
-  my $current_interface;
-  while(<IP_ADDR>) {
-    if (m/^\d+: (\S+):/) {
-      $current_interface = $1;
-      if (m/master (\S+)/) {
-        push @{$bridge_members{$1}}, $current_interface;
-      }
-    } elsif (m|inet ([0-9.]+/[0-9]+)|) {
-      # In case of multiple IPs for the same interface (i.e., aliases),
-      # keep only the first one.
-      $network_configs{$current_interface} ||= NetAddr::IP::Lite->new($1);
-    }
-  }
-
-  foreach my $bridged_if (keys %bridge_members) {
-    my @real_interfaces = grep {is_physical_interface($_)}
-      (@{$bridge_members{$bridged_if}});
-    if ((@real_interfaces == 1) and
-          exists $network_configs{$bridged_if}) {
-      $network_configs{$real_interfaces[0]} = delete $network_configs{$bridged_if};
-    }
-  }
-
-  return %network_configs;
-}
-
-sub is_physical_interface {
-  my ($iface_name) = @_;
-  my $sysfs_link = "/sys/class/net/$iface_name";
-  if (-l $sysfs_link) {
-    return (readlink($sysfs_link) !~ m|devices/virtual|);
-  } elsif ($iface_name =~ m/^(vir|docker|tun|tap|veth)/) {
-    return 0;
-  } elsif ($iface_name =~ m/^(en|wlan|wifi|eth)/) {
-    return 1;
-  } else {
-    die "Unable to guess whether $iface_name is a physical interface";
-  }
-}
-
-sub is_rfc1918_ip {
-  my ($byte1, $byte2) = split m/\./, shift;
-  # Actually returns a "credibility score", 192.168 coming first:
-  if ("$byte1.$byte2" == "192.168") {
-    return 3;
-  } elsif ($byte1 eq "10") {
-    return 2;
-  } elsif ($byte1 == 172 && $byte2 >= 16 && $byte2 <= 31) {
-    return 1;
-  } else {
-    return 0;
-  }
-}
 
 =pod
 
