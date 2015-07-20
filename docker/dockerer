@@ -205,9 +205,8 @@ sub backup {
 }
 
 # Ensuring that ->private_ipv4_bridge_name() is set up correctly is
-# done by Puppet (in fully operational mode) and by
-# install-provisioning-server.sh (during install) TODO: This whole
-# thing is just ugly.
+# done by Puppet (in fully operational mode) and by configure.pl
+# (during install). TODO: This whole thing is just ugly.
 sub do_pipework {
   my ($foreman, $is_async) = @_;
   my $container_name = $foreman->container_name();
@@ -313,8 +312,9 @@ sub vip_netmask {
   return 24;  # TODO: read this from e.g. epflsti-configure-answers.yaml
 }
 
+sub private_ipv4_bridge_name { shift->yaml_config->{interactive_configure}->{answers}->{physical_internal_bridge} }
+
 # TODO: pick this up from live config or foreman-installer-answers.yaml
-sub private_ipv4_bridge_name { "ethbr4" }
 sub ipmi_alias_ipaddr { "192.168.10.253" }
 sub ipmi_alias_netmask { "24" }
 

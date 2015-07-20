@@ -25,6 +25,7 @@ To see the list of all options, try
 =cut
 
 use Memoize;
+use List::Util qw(max);
 use FindBin; use lib "$FindBin::Bin/lib";
 use EPFLSTI::Foreman::Configure;
 use NetAddr::IP::Lite;
@@ -74,41 +75,70 @@ failover, services and their VIPs are allowed to move about in the
 cluster.
 
 In the case of a VIP for a Docker container, the way to do that is
-bridging. Thus, C<configure.pl> expects to find the physical interface
-for the cluster's internal network to be part of a bridge (which under
-Linux bears the IP address in the C<ifconfig> or C<ip addr show>
-sense, rather than the physical interface; see
-https://unix.stackexchange.com/questions/86056/).
+to set up a bridge, which C<configure.pl> offers to take care of for you.
 
 =cut
 
-sub physical_internal_ip : PromptUser {
+sub physical_internal_bridge :
+  ToYaml : PromptUser(validate => \&maybe_configure_internal_bridge) {
   my %network_configs = network_configs();
   my @phybridges = grep {
     my $iface = $network_configs{$_};
-    (@{$iface->{ips}} >= 1) &&
-      (grep {is_physical_interface($_)} @{$iface->{bridged}});
+    (@{$iface->{ips} || []} >= 1) &&
+      (grep {interface_type($_) eq "physical"} (@{$iface->{bridged} || []}));
   } (keys %network_configs);
   if (@phybridges) {
-    return $phybridges[0]->{ips}->[0];
+    return $phybridges[0]->{name};
   } else {
-    warn <<GRIPE;
-WARNING: Could not detect a bridge tied to a physical interface.
+    return "ethbr4";
+  }
+}
 
-In order for Docker VIPs (most prominently, the Puppetmaster's) to work,
-you will need to:
-   1. set up a bridge (e.g. brctl addbr ethbr4),
-   2. bridge the internal physical interface to it (e.g. brctl addif ethbr4 eth1),
-   3. unset the host's internal IP address on the physical interface, and
-      set it on the bridge using ifconfig or ip addr.
+sub maybe_configure_internal_bridge {
+  my ($bridgenameref) = @_;
+  my $bridgename = $$bridgenameref;
+  my %network_configs = network_configs();
+  return if exists $network_configs{$bridgename};
 
-Trying to resume configuration with guesswork.
+  my $internal_iface = physical_internal_interface();
+  warn <<"GRIPE";
+WARNING: $bridgename is not configured.
+
+In order for Docker VIPs to be reachable, we need to bridge them to
+the physical interface for the internal network.
+
+Shall I set up $bridgename and bridge it with $internal_iface now?
 
 GRIPE
-    my @private_ips = sort { is_rfc1918_ip($b) <=> is_rfc1918_ip($a) }
-      (map {@{$_->{ips}}} (values %network_configs));
-    return $private_ips[0];
+
+  sub auto_setup_bridge : PromptUser(question => "Set up bridge automatically?") {
+    return "y";
   }
+  return if (auto_setup_bridge =~ m/^n/i);
+
+  system("set -x; brctl addbr $bridgename");
+  system("set -x; brctl addif $bridgename $internal_iface");
+  # Move over all IP and aliases from pysical to bridge:
+  # https://unix.stackexchange.com/questions/86056/
+  foreach my $ip (@{$network_configs{$internal_iface}->{ips}}) {
+    system("set -x; ip addr del $ip dev $internal_iface");
+    system("set -x; ip addr add $ip dev $bridgename");
+  }
+}
+
+sub physical_internal_interface : PromptUser {
+  my %network_configs = network_configs();
+  my $rfc1918_score_of_interface = sub {
+    my ($iface) = @_;
+    my $score = max(map {rfc1918_score($_)} @{$iface->{ips}}) // -1;
+    warn("$iface->{name} has score $score");
+    return $score;
+  };
+  my @physical_interfaces = sort {
+    $rfc1918_score_of_interface->($b) <=> $rfc1918_score_of_interface->($a)
+  } (grep {interface_type($_->{name}) eq "physical"} (values %network_configs));
+  return if ! @physical_interfaces;
+  return $physical_interfaces[0]->{name};
 }
 
 sub gateway_vip : PromptUser {
@@ -176,9 +206,10 @@ sub interface_type {
   }
 }
 
-sub is_rfc1918_ip {
+# Returns a score of how credible it is that this IP is the internal IP
+# for the provisioning network.
+sub rfc1918_score {
   my ($byte1, $byte2) = split m/\./, shift;
-  # Actually returns a "credibility score", 192.168 coming first:
   if ("$byte1.$byte2" == "192.168") {
     return 3;
   } elsif ($byte1 eq "10") {
