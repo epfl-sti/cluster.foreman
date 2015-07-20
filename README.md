@@ -7,12 +7,13 @@ that Docker image can later be moved around in your cluster.
 
 ## Quick Start
 
-You will need a machine with RedHat 7.x or CentOS 7.x installed<sup>[1](#footnote1)</sup>.
-
-Launch `./install-provisioning-server.sh` to install foreman-in-Docker
-on the head node. (Alternatively if you haven't checked out the
-sources yet, take a look at the `wget` incantations at the top of
-[`install-provisioning-server.sh`](https://github.com/epfl-sti/cluster.foreman/blob/master/install-provisioning-server.sh))
+1. Select a machine to run the first few containers; it needs not run
+CoreOS or any particular operating system, but you should be able to
+ssh into it as root.
+2. Run `./configure.pl`
+3. Run `./docker/dockerer build mysubdomain.mydomain.com`, where
+  `mysubdomain.mydomain.com` is an as-of-yet nonexistent domain
+3. Run `./docker/dockerer run mysubdomain.mydomain.com`
 
 For further information, see the [wiki](https://github.com/epfl-sti/cluster.foreman/wiki).
 

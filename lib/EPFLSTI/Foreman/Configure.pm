@@ -75,6 +75,8 @@ sub UNIVERSAL::Flag : ATTR(CODE) {
 
 =head2 PromptUser (validate => \&my_validation_sub)
 
+=head2 PromptUser (question => "What is your favorite color?")
+
 Functions in ../configure.pl decorated with this attribute prompt the
 user for their return value. The return value of the function body is
 used as the default.
@@ -358,18 +360,25 @@ sub yaml_key {
   if ($self->has_ToYaml) {
     if (ref($self->{decoration_ToYaml}) eq "ARRAY") {
       return @{$self->{decoration_ToYaml}};
+    } elsif ($self->has_PromptUser && $self->{name} !~ m/__/) {
+      return $self->_PromptUser_yaml_key();
     } else {
       my $key = lc($self->{name});
       return split m/__/, $key;
     }
   } elsif ($self->has_PromptUser) {
-    # We can't pick our own top-level name, lest foreman-installer believe
-    # that it references a module. Hide our data under a dud foreman-installer
-    # module (see docker/foreman-base/interactive_configure.pp).
-    return ("interactive_configure", "answers", $self->{name});
+    return $self->_PromptUser_yaml_key();
   } else {
     die "$self->{name} is not persistent";
   }
+}
+
+sub _PromptUser_yaml_key {
+  my ($self) = @_;
+  # We can't pick our own top-level name, lest foreman-installer believe
+  # that it references a module. Hide our data under a dud foreman-installer
+  # module (see docker/foreman-base/interactive_configure.pp).
+  return ("interactive_configure", "answers", $self->{name});
 }
 
 sub flag_name {
@@ -379,11 +388,16 @@ sub flag_name {
   return $flag;
 }
 
-sub human_name {
+sub question_text {
   my ($self) = @_;
-  my $flag = ucfirst($self->{name});
-  $flag =~ s/_+/ /g;
-  return $flag;
+  if (my $question = $self->param_PromptUser("question")) {
+    $question =~ s/(\s+\?)$//;
+    return $question;
+  } else {
+    my $name = ucfirst($self->{name});
+    $name =~ s/_+/ /g;
+    return $name;
+  }
 }
 
 sub getopt_spec {
@@ -418,7 +432,7 @@ sub value {
   } elsif ($self->has_PromptUser) {
     my $default_value = $self->{interactive_default_value} || $self->{code_orig}->();
     my $answer = prompt_user(
-      $self->human_name, $default_value);
+      $self->question_text, $default_value);
     if (my $validator = $self->param_PromptUser("validate")) {
       $validator->(\$answer);
     }

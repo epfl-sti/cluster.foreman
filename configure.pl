@@ -24,11 +24,19 @@ To see the list of all options, try
 
 =cut
 
+use autodie;
 use Memoize;
 use List::Util qw(max);
 use FindBin; use lib "$FindBin::Bin/lib";
 use EPFLSTI::Foreman::Configure;
 use NetAddr::IP::Lite;
+
+foreach my $command (qw(brctl docker)) {
+  system("which $command >/dev/null 2>&1") &&
+    die <<"MESSAGE";
+Cannot find $command, please install it first.
+MESSAGE
+}
 
 =head1 HACKING
 
