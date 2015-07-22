@@ -132,6 +132,16 @@ GRIPE
     system("set -x; ip addr del $ip dev $internal_iface");
     system("set -x; ip addr add $ip dev $bridgename");
   }
+  # Also move over the routes:
+  local *ROUTES;
+  open(ROUTES, "ip route show dev $internal_iface |");
+  while(<ROUTES>) {
+    next if m/169.254/;
+    next unless my ($route) = m|^(\d+\.\d+\.\d+\.\d+/\d+)|;
+    system("set -x; ip route del $route dev $internal_iface");
+    system("set -x; ip route add $route dev $bridgename");
+  }
+  close(ROUTES);
 }
 
 sub physical_internal_interface : PromptUser {
