@@ -75,7 +75,7 @@ sub foreman_proxy__dns_forwarders : ToYaml {
   [qw(128.178.15.227 128.178.15.228)]
 }
 
-=head1 VIP CONFIGURATION
+=head1 NETWORK ADDRESS PLANNING AND VIP CONFIGURATION
 
 B<configure.pl> reserves a number of so-called Virtual IPs (VIPs),
 which belong to a service, rather than a physical host; in case of a
@@ -84,6 +84,8 @@ cluster.
 
 In the case of a VIP for a Docker container, the way to do that is
 to set up a bridge, which C<configure.pl> offers to take care of for you.
+
+C<configure.pl> will also take care of setting up an IPv4 address plan.
 
 =cut
 
@@ -96,7 +98,7 @@ sub physical_internal_bridge :
       (grep {interface_type($_) eq "physical"} (@{$iface->{bridged} || []}));
   } (keys %network_configs);
   if (@phybridges) {
-    return $phybridges[0]->{name};
+    return $phybridges[0];
   } else {
     return "ethbr4";
   }
@@ -171,6 +173,19 @@ sub puppetmaster_vip : PromptUser {
   return join(".", @quad);
 }
 
+
+sub main_netmask : ToYaml : PromptUser { 24 }
+
+sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
+  my $ip = puppetmaster_vip();
+  # We might want to be smarter here.
+  my $net = $ip; $net =~ s/\.[0-9]+$//;
+  my $begin_dhcp_range = "$net.129";
+  my $end_dhcp_range = "$net.191";
+  return "$begin_dhcp_range $end_dhcp_range";
+}
+
+
 sub dns_vip : PromptUser {
   my @quad = split m/\./, gateway_vip();
   $quad[3] -= 1;
@@ -179,6 +194,10 @@ sub dns_vip : PromptUser {
   }
   return join(".", @quad);
 }
+
+sub ipmi_vip : ToYaml : PromptUser { "192.168.10.253" }
+sub ipmi_netmask : ToYaml : PromptUser { 24 }
+
 
 memoize('network_configs');
 sub network_configs {

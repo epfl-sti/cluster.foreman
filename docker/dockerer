@@ -106,7 +106,7 @@ sub build {
   my @shellvars = ($Bin,
                    $foreman->cluster_name(),
                    $foreman->container_name(), $foreman->image_name(),
-                   $foreman->vip(), $foreman->vip_netmask(), $tarname_to_restore);
+                   $foreman->vip(), $foreman->main_netmask(), $tarname_to_restore);
   system(sprintf(<<'DOCKER_PERSONALIZE', @shellvars));
 Bin=%s
 clustername=%s
@@ -211,17 +211,27 @@ sub do_pipework {
   my ($foreman, $is_async) = @_;
   my $container_name = $foreman->container_name();
   my $foreman_ipaddr = $foreman->vip();
-  my $foreman_netmask = $foreman->vip_netmask();
-  my $foreman_ipmi_alias_ipaddr = $foreman->ipmi_alias_ipaddr();
+  my $main_netmask = $foreman->main_netmask();
+  my $foreman_ipmi_alias_ipaddr = $foreman->ipmi_alias_vip();
   my $foreman_ipmi_alias_netmask = $foreman->ipmi_alias_netmask();
   my $bridgename = $foreman->private_ipv4_bridge_name();
 
-  my $cmd_core = <<"DO_PIPEWORK";
+  my $cmd_core = <<"PIPEWORK_FOREMAN_VIP";
 $Bin/foreman-base/pipework/pipework $bridgename \\
-         $container_name $foreman_ipaddr/$foreman_netmask
+         $container_name $foreman_ipaddr/$main_netmask
+PIPEWORK_FOREMAN_VIP
+  $cmd_core .= <<"PIPEWORK_IPMI_VIP";
 $Bin/foreman-base/pipework/pipework $bridgename -i eth2 \\
          $container_name $foreman_ipmi_alias_ipaddr/$foreman_ipmi_alias_netmask
-DO_PIPEWORK
+PIPEWORK_IPMI_VIP
+  my $dns_vip = $foreman->dns_vip();
+  if (defined $dns_vip) {
+  $cmd_core .= <<"PIPEWORK_DNS_VIP";
+$Bin/foreman-base/pipework/pipework $bridgename -i eth3 \\
+         $container_name $dns_vip/$main_netmask
+PIPEWORK_DNS_VIP
+  }
+
   if (! $is_async) {
     system("set -e -x\n" . $cmd_core);
   } else {
@@ -306,15 +316,20 @@ sub _load_yaml_config {
   return YAML::Tiny->read($self->yaml_config_path)->[0];
 }
 
-sub vip { shift->yaml_config->{foreman_proxy}->{dhcp_nameservers} }
-
-sub vip_netmask {
-  return 24;  # TODO: read this from e.g. epflsti-configure-answers.yaml
+sub _configure_answer {
+  my ($self, $key) = @_;
+  return $self->yaml_config->{interactive_configure}->{answers}->{$key};
 }
 
-sub private_ipv4_bridge_name { shift->yaml_config->{interactive_configure}->{answers}->{physical_internal_bridge} }
+sub vip { shift->yaml_config->{foreman_proxy}->{dhcp_nameservers} }
+sub main_netmask { shift->_configure_answer("main_netmask") }
 
-# TODO: pick this up from live config or foreman-installer-answers.yaml
-sub ipmi_alias_ipaddr { "192.168.10.253" }
-sub ipmi_alias_netmask { "24" }
+sub private_ipv4_bridge_name {
+  shift->_configure_answer("physical_internal_bridge")
+}
+
+sub ipmi_alias_vip { shift->_configure_answer("ipmi_vip") }
+sub dns_vip { shift->_configure_answer("dns_vip") }
+sub ipmi_alias_netmask { shift->_configure_answer("ipmi_netmask") }
+
 
