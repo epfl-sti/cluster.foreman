@@ -199,7 +199,7 @@ sub backup {
             -v \$(pwd):/backup busybox \\
             tar cf - /var/lib/puppet /var/lib/postgresql \\
                    /var/lib/dhcp /var/lib/tftpboot \\
-                   /var/cache/bind /etc/puppet /etc/foreman > $tarname");
+                   /var/cache/bind /etc/puppet /etc/foreman > $tarname ||true");
   warn("Backup saved as " . getcwd() . "/$tarname\n");
   return $tarname;
 }
