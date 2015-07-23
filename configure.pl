@@ -53,7 +53,7 @@ about ToYaml and other function decorations.
 
 =cut
 
-sub foreman_proxy__tftp_severname : ToYaml    { puppetmaster_vip() }
+sub foreman_proxy__tftp_servername : ToYaml    { puppetmaster_vip() }
 sub foreman_proxy__dhcp_gateway : ToYaml      { gateway_vip() }
 sub foreman_proxy__dhcp_nameservers : ToYaml  { dns_vip() }
 
