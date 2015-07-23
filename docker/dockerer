@@ -321,7 +321,7 @@ sub _configure_answer {
   return $self->yaml_config->{interactive_configure}->{answers}->{$key};
 }
 
-sub vip { shift->yaml_config->{foreman_proxy}->{dhcp_nameservers} }
+sub vip { shift->_configure_answer("puppetmaster_vip") }
 sub main_netmask { shift->_configure_answer("main_netmask") }
 
 sub private_ipv4_bridge_name {
