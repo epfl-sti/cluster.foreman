@@ -114,10 +114,10 @@ tab.
             report          = true
             ignoreschedules = true
             daemon          = false
-            ca_server       = <%= @host.params['puppet_conf_ca_server'] -%>
+            ca_server       = <%= @host.params['puppet_conf_ca_server'] %>
             certname        = <%= @host.name %>
             environment     = production
-            server          = <%= @host.params['puppet_conf_server'] -%> 
+            server          = <%= @host.params['puppet_conf_server'] %> 
 <% if @host.params['ssh_authorized_keys'] -%>
       ssh_authorized_keys:
   <% @host.params['ssh_authorized_keys'].split(',').map(&:strip).each do |ssh_key| -%>
