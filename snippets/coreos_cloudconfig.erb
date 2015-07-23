@@ -7,7 +7,7 @@ name: coreos_cloudconfig
 <%#
 Note! This is a snippet that gets transcluded into "CoreOS provision".
 For that to work, the whole file needs to be indented by EXACTLY one
-tab and two spaces.
+tab.
 %>
       coreos:
         etcd:
@@ -84,6 +84,27 @@ tab and two spaces.
               [NetDev]
               Name=ethbr4
               Kind=bridge
+          - name: systemd-networkd.service
+            command: stop
+          - name: 00-ethbr4.network
+            runtime: true
+            content: |
+              [Match]
+              Name=eth0
+
+              [Network]
+              DNS=1.2.3.4
+              Address=10.0.0.101/24
+              Gateway=10.0.0.1
+          - name: down-interfaces.service
+            command: start
+            content: |
+              [Service]
+              Type=oneshot
+              ExecStart=/usr/bin/ip addr flush dev enp1s0f0
+              ExecStart=/usr/sbin/brctl addif ethbr4 enp1s0f0
+          - name: systemd-networkd.service
+            command: start
       write_files:
         - path: /etc/puppet/puppet.conf
           content: |
