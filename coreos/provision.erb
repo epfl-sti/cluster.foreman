@@ -30,7 +30,7 @@ users:
 <% end -%>
 write_files:
   - content: |
-      <%= snippet 'coreos_cloudconfig' %>
+      <%= snippet 'STI-IT coreos_cloudconfig' %>
     path: /home/core/cloud-config.yml
     permissions: '0600'
     owner: core:core
