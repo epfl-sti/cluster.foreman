@@ -1,5 +1,11 @@
 # cluster.foreman.community-templates
-A place to share templates for various OSes for EPFL-STI's Foreman's provisioning 
+EPFL-STI's templates for Foreman provisioning 
 
-* See https://github.com/theforeman/community-templates for more provisioning templates.
-* And use the [foreman_templates plugin](https://github.com/theforeman/foreman_templates) to add this repo to your foreman setup
+Quick start:
+
+1. Install the [foreman_templates plugin](https://github.com/theforeman/foreman_templates)
+2. Type <pre>foreman-rake templates:sync prefix="STI-IT " \
+          repo='https://github.com/epfl-sti/cluster.foreman.community-templates.git'</pre>
+3. A couple of templates with names starting with “STI-IT” should show up under Hosts → Provisioning templates
+
+See https://github.com/theforeman/community-templates for more provisioning templates.
