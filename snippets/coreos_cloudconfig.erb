@@ -9,6 +9,7 @@ Note! This is a snippet that gets transcluded into "CoreOS provision".
 For that to work, the whole file needs to be indented by EXACTLY one
 tab.
 %>
+      hostname: <%= @host.shortname %>
       coreos:
         etcd:
 <% if @host.params['etcd_discovery_url'] -%>
