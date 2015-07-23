@@ -1,11 +1,13 @@
+#cloud-config
 <%#
 kind: snippet
 name: coreos_cloudconfig
+%>
 
+<%#
 Note! This is a snippet that gets transcluded into "CoreOS provision".
 For that to work, the whole file needs to be indented by EXACTLY one
 tab and two spaces.
-#cloud-config
 %>
       coreos:
         etcd:
