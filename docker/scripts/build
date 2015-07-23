@@ -7,8 +7,6 @@
 
 echo "Personalizing Docker container..."
 
-cp /cluster.foreman/foreman-installer-answers.yaml /etc/foreman/
-
 if [ -n "$tarname" ]; then
     # Untar the contents of all volumes.
     # Keep this list in sync with Dockerfile and dockerer
@@ -21,6 +19,9 @@ if [ -n "$tarname" ]; then
         etc/puppet/environments/production/ \
         etc/foreman/foreman-installer-answers.yaml || true
 fi
+
+# -u means update only (if newer):
+cp -u /cluster.foreman/foreman-installer-answers.yaml /etc/foreman/
 
 foreman-installer || bash
 
