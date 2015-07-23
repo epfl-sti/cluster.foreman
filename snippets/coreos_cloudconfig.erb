@@ -84,10 +84,7 @@ tab.
               [NetDev]
               Name=ethbr4
               Kind=bridge
-          - name: systemd-networkd.service
-            command: stop
           - name: 00-ethbr4.network
-            runtime: true
             content: |
               [Match]
               Name=ethbr4
@@ -96,15 +93,45 @@ tab.
               Address=<%= @host.ip %>/24
               Gateway=<%= @host.params['gateway_vip'] %>
               DNS=<%= @host.params['dns_vip'] %>
-          - name: down-interfaces.service
+          - name: 00-enp1s0f0.network
+            content: |
+              [Match]
+              Name=enp1s0f0
+
+              [Network]
+              DHCP=no
+              Bridge=ethbr4
+          - name: systemd-networkd.service
+            command: stop
+          - name: cleanup-DHCP-assigned-addresses.service
+            runtime: true
             command: start
             content: |
               [Service]
               Type=oneshot
               ExecStart=/usr/bin/ip addr flush dev enp1s0f0
-              ExecStart=/usr/sbin/brctl addif ethbr4 enp1s0f0
           - name: systemd-networkd.service
             command: start
+          - name: puppet-certreq.service
+            runtime: true
+            content: |
+              [Unit]
+              Description=Register a certificate with the Puppetmaster
+              After=puppet.service system-networkd.service
+              Requires=puppet.service
+              [Service]
+              Type=oneshot
+              ExecStart=/usr/bin/docker exec -it puppet.service puppet agent -t
+          - name: tell-foreman-we-are-done.service
+            runtime: true
+            content: |
+              [Unit]
+              Description=Invoke the GET URL that tells Foreman we are done
+              After=puppet-certreq.service
+              Requires=puppet-certreq.service
+              [Service]
+              Type=oneshot
+              ExecStart=/usr/bin/curl -o /dev/null <%= foreman_url %> 
       write_files:
         - path: /etc/puppet/puppet.conf
           content: |
