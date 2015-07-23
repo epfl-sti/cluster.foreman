@@ -3,7 +3,7 @@
 :column_view:
   :architecture:
     :title: Arch
-    :after: last_report
+    :after: model
     :content: facts_hash['architecture']
   :memorytotal:
     :title: Mem
@@ -11,5 +11,9 @@
     :content: facts_hash['memorysize']
   :comment:
     :title: Comment
-    :after: last_report
+    :after: hostgroup
     :content: comment
+  :build:
+    :title: Building
+    :after: last_report
+    :content: build
