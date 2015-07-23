@@ -14,7 +14,7 @@ coreos:
         [Unit]
         Description=Install coreos to disk
         [Service]
-        ExecStart=/bin/bash -c "vgremove -f $(vgs --noheadings 2>/dev/null | awk '{ print $1}') || true; /usr/bin/coreos-install -C  <%= @host.operatingsystem.release_name %> -d <%= @host.params['install-disk'] || '/dev/sda' %> -c /home/core/cloud-config.yml <% if @host.operatingsystem.major >= "557" -%>-b <%= @mediapath %><% end -%>  && wget -q -O /dev/null --no-check-certificate <%= foreman_url %> && reboot"
+        ExecStart=/bin/bash -c "vgremove -f $(vgs --noheadings 2>/dev/null | awk '{ print $1}') || true; /usr/bin/coreos-install -C  <%= @host.operatingsystem.release_name %> -d <%= @host.params['install-disk'] || '/dev/sda' %> -c /home/core/cloud-config.yml <% if @host.operatingsystem.major >= "557" -%>-b <%= @mediapath %><% end -%>  && reboot"
         [X-Fleet]
         X-Conflicts=coreos-bootstrap.service
 <% if @host.params['ssh_authorized_keys'] -%>
