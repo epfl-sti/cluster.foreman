@@ -2,6 +2,10 @@
 <%#
 kind: snippet
 name: coreos_cloudconfig
+
+Note! This is a snippet that gets transcluded into "CoreOS provision".
+For that to work, the whole file needs to be indented by EXACTLY one
+tab and two spaces.
 %>
       coreos:
         etcd:
@@ -38,6 +42,59 @@ name: coreos_cloudconfig
               [Service]
               Type=oneshot
               ExecStart=/usr/bin/systemctl enable docker-tcp.socket
+          - name: puppet.service
+            command: start
+            content: |
+              [Unit]
+              Description=Enable the puppet service
+              After=docker.service
+              Requires=docker.service
+              
+              [Service]
+              ExecStartPre=/bin/bash -c '/usr/bin/docker inspect %n &> /dev/null && /usr/bin/docker rm %n || :'
+              ExecStart=/usr/bin/docker run \
+                --name %n \
+                --net=host \
+                --privileged \
+                -v /media/staging:/opt/staging \
+                -v /etc/systemd:/etc/systemd \
+                -v /etc/puppet:/etc/puppet \
+                -v /var/lib/puppet:/var/lib/puppet \
+                -v /home/core:/home/core \
+                -v /etc/os-release:/etc/os-release:ro \
+                -v /etc/lsb-release:/etc/lsb-release:ro \
+                -v /etc/coreos:/etc/coreos:rw \
+                -v /etc/systemd:/etc/systemd:rw \
+                -v /run:/run:ro \
+                -v /usr/bin/systemctl:/usr/bin/systemctl:ro \
+                -v /lib64:/lib64:ro \
+                -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+                -v /etc/puppet/puppet.conf:/etc/puppet/puppet.conf:ro \
+                jumanjiman/puppet:latest \
+                agent --no-daemonize --logdest=console --environment=production
+              RestartSec=5s
+              Restart=always
+            
+              [Install]
+              WantedBy=multi-user.target
+          - name: ethbr4.netdev
+            content: |
+              [NetDev]
+              Name=ethbr4
+              Kind=bridge
+      write_files:
+        - path: /etc/puppet/puppet.conf
+          content: |
+            # My default puppet.conf file
+            [agent]
+            pluginsync      = true
+            report          = true
+            ignoreschedules = true
+            daemon          = false
+            ca_server       = <%= @host.params['puppet_conf_ca_server'] -%>
+            certname        = <%= @host.name %>
+            environment     = production
+            server          = <%= @host.params['puppet_conf_server'] -%> 
 <% if @host.params['ssh_authorized_keys'] -%>
       ssh_authorized_keys:
   <% @host.params['ssh_authorized_keys'].split(',').map(&:strip).each do |ssh_key| -%>
