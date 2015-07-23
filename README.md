@@ -1,4 +1,4 @@
-# cluser.foreman.community-templates
+# cluster.foreman.community-templates
 A place to share templates for various OSes for EPFL-STI's Foreman's provisioning 
 
 * See https://github.com/theforeman/community-templates for more provisioning templates.
