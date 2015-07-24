@@ -13,7 +13,3 @@
     :title: Comment
     :after: hostgroup
     :content: comment
-  :build:
-    :title: Building
-    :after: last_report
-    :content: build
