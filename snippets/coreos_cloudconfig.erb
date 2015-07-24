@@ -126,18 +126,6 @@ tab.
               Type=oneshot
               ExecStart=/usr/bin/docker exec -it puppet.service puppet agent -t
       write_files:
-        - path: /etc/puppet/puppet.conf
-          content: |
-            # My default puppet.conf file
-            [agent]
-            pluginsync      = true
-            report          = true
-            ignoreschedules = true
-            daemon          = false
-            ca_server       = <%= @host.params['puppet_conf_ca_server'] %>
-            certname        = <%= @host.name %>
-            environment     = production
-            server          = <%= @host.params['puppet_conf_server'] %> 
         - path: /etc/modules-load.d/ipmi.conf
           content: |
             # Load IPMI modules
