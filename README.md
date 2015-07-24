@@ -19,4 +19,4 @@ CoreOS mostly, as we are quite infatuated of CoreOS these days, at least [as lon
 
 * Adopt etcd2
 * Test zero-click enrollment into Puppet CA
-* Some of the network things (name of the internal interface, whether the default route goes through the gateway VIP) should be set up from Puppet
+* Puppet should dictate some of the network things (name of the internal interface, whether the default route goes through the gateway VIP), instead of them being hard-coded
