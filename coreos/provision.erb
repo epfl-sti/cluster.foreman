@@ -14,7 +14,7 @@ coreos:
         Description=Erase any previous volume groups, so that intstallation can proceed and reboot
         [Service]
         Type=oneshot
-        ExecStart=/bin/bash -c "vgs --noheadings 2>/dev/null | awk '{ print $1}' | xargs vgremove -f {} || true
+        ExecStart=/bin/bash -c "vgs --noheadings 2>/dev/null | awk '{ print $1}' | xargs vgremove -f {} || true"
     - name: coreos-bootstrap.service
       command: start
       content: |
