@@ -25,7 +25,7 @@ tab.
           listen-peer-urls: http://<%= @host.ip %>:2380,http://<%= @host.ip %>:7001
         fleet:
           public-ip: <%= @host.ip %>
-          metadata: region=<%= host.params['etcd_region'] %>
+          metadata: region=<%= @host.params['etcd_region'] %>
         units:
           - name: etcd2.service
             command: start
