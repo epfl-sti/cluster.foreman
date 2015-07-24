@@ -17,7 +17,8 @@ if [ -n "$tarname" ]; then
         var/lib/tftpboot/ \
         var/cache/bind/ \
         etc/puppet/environments/production/ \
-        etc/foreman/foreman-installer-answers.yaml || true
+        etc/foreman/foreman-installer-answers.yaml \
+        root/ || true
 fi
 
 # -u means update only (if newer):
