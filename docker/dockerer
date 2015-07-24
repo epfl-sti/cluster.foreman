@@ -227,10 +227,13 @@ $Bin/foreman-base/pipework/pipework $bridgename -i eth2 \\
 PIPEWORK_IPMI_VIP
   my $dns_vip = $foreman->dns_vip();
   if (defined $dns_vip) {
-  $cmd_core .= <<"PIPEWORK_DNS_VIP";
-$Bin/foreman-base/pipework/pipework $bridgename -i eth3 \\
-         $container_name $dns_vip/$main_netmask
-PIPEWORK_DNS_VIP
+    # Alias eth1 to $dns_vip; unfortunately, pipework cannot be used.
+    $cmd_core .= <<"ALIAS_DNS_VIP";
+DOCKERPID=\$(docker inspect --format='{{ .State.Pid }}' "$container_name")
+ln -sf "/proc/\$DOCKERPID/ns/net" "/var/run/netns/\$DOCKERPID"
+ip netns exec \$DOCKERPID ip addr add "$dns_vip"/"$foreman_ipmi_alias_netmask" dev eth1
+rm -f "/var/run/netns/\$DOCKERPID"
+ALIAS_DNS_VIP
   }
 
   if (! $is_async) {
