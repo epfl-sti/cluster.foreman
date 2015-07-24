@@ -62,9 +62,7 @@ coreos:
           -v /dev/ipmi0:/dev/ipmi0 \
           epflsti/puppet:latest \
           agent -t
-        RestartSec=5s
-        Restart=always
-            
+
         [Install]
         WantedBy=multi-user.target
     - name: foreman-install-done.service
