@@ -54,6 +54,21 @@ write_files:
       # which we need to do before rebooting, lest the machine go into a reinstall
       # loop if it is configured to boot on PXE):
       mount LABEL=ROOT /mnt
+      mount LABEL=USR-A /mnt/usr -o ro
+      mkdir -p /mnt/etc/puppet
+      cat >> /mnt/etc/puppet/puppet.conf <<PUPPETCONF
+      # My default puppet.conf file
+      [agent]
+      pluginsync      = true
+      report          = true
+      ignoreschedules = true
+      daemon          = false
+      ca_server       = <%= @host.params['puppet_conf_ca_server'] %>
+      certname        = <%= @host.name %>
+      environment     = production
+      server          = <%= @host.params['puppet_conf_server'] %> 
+      PUPPETCONF
+
       /usr/bin/docker run \
           --name puppet-certreq \
           --net=host \
