@@ -47,6 +47,13 @@ write_files:
       vgs --noheadings 2>/dev/null | awk '{ print $1}' | xargs -n 1 vgremove -f || true
 
       /usr/bin/coreos-install -C  <%= @host.operatingsystem.release_name %> -d <%= @host.params['install-disk'] || '/dev/sda' %> -c /home/core/cloud-config.yml <% if @host.operatingsystem.major >= "557" -%>-b <%= @mediapath %><% end -%>
+      
+      # Create this file before next reboot to simplify post-reboot bootstrap
+      cat >> /mnt/etc/modules-load.d/ipmi.conf <<"IPMI_CONF"
+      # Load IPMI modules
+      ipmi_si
+      ipmi_devintf
+      IPMI_CONF
 
       # Run Puppet once before rebooting, so as to get a certificate while
       # Foreman lets Puppet autosign (that time window closes at the same
