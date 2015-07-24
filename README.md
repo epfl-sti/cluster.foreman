@@ -18,5 +18,5 @@ CoreOS mostly, as we are quite infatuated of CoreOS these days, at least [as lon
 ## TODO
 
 * Adopt etcd2
-* Test zero-click enrollment into Puppet CA
+* Implement zero-click enrollment into Puppet CA (somewhat difficult – Requires running Puppet to create the keys *before* rebooting)
 * Foreman and/or Puppet should dictate some of the network parameters, instead of them being hard-coded (name of the internal interface, and whether the default route goes through the gateway VIP)
