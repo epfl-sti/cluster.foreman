@@ -125,16 +125,6 @@ tab.
               [Service]
               Type=oneshot
               ExecStart=/usr/bin/docker exec -it puppet.service puppet agent -t
-          - name: foreman-provisioning-done.service
-            runtime: true
-            content: |
-              [Unit]
-              Description=Invoke the GET URL that tells Foreman we are done, and reboot
-              After=puppet-certreq.service
-              Requires=puppet-certreq.service
-              [Service]
-              Type=oneshot
-              ExecStart=/usr/bin/curl -o /dev/null <%= foreman_url %> && reboot
       write_files:
         - path: /etc/puppet/puppet.conf
           content: |
