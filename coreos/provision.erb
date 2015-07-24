@@ -55,7 +55,7 @@ write_files:
       # loop if it is configured to boot on PXE):
       mount LABEL=ROOT /mnt
       /usr/bin/docker run \
-          --name %n \
+          --name puppet-certreq \
           --net=host \
           --privileged \
           -v /mnt/etc/systemd:/etc/systemd \
