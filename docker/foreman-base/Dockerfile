@@ -26,6 +26,7 @@ RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt-get -q update && \
     apt-get -qy install foreman foreman-installer ruby \
                        ruby-foreman-discovery ruby-foreman-column-view \
+                       ruby-foreman-templates \
                        tftp tftpd-hpa xinetd git
 
 # enable => true doesn't work in an Ubuntu-based container:
