@@ -12,6 +12,7 @@ tab.
       hostname: <%= @host.name %>
       coreos:
         etcd2:
+          name: <%= @host.name %>
 <% if @host.params['etcd_discovery_url'] -%>
           # generate a new token for each unique cluster from https://discovery.etcd.io/new
           discovery: <%= @host.params['etcd_discovery_url'] %>
