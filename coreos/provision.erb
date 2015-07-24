@@ -48,14 +48,6 @@ write_files:
 
       /usr/bin/coreos-install -C  <%= @host.operatingsystem.release_name %> -d <%= @host.params['install-disk'] || '/dev/sda' %> -c /home/core/cloud-config.yml <% if @host.operatingsystem.major >= "557" -%>-b <%= @mediapath %><% end -%>
       
-      # Create this file before next reboot to simplify post-reboot bootstrap
-      mkdir -p /mnt/etc/modules-load.d
-      cat >> /mnt/etc/modules-load.d/ipmi.conf <<"IPMI_CONF"
-      # Load IPMI modules
-      ipmi_si
-      ipmi_devintf
-      IPMI_CONF
-
       # Run Puppet once before rebooting, so as to get a certificate while
       # Foreman lets Puppet autosign (that time window closes at the same
       # time as the /built API call - http://projects.theforeman.org/issues/1930 -
@@ -96,6 +88,14 @@ write_files:
           epflsti/puppet:latest \
           agent -t
           
+      # Create this file before next reboot to simplify post-reboot bootstrap
+      mkdir -p /mnt/etc/modules-load.d
+      cat >> /mnt/etc/modules-load.d/ipmi.conf <<"IPMI_CONF"
+      # Load IPMI modules
+      ipmi_si
+      ipmi_devintf
+      IPMI_CONF
+
       # All done
       umount /mnt/usr
       umount /mnt
