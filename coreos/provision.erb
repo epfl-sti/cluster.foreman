@@ -25,13 +25,55 @@ coreos:
         ExecStart=/bin/bash -c "/usr/bin/coreos-install -C  <%= @host.operatingsystem.release_name %> -d <%= @host.params['install-disk'] || '/dev/sda' %> -c /home/core/cloud-config.yml <% if @host.operatingsystem.major >= "557" -%>-b <%= @mediapath %><% end -%>"
         [X-Fleet]
         X-Conflicts=coreos-install.service
+    - name: mount-installroot.service
+      content: |
+        [Unit]
+        Description=Mount the coreos-install'd image under /mnt
+        After=coreos-install.service
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/mount LABEL=ROOT /mnt
+    - name: puppet-enroll.service
+      command: start
+      content: |
+        [Unit]
+        Description=Do a dummy Puppet run to create the keys
+        After=mount-installroot.service
+        Requires=coreos-install.service
+        [Service]
+        Type=oneshot
+        ExecStartPre=/bin/bash -c '/usr/bin/docker inspect %n &> /dev/null && /usr/bin/docker rm %n || :'
+        ExecStart=/usr/bin/docker run \
+          --name %n \
+          --net=host \
+          --privileged \
+          -v /mnt/etc/systemd:/etc/systemd \
+          -v /mnt/etc/puppet:/etc/puppet \
+          -v /mnt/var/lib/puppet:/var/lib/puppet \
+          -v /mnt/home/core:/home/core \
+          -v /mnt/etc/os-release:/etc/os-release:ro \
+          -v /mnt/etc/lsb-release:/etc/lsb-release:ro \
+          -v /mnt/etc/coreos:/etc/coreos:rw \
+          -v /mnt/run:/run:ro \
+          -v /mnt/usr/bin/systemctl:/usr/bin/systemctl:ro \
+          -v /mnt/lib64:/lib64:ro \
+          -v /mnt/sys/fs/cgroup:/sys/fs/cgroup:ro \
+          -v /mnt/etc/puppet/puppet.conf:/etc/puppet/puppet.conf:ro \
+          -v /dev/ipmi0:/dev/ipmi0 \
+          epflsti/puppet:latest \
+          agent -t
+        RestartSec=5s
+        Restart=always
+            
+        [Install]
+        WantedBy=multi-user.target
     - name: foreman-install-done.service
       command: start
       content: |
         [Unit]
         Description=Tell Foreman we are done and reboot
-        After=coreos-install.service
-        ExecStart=/bin/bash -c "wget -q -O /dev/null --no-check-certificate <%= foreman_url %> && reboot"
+        After=puppet-enroll.service
+        ExecStart=/bin/bash -c "wget -q -O /dev/null --no-check-certificate <%= foreman_url %> # && reboot"
 <% if @host.params['ssh_authorized_keys'] -%>
 ssh_authorized_keys:
 <% @host.params['ssh_authorized_keys'].split(',').map(&:strip).each do |ssh_key| -%>
