@@ -26,6 +26,8 @@ cp -u /cluster.foreman/foreman-installer-answers.yaml /etc/foreman/
 
 foreman-installer || bash
 
+perl -i -pe 's|:daemon:.*|:daemon: false|g' /etc/foreman-proxy/settings.yml
+
 echo 'listen-on { any; };' >>/etc/bind/named.conf.options
 # Under Debian, foreman-installer may create duplicate sources.list.d,
 # producing annoying messages in apt-get commands:
