@@ -45,6 +45,8 @@ tab.
               [Service]
               Type=oneshot
               ExecStart=/usr/bin/systemctl enable docker-tcp.socket
+          - name: system-modules-load.service
+            command: restart
           - name: puppet.service
             command: start
             content: |
@@ -72,6 +74,7 @@ tab.
                 -v /lib64:/lib64:ro \
                 -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
                 -v /etc/puppet/puppet.conf:/etc/puppet/puppet.conf:ro \
+                -v /dev/ipmi0:/dev/ipmi0 \
                 epflsti/puppet:latest \
                 agent --no-daemonize --logdest=console --environment=production
               RestartSec=5s
@@ -145,6 +148,11 @@ tab.
             certname        = <%= @host.name %>
             environment     = production
             server          = <%= @host.params['puppet_conf_server'] %> 
+        - path: /etc/modules-load.d/ipmi.conf
+          content: |
+            # Load IPMI modules
+            ipmi_si
+            ipmi_devintf
 <% if @host.params['ssh_authorized_keys'] -%>
       ssh_authorized_keys:
   <% @host.params['ssh_authorized_keys'].split(',').map(&:strip).each do |ssh_key| -%>
