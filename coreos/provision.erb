@@ -57,6 +57,10 @@ write_files:
       # loop if it is configured to boot on PXE):
       mount LABEL=ROOT /mnt
       mount LABEL=USR-A /mnt/usr -o ro
+
+      # Keep a copy of ourselves around
+      cp /home/core/cloud-config.yml /mnt/etc/coreos/
+
       mkdir -p /mnt/etc/puppet
       cat >> /mnt/etc/puppet/puppet.conf <<PUPPETCONF
       # My default puppet.conf file
@@ -99,9 +103,6 @@ write_files:
       ipmi_devintf
       IPMI_CONF
       
-      # Keep a copy of ourselves around
-      cp /home/core/cloud-config.yml /mnt/etc/coreos/
-
       # All done
       umount /mnt/usr
       umount /mnt
