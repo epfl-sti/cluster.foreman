@@ -1,2 +1,2 @@
-coreos/provision.erb             filter=indent
-snippets/coreos_cloudconfig.erb  filter=indent
+coreos/provision.erb             ident
+snippets/coreos_cloudconfig.erb  ident
