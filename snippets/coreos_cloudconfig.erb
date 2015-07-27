@@ -98,7 +98,7 @@ spaces.
               Kind=bridge
           - name: 40-ethbr4-nogateway.opt-network
             content: |
-              # Network configuration of ethbr4 for a gateway node.
+              # Network configuration for ethbr4 without a default route.
               # Overrides 50-ethbr4-internal.network on gateway nodes.
               [Match]
               Name=ethbr4
