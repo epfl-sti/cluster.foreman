@@ -6,10 +6,10 @@ name: coreos_cloudconfig
 
 <%#
 Note! This is a snippet that gets transcluded into "CoreOS provision".
-For that to work, the whole file needs to be indented by EXACTLY one
-tab.
+For that to work, the whole file needs to be indented by EXACTLY six
+spaces.
 %>
-      # $Id$
+      # coreos_cloudconfig.erb $Id$
       hostname: <%= @host.name %>
       coreos:
         etcd2:
