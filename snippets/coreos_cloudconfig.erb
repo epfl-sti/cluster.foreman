@@ -138,7 +138,7 @@ spaces.
               Type=oneshot
               ExecStart=/usr/bin/docker exec -it puppet.service puppet agent -t
       write_files:
-          - name: /etc/systemd/network/40-ethbr4-nogateway.opt-network
+          - path: /etc/systemd/network/40-ethbr4-nogateway.opt-network
             content: |
               # Network configuration for ethbr4 without a default route.
               # Overrides 50-ethbr4-internal.network on gateway nodes.
