@@ -96,16 +96,6 @@ spaces.
               [NetDev]
               Name=ethbr4
               Kind=bridge
-          - name: 40-ethbr4-nogateway.opt-network
-            content: |
-              # Network configuration for ethbr4 without a default route.
-              # Overrides 50-ethbr4-internal.network on gateway nodes.
-              [Match]
-              Name=ethbr4
-
-              [Network]
-              Address=<%= @host.ip %>/24
-              DNS=<%= @host.params['dns_vip'] %>
           - name: 50-ethbr4-internal.network
             content: |
               # Network configuration of ethbr4 for an internal node.
