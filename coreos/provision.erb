@@ -1,5 +1,4 @@
 #cloud-config
-# $Id$
 <%#
 kind: provision
 name: CoreOS provision
@@ -33,6 +32,7 @@ write_files:
     permissions: '0600'
     owner: core:core
     content: |
+      # provision.erb $Id$
       <%= snippet 'STI-IT coreos_cloudconfig' %>
   - path: /home/core/install-and-reboot.sh
     permissions: '0755'
