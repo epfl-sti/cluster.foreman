@@ -95,8 +95,11 @@ tab.
               [NetDev]
               Name=ethbr4
               Kind=bridge
-          - name: 00-ethbr4.network
+          - name: 50-ethbr4-internal.network
             content: |
+              # Network configuration for an internal node.
+              # May be overridden (e.g. on gateway nodes) by creating a file with the
+              # same [Match] section, but a lexically lower file name.
               [Match]
               Name=ethbr4
 
