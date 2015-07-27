@@ -75,6 +75,7 @@ write_files:
       server          = <%= @host.params['puppet_conf_server'] %> 
       PUPPETCONF
 
+      set +e
       /usr/bin/docker run \
           --name puppet-certreq \
           --net=host \
@@ -94,7 +95,13 @@ write_files:
           -v /dev/ipmi0:/dev/ipmi0 \
           epflsti/cluster.coreos.puppet:latest \
           agent -t
-          
+      local exitcode=$?
+      case "$exitcode" in
+        0|2) : ;;
+        *) echo >&2 "Puppet agent in Docker exited with status $exitcode"
+           exit $exitcode ;;
+      set -e
+
       # Create this file before next reboot to simplify post-reboot bootstrap
       mkdir -p /mnt/etc/modules-load.d
       cat >> /mnt/etc/modules-load.d/ipmi.conf <<"IPMI_CONF"
