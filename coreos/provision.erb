@@ -95,11 +95,12 @@ write_files:
           -v /dev/ipmi0:/dev/ipmi0 \
           epflsti/cluster.coreos.puppet:latest \
           agent -t
-      local exitcode=$?
+      exitcode=$?
       case "$exitcode" in
         0|2) : ;;
         *) echo >&2 "Puppet agent in Docker exited with status $exitcode"
            exit $exitcode ;;
+      esac
       set -e
 
       # Create this file before next reboot to simplify post-reboot bootstrap
