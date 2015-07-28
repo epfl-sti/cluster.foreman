@@ -84,7 +84,7 @@ spaces.
                 -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
                 -v /etc/puppet/puppet.conf:/etc/puppet/puppet.conf:ro \
                 -v /dev/ipmi0:/dev/ipmi0 \
-                epflsti/puppet:latest \
+                epflsti/cluster.coreos.puppet:latest \
                 agent --no-daemonize --logdest=console --environment=production
               RestartSec=5s
               Restart=always
