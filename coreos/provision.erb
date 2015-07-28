@@ -60,6 +60,9 @@ write_files:
 
       # Keep a copy of ourselves around
       cp /home/core/cloud-config.yml /mnt/etc/coreos/
+      
+      # Load modules right away, so that Puppet may tweak IPMI
+      modprobe ipmi_si ipmi_devintf
 
       mkdir -p /mnt/etc/puppet
       cat >> /mnt/etc/puppet/puppet.conf <<PUPPETCONF
