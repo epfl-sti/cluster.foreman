@@ -108,10 +108,10 @@ spaces.
               Address=<%= @host.ip %>/24
               Gateway=<%= @host.params['gateway_vip'] %>
               DNS=<%= @host.params['dns_vip'] %>
-          - name: 00-enp1s0f0.network
+          - name: 00-<%= @host.primary_interface.identifier %>.network
             content: |
               [Match]
-              Name=enp1s0f0
+              Name=<%= @host.primary_interface.identifier %>
 
               [Network]
               DHCP=no
@@ -124,7 +124,7 @@ spaces.
             content: |
               [Service]
               Type=oneshot
-              ExecStart=/usr/bin/ip addr flush dev enp1s0f0
+              ExecStart=/usr/bin/ip addr flush dev <%= @host.primary_interface.identifier %>
           - name: systemd-networkd.service
             command: start
           - name: puppet-certreq.service
