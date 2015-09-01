@@ -71,6 +71,7 @@ spaces.
                 --net=host \
                 --privileged \
                 -v /media/staging:/opt/staging \
+                -v /:/opt/root:rw \
                 -v /etc/systemd:/etc/systemd \
                 -v /etc/puppet:/etc/puppet \
                 -v /var/lib/puppet:/var/lib/puppet \
