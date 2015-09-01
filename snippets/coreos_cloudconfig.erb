@@ -56,6 +56,7 @@ spaces.
               [Service]
               Type=oneshot
               ExecStart=/usr/bin/systemctl enable docker-tcp.socket
+<%# Keep in sync with same in ../coreos/provision.erb %>
           - name: puppet.service
             command: start
             content: |

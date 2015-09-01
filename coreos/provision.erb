@@ -80,6 +80,7 @@ write_files:
       PUPPETCONF
 
       set +e
+      # Keep in sync with same in ../snippets/coreos_cloudconfig.erb
       /usr/bin/docker run \
           --name puppet-certreq \
           --net=host \
