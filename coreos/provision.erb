@@ -84,6 +84,7 @@ write_files:
           --name puppet-certreq \
           --net=host \
           --privileged \
+          -v /mnt:/opt/root \
           -v /mnt/etc/systemd:/etc/systemd \
           -v /mnt/etc/puppet:/etc/puppet \
           -v /mnt/var/lib/puppet:/var/lib/puppet \
