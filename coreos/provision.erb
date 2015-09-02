@@ -48,7 +48,7 @@ write_files:
 
       vgs --noheadings 2>/dev/null | awk '{ print $1}' | xargs -n 1 vgremove -f || true
 
-      /usr/bin/coreos-install -C stable -d <%= @host.params['install-disk'] || '/dev/sda' %> -c /home/core/cloud-config.yml <% if @host.operatingsystem.major >= "557" -%>-b <%= @mediapath %><% end -%>
+      /usr/bin/coreos-install -C stable -d <%= @host.params['install-disk'] || '/dev/sda' %> -c /home/core/cloud-config.yml -b <%= @mediapath %>
       
       # Run Puppet once before rebooting, so as to get a certificate while
       # Foreman lets Puppet autosign (that time window closes at the same
