@@ -14,11 +14,11 @@ spaces.
       coreos:
         fleet:
           public-ip: <%= @host.ip %>
-          metadata: region=<%= @host.params['etcd_region'] %>
         units:
-<%# etcd is configured by Puppet, yet started by the CoreOS boot sequence.
-    This lets quorum members reboot safely if Puppet is unavailable. (Nothing
-    particularly bad happens if etcd2 starts unconfigured; it just bails out.)  %>
+<%# etcd and the fleet metadata are configured by Puppet, yet started
+    by the CoreOS boot sequence. This lets quorum members reboot
+    safely if Puppet is unavailable. (Nothing particularly bad happens
+    if etcd2 starts unconfigured; it just bails out.) %>
           - name: etcd2.service
             command: start
           - name: fleet.service
