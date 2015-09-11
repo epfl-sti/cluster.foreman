@@ -35,6 +35,10 @@ write_files:
       #cloud-config
       # provision.erb $Id$
       <%= snippet 'STI-IT coreos_cloudconfig' %>
+  - path: /etc/environment
+    permissions: 0644
+    content: |
+      COREOS_PRIVATE_IPV4=<%= @host.ip %>
   - path: /home/core/install-and-reboot.sh
     permissions: '0755'
     owner: core:core
@@ -99,6 +103,7 @@ write_files:
           -v /mnt/sys/fs/cgroup:/sys/fs/cgroup:ro \
           -v /mnt/etc/puppet/puppet.conf:/etc/puppet/puppet.conf:ro \
           -v /dev/ipmi0:/dev/ipmi0 \
+          -e FACTER_ipaddress=<%= @host.ip %> \
           epflsti/cluster.coreos.puppet:latest \
           agent -t --tags bootstrap
       exitcode=$?

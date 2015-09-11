@@ -56,6 +56,7 @@ spaces.
               Requires=docker.service
               
               [Service]
+              EnvironmentFile=/etc/environment
               ExecStartPre=/bin/bash -c '/usr/bin/docker inspect %n &> /dev/null && /usr/bin/docker rm %n || :'
               ExecStart=/usr/bin/docker run \
                 --name %n \
@@ -76,6 +77,7 @@ spaces.
                 -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
                 -v /etc/puppet/puppet.conf:/etc/puppet/puppet.conf:ro \
                 -v /dev/ipmi0:/dev/ipmi0 \
+                -e FACTER_ipaddress=<%= @host.ip %> \
                 epflsti/cluster.coreos.puppet:latest \
                 agent --no-daemonize --logdest=console --environment=production
               RestartSec=5s
