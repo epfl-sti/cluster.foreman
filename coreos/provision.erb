@@ -100,7 +100,7 @@ write_files:
           -v /mnt/etc/puppet/puppet.conf:/etc/puppet/puppet.conf:ro \
           -v /dev/ipmi0:/dev/ipmi0 \
           epflsti/cluster.coreos.puppet:latest \
-          agent -t
+          agent -t --tags bootstrap
       exitcode=$?
       case "$exitcode" in
         0|2) : ;;
