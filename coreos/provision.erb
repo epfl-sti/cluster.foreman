@@ -33,6 +33,7 @@ ssh_authorized_keys:
 <% @host.params['ssh_authorized_keys'].split(',').map(&:strip).each do |ssh_key| -%>
   - "<%= ssh_key %>"
 <% end -%>
+<% end -%>
 <% if (@host.params['force_core_password'] || ! @host.params['ssh_authorized_keys']) -%>
 users:
   - name: core
