@@ -14,17 +14,17 @@ coreos:
         [Unit]
         Description=Install coreos to disk
         [Service]
-        Environment=COREOS_FQDN='<%= @host.name %>'
-        Environment=COREOS_PRIVATE_IPV4='<%= @host.ip %>'
-        Environment=COREOS_PRIMARY_NETWORK_INTERFACE='<%= @host.primary_interface.identifier %>'
-        Environment=COREOS_INSTALL_TO_DISK='<%= @host.params['install-disk'] %>'
-        Environment=COREOS_INSTALL_URL='<%= @mediapath %>'
-        Environment=PROVISIONING_DONE_URL='<%= foreman_url %>'
-        Environment=PUPPET_CONF_CA_SERVER='<%= @host.params['puppet_conf_ca_server'] %>'
-        Environment=PUPPET_CONF_SERVER='<%= @host.params['puppet_conf_server'] %>'
-        Environment=GATEWAY_VIP='<%= @host.params['gateway_vip'] %>'
-        Environment=DNS_VIP='<%= @host.params['dns_vip'] %>'
-        Environment=PROVISION_GIT_ID='$Id$'
+        Environment=COREOS_FQDN="<%= @host.name %>"
+        Environment=COREOS_PRIVATE_IPV4="<%= @host.ip %>"
+        Environment=COREOS_PRIMARY_NETWORK_INTERFACE="<%= @host.primary_interface.identifier %>"
+        Environment=COREOS_INSTALL_TO_DISK="<%= @host.params['install-disk'] %>"
+        Environment=COREOS_INSTALL_URL="<%= @mediapath %>"
+        Environment=PROVISIONING_DONE_URL="<%= foreman_url %>"
+        Environment=PUPPET_CONF_CA_SERVER="<%= @host.params['puppet_conf_ca_server'] %>"
+        Environment=PUPPET_CONF_SERVER="<%= @host.params['puppet_conf_server'] %>"
+        Environment=GATEWAY_VIP="<%= @host.params['gateway_vip'] %>"
+        Environment=DNS_VIP="<%= @host.params['dns_vip'] %>"
+        Environment=PROVISION_GIT_ID="$Id$"
         ExecStartPre=/usr/bin/curl -o /home/core/install.sh https://raw.githubusercontent.com/epfl-sti/cluster.coreos.install/master/install.sh
         ExecStartPre=/usr/bin/chmod a+x /home/core/install.sh
         ExecStart=/home/core/install.sh install-and-reboot
