@@ -19,6 +19,7 @@ coreos:
         Environment="COREOS_PRIMARY_NETWORK_INTERFACE=<%= @host.primary_interface.identifier %>"
         Environment="COREOS_INSTALL_TO_DISK=<%= @host.params['install-disk'] %>"
         Environment="COREOS_INSTALL_URL=<%= @mediapath %>"
+        Environment="COREOS_HASHED_CORE_PASSWORD=<%= root_pass %>"
         Environment="PROVISIONING_DONE_URL=<%= foreman_url %>"
         Environment="PUPPET_CONF_CA_SERVER=<%= @host.params['puppet_conf_ca_server'] %>"
         Environment="PUPPET_CONF_SERVER=<%= @host.params['puppet_conf_server'] %>"
