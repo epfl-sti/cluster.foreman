@@ -27,7 +27,7 @@ coreos:
         Environment="PROVISION_GIT_ID=$Id$"
         WorkingDirectory=/home/core
         ExecStartPre=/usr/bin/git clone https://github.com/epfl-sti/cluster.coreos.install.git
-        ExecStart=/home/core/cluster.coreos.install/install.sh <%= @host.params['install_args'] || 'install reboot' %>
+        ExecStart=/home/core/cluster.coreos.install/install.sh <%= @host.params['coreos_install_args'] || 'install reboot' %>
 <% if @host.params['ssh_authorized_keys'] -%>
 ssh_authorized_keys:
 <% @host.params['ssh_authorized_keys'].split(',').map(&:strip).each do |ssh_key| -%>
