@@ -23,6 +23,7 @@ spaces.
             command: start
           - name: fleet.service
             command: start
+<%# https://coreos.com/os/docs/latest/customizing-docker.html %>
           - name: docker-tcp.socket
             command: start
             enable: yes
@@ -46,6 +47,12 @@ spaces.
               [Service]
               Type=oneshot
               ExecStart=/usr/bin/systemctl enable docker-tcp.socket
+          - name: docker.service
+            drop-ins:
+              - name: 10-ipv6.conf
+                content: |
+                  [Service]
+                  Environment="DOCKER_OPTS=--ipv6"
 <%# Keep in sync with same in ../coreos/provision.erb %>
           - name: puppet.service
             command: start
