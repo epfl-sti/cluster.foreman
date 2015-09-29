@@ -25,9 +25,9 @@ coreos:
         Environment="GATEWAY_VIP=<%= @host.params['gateway_vip'] %>"
         Environment="DNS_VIP=<%= @host.params['dns_vip'] %>"
         Environment="PROVISION_GIT_ID=$Id$"
-        ExecStartPre=/usr/bin/curl -o /home/core/install.sh https://raw.githubusercontent.com/epfl-sti/cluster.coreos.install/master/install.sh
-        ExecStartPre=/usr/bin/chmod a+x /home/core/install.sh
-        ExecStart=/home/core/install.sh install-and-reboot
+        WorkingDirectory=/home/core
+        ExecStartPre=/usr/bin/git clone https://github.com/epfl-sti/cluster.coreos.install.git
+        ExecStart=./install.sh install-and-reboot
 <% if @host.params['ssh_authorized_keys'] -%>
 ssh_authorized_keys:
 <% @host.params['ssh_authorized_keys'].split(',').map(&:strip).each do |ssh_key| -%>
