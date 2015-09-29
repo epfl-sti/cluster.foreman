@@ -27,7 +27,7 @@ coreos:
         Environment="DNS_VIP=<%= @host.params['dns_vip'] %>"
         Environment="PROVISION_GIT_ID=$Id$"
         WorkingDirectory=/home/core
-        ExecStartPre=/usr/bin/git clone https://github.com/epfl-sti/cluster.coreos.install.git
+        ExecStartPre=/bin/bash -c 'if [ -d cluster.coreos.install ] ; then (cd cluster.coreos.install && git pull); else /usr/bin/git clone https://github.com/epfl-sti/cluster.coreos.install.git; fi'
         ExecStart=/home/core/cluster.coreos.install/install.sh <%= @host.params['coreos_install_args'] || 'install reboot' %>
 <% if @host.params['ssh_authorized_keys'] -%>
 ssh_authorized_keys:
