@@ -24,6 +24,7 @@ coreos:
         Environment=PUPPET_CONF_SERVER='<%= @host.params['puppet_conf_server'] %>'
         Environment=GATEWAY_VIP='<%= @host.params['gateway_vip'] %>'
         Environment=DNS_VIP='<%= @host.params['dns_vip'] %>'
+        Environment=PROVISION_GIT_ID='$Id$'
         ExecStartPre=curl -o /home/core/install.sh https://raw.githubusercontent.com/epfl-sti/cluster.coreos.install/master/install.sh
         ExecStartPre=chmod a+x /home/core/install.sh
         ExecStart=/home/core/install.sh install-and-reboot
