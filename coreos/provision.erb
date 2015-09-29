@@ -14,9 +14,19 @@ coreos:
         [Unit]
         Description=Install coreos to disk
         [Service]
-        ExecStart=/home/core/install-and-reboot.sh
-        [X-Fleet]
-        X-Conflicts=coreos-bootstrap.service
+        Environment=COREOS_FQDN='<%= @host.name %>'
+        Environment=COREOS_PRIVATE_IPV4='<%= @host.ip %>'
+        Environment=COREOS_PRIMARY_NETWORK_INTERFACE='<%= @host.primary_interface.identifier %>'
+        Environment=COREOS_INSTALL_TO_DISK='<%= @host.params['install-disk'] %>'
+        Environment=COREOS_INSTALL_URL='<%= @mediapath %>'
+        Environment=PROVISIONING_DONE_URL='<%= foreman_url %>'
+        Environment=PUPPET_CONF_CA_SERVER='<%= @host.params['puppet_conf_ca_server'] %>'
+        Environment=PUPPET_CONF_SERVER='<%= @host.params['puppet_conf_server'] %>'
+        Environment=GATEWAY_VIP='<%= @host.params['gateway_vip'] %>'
+        Environment=DNS_VIP='<%= @host.params['dns_vip'] %>'
+        ExecStartPre=curl -o /home/core/install.sh https://raw.githubusercontent.com/epfl-sti/cluster.coreos.install/master/install.sh
+        ExecStartPre=chmod a+x /home/core/install.sh
+        ExecStart=/home/core/install.sh install-and-reboot
 <% if @host.params['ssh_authorized_keys'] -%>
 ssh_authorized_keys:
 <% @host.params['ssh_authorized_keys'].split(',').map(&:strip).each do |ssh_key| -%>
@@ -27,103 +37,3 @@ users:
   - name: core
     passwd: <%= root_pass %>
 <% end -%>
-write_files:
-  - path: /home/core/cloud-config.yml
-    permissions: '0600'
-    owner: core:core
-    content: |
-      #cloud-config
-      # provision.erb $Id$
-      <%= snippet 'STI-IT coreos_cloudconfig' %>
-  - path: /etc/environment
-    permissions: 0644
-    content: |
-      COREOS_PRIVATE_IPV4=<%= @host.ip %>
-  - path: /home/core/install-and-reboot.sh
-    permissions: '0755'
-    owner: core:core
-    content: |
-      #!/bin/bash
-      
-      set -e -x
-
-      # Zap all volume groups, lest coreos-install fail to BLKRRPART
-      # (https://github.com/coreos/bugs/issues/152)
-
-      vgs --noheadings 2>/dev/null | awk '{ print $1}' | xargs -n 1 vgremove -f || true
-
-      /usr/bin/coreos-install -C stable -d <%= @host.params['install-disk'] || '/dev/sda' %> -c /home/core/cloud-config.yml -b <%= @mediapath %>
-      
-      # Run Puppet once before rebooting, so as to get a certificate while
-      # Foreman lets Puppet autosign (that time window closes at the same
-      # time as the /built API call - http://projects.theforeman.org/issues/1930 -
-      # which we need to do before rebooting, lest the machine go into a reinstall
-      # loop if it is configured to boot on PXE):
-      mount LABEL=ROOT /mnt
-      mount LABEL=USR-A /mnt/usr -o ro
-
-      # Keep a copy of ourselves around
-      cp /home/core/cloud-config.yml /mnt/etc/coreos/
-      
-      # Load modules right away, so that Puppet may tweak IPMI
-      modprobe ipmi_si
-      modprobe ipmi_devintf
-
-      mkdir -p /mnt/etc/puppet
-      cat >> /mnt/etc/puppet/puppet.conf <<PUPPETCONF
-      # My default puppet.conf file
-      [agent]
-      pluginsync      = true
-      report          = true
-      ignoreschedules = true
-      daemon          = false
-      ca_server       = <%= @host.params['puppet_conf_ca_server'] %>
-      certname        = <%= @host.name %>
-      environment     = production
-      server          = <%= @host.params['puppet_conf_server'] %> 
-      PUPPETCONF
-
-      set +e
-      # Keep in sync with same in ../snippets/coreos_cloudconfig.erb
-      /usr/bin/docker run \
-          --name puppet-certreq \
-          --net=host \
-          --privileged \
-          -v /mnt:/opt/root \
-          -v /mnt/etc/systemd:/etc/systemd \
-          -v /mnt/etc/puppet:/etc/puppet \
-          -v /mnt/var/lib/puppet:/var/lib/puppet \
-          -v /mnt/home/core:/home/core \
-          -v /mnt/etc/os-release:/etc/os-release:ro \
-          -v /mnt/etc/lsb-release:/etc/lsb-release:ro \
-          -v /mnt/etc/coreos:/etc/coreos:rw \
-          -v /run:/run:ro \
-          -v /mnt/usr/bin/systemctl:/usr/bin/systemctl:ro \
-          -v /mnt/lib64:/lib64:ro \
-          -v /mnt/sys/fs/cgroup:/sys/fs/cgroup:ro \
-          -v /mnt/etc/puppet/puppet.conf:/etc/puppet/puppet.conf:ro \
-          -v /dev/ipmi0:/dev/ipmi0 \
-          -e FACTER_ipaddress=<%= @host.ip %> \
-          epflsti/cluster.coreos.puppet:latest \
-          agent -t
-      exitcode=$?
-      case "$exitcode" in
-        0|2) : ;;
-        *) echo >&2 "Puppet agent in Docker exited with status $exitcode"
-           exit $exitcode ;;
-      esac
-      set -e
-
-      # Create this file before next reboot to simplify post-reboot bootstrap
-      mkdir -p /mnt/etc/modules-load.d
-      cat >> /mnt/etc/modules-load.d/ipmi.conf <<"IPMI_CONF"
-      # Load IPMI modules
-      ipmi_si
-      ipmi_devintf
-      IPMI_CONF
-      
-      # All done
-      umount /mnt/usr
-      umount /mnt
-      wget -q -O /dev/null --no-check-certificate <%= foreman_url %>
-      reboot
