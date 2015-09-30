@@ -28,4 +28,4 @@ A couple of Foreman templates are provided under `coreos/` to help install CoreO
 1. <pre>docker exec -it puppetmaster.mysubdomain.mydomain.com /bin/bash</pre>
 2. Install the [foreman_templates plugin](https://github.com/theforeman/foreman_templates) (TODO: should be provided as part of the Docker image)
 3. <pre>foreman-rake templates:sync prefix='"STI-IT "' \
-          repo='https://github.com/epfl-sti/cluster.foreman.community-templates.git'</pre>
+          repo='https://github.com/epfl-sti/cluster.foreman.git'</pre>
