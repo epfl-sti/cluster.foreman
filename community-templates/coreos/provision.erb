@@ -1,0 +1,42 @@
+#cloud-config
+<%#
+kind: provision
+name: CoreOS provision
+oses:
+- CoreOS
+%>
+coreos:
+  units:
+    - name: coreos-bootstrap.service
+      runtime: no
+      command: start
+      content: |
+        [Unit]
+        Description=Install coreos to disk
+        [Service]
+        Environment="COREOS_FQDN=<%= @host.name %>"
+        Environment="COREOS_PRIVATE_IPV4=<%= @host.ip %>"
+        Environment="COREOS_PRIMARY_NETWORK_INTERFACE=<%= @host.primary_interface.identifier %>"
+        Environment="COREOS_INSTALL_TO_DISK=<%= @host.params['install-disk'] %>"
+        Environment="COREOS_INSTALL_URL=<%= @mediapath %>"
+        Environment="COREOS_HASHED_CORE_PASSWORD=<%= root_pass %>"
+        Environment="PROVISIONING_DONE_URL=<%= foreman_url %>"
+        Environment="PUPPET_CONF_CA_SERVER=<%= @host.params['puppet_conf_ca_server'] %>"
+        Environment="PUPPET_CONF_SERVER=<%= @host.params['puppet_conf_server'] %>"
+        Environment="GATEWAY_VIP=<%= @host.params['gateway_vip'] %>"
+        Environment="DNS_VIP=<%= @host.params['dns_vip'] %>"
+        Environment="PROVISION_GIT_ID=$Id$"
+        WorkingDirectory=/home/core
+        ExecStartPre=/bin/bash -c 'if [ -d cluster.coreos.install ] ; then (cd cluster.coreos.install && git pull); else /usr/bin/git clone https://github.com/epfl-sti/cluster.coreos.install.git; fi'
+        ExecStart=/home/core/cluster.coreos.install/install.sh <%= @host.params['coreos_install_args'] || 'install reboot' %>
+<% if @host.params['ssh_authorized_keys'] -%>
+ssh_authorized_keys:
+<% @host.params['ssh_authorized_keys'].split(',').map(&:strip).each do |ssh_key| -%>
+  - "<%= ssh_key %>"
+<% end -%>
+<% else -%>
+users:
+  - name: core
+    passwd: <%= root_pass %>
+    lock-passwd: false
+<% end -%>

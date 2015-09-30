@@ -1,0 +1,2 @@
+coreos/provision.erb             ident
+snippets/coreos_cloudconfig.erb  ident
