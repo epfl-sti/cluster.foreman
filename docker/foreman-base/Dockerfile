@@ -39,7 +39,7 @@ RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
 # Hack so that "foreman-rake console -- --sandbox" works.
 RUN perl -i -pe 's/(\[ -f Gemfile \] &&)/$1 . q( [ $1 != 'console' ] &&)/e' /usr/sbin/foreman-rake
 # Hack so that veth interfaces don't clog up the "interfaces" view
-RUN perl -i -ne 'if (m/^(.*)def ignored_interfaces/) { <>; <>; print $1, qq(def ignored_interfaces\n), $1, q{  /\A(lo(?!cal_area_connection)|usb|vnet|veth|docker)/}, qq(\n), $1, qq(end\n) } else { print }' /usr/share/foreman/app/services/fact_parser.rb
+RUN perl -i -ne 'if (m/^(.*)def ignored_interfaces/) { <>; <>; print $1, qq(def ignored_interfaces\n), $1, q{  /\A(lo(?!cal_area_connection)|usb|vnet|veth|docker|br)/}, qq(\n), $1, qq(end\n) } else { print }' /usr/share/foreman/app/services/fact_parser.rb
 
 # http://librarian-puppet.com/
 RUN gem install librarian-puppet
