@@ -15,6 +15,7 @@ coreos:
         [Unit]
         Description=Install coreos to disk
         [Service]
+        Environment="COREOS_FQDN=<%= @host.name %>"
         Environment="COREOS_PRIVATE_IPV4=<%= @host.ip %>"
         Environment="COREOS_INSTALL_TO_DISK=<%= @host.params['install-disk'] %>"
         Environment="COREOS_INSTALL_URL=<%= @mediapath %>"
