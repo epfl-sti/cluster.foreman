@@ -23,8 +23,6 @@ coreos:
         Environment="PROVISIONING_DONE_URL=<%= foreman_url %>"
         Environment="PUPPET_CONF_CA_SERVER=<%= @host.params['puppet_conf_ca_server'] %>"
         Environment="PUPPET_CONF_SERVER=<%= @host.params['puppet_conf_server'] %>"
-        Environment="GATEWAY_VIP=<%= @host.params['gateway_vip'] %>"
-        Environment="DNS_VIP=<%= @host.params['dns_vip'] %>"
         Environment="PROVISION_GIT_ID=$Id$"
         WorkingDirectory=/home/core
         ExecStartPre=/bin/bash -c 'if [ -d cluster.coreos.install ] ; then (cd cluster.coreos.install && git pull); else /usr/bin/git clone https://github.com/epfl-sti/cluster.coreos.install.git; fi'
