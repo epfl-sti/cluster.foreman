@@ -1,0 +1,4 @@
+:filters:
+  - !ruby/regexp '/params$/'
+  - !ruby/regexp '/base$/'
+  - !ruby/regexp '/private$/'

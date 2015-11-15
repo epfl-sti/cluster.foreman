@@ -109,6 +109,7 @@ RUN apt-get -qy install ruby-rubyipmi
 
 # EPFLSTI-specific customizations
 ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
+ADD ignored_environments.yml /usr/share/foreman/config/ignored_environments.yml
 RUN mkdir -p /usr/share/foreman-installer/modules/interactive_configure/manifests
 ADD interactive_configure.pp /usr/share/foreman-installer/modules/interactive_configure/manifests/init.pp
 RUN rm -rf /etc/puppet/environments/*
