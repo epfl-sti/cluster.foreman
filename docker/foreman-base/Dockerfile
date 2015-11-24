@@ -20,8 +20,8 @@ RUN echo "PS1='⚠DOCKER! \u@\h:\w\$ '" >> /root/.bashrc
 # http://theforeman.org/manuals/1.9/index.html#3.InstallingForeman
 RUN wget -q https://apt.puppetlabs.com/puppetlabs-release-trusty.deb
 RUN dpkg -i puppetlabs-release-trusty.deb
-RUN echo "deb http://deb.theforeman.org/ trusty 1.9" > /etc/apt/sources.list.d/foreman.list
-RUN echo "deb http://deb.theforeman.org/ plugins 1.9" >> /etc/apt/sources.list.d/foreman.list
+RUN echo "deb http://deb.theforeman.org/ trusty 1.10" > /etc/apt/sources.list.d/foreman.list
+RUN echo "deb http://deb.theforeman.org/ plugins 1.10" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt-get -q update && \
     apt-get -qy install foreman foreman-installer ruby \
