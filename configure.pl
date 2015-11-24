@@ -297,6 +297,14 @@ Docker's NAT).
 sub foreman_proxy__dns_interface : ToYaml { "eth1" }
 sub foreman_proxy__dhcp_interface : ToYaml { "eth1" }
 
+=head2 foreman::cli
+
+Set to a true value so that foreman-installer sets up hammer
+
+=cut
+
+sub foreman_cli : ToYaml("foreman::cli") { {} }
+
 
 =head1 UTILITY FUNCTIONS
 
