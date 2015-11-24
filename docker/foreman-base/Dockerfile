@@ -86,6 +86,7 @@ RUN rm -rf /var/lib/puppet/concat/* \
     /etc/apache2/sites-available/05-foreman-ssl.conf        \
     /etc/foreman-proxy/settings.d/templates.yml             \
     /etc/foreman-proxy/settings.d/puppet.yml                \  
+    /etc/foreman-proxy/settings.d/dns_nsupdate_gss.yml      \
     /etc/puppet/foreman.yaml \
     /etc/puppet/hiera.yaml
 
