@@ -19,6 +19,12 @@ if [ -n "$tarname" ]; then
         etc/puppet/environments/production/ \
         etc/foreman/foreman-installer-answers.yaml \
         root/ || true
+    # For some reason, dockerer backup forgets to record user and group names?
+    chown -R postgres:postgres var/lib/postgresql
+    chown -R puppet:puppet var/lib/puppet
+    chown -R root:root var/lib/dhcp
+    chown -R foreman-proxy:foreman-proxy var/lib/tftpboot/{boot,pxelinux.cfg}
+    chown -R bind:bind var/cache/bind/
 fi
 
 # -u means update only (if newer):
