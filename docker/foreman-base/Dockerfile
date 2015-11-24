@@ -48,6 +48,10 @@ RUN gem install librarian-puppet
 # Moar debugging tools
 RUN gem install debugger
 
+# Ensure we get a reasonable locale setup (wanted by PostgreSQL DB creation)
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+
 # Run foreman-installer a first time, just to drag in as many packages as possible
 # With tricks from
 # https://github.com/riskable/docker-foreman/blob/master/install_foreman.sh
