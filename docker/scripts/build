@@ -24,7 +24,13 @@ fi
 # -u means update only (if newer):
 cp -u /cluster.foreman/foreman-installer-answers.yaml /etc/foreman/
 
-foreman-installer || bash
+# Contain temporary errors such as out-of-order db:migrate files:
+(for i in 1 2 3; do foreman-installer && exit 0; done; exit 1) || bash
+
+# From the upgrade instructions in the Foreman manual (not handled by
+# foreman-installer):
+foreman-rake tmp:cache:clear
+foreman-rake tmp:sessions:clear
 
 perl -i -pe 's|:daemon:.*|:daemon: false|g' /etc/foreman-proxy/settings.yml
 
