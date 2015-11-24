@@ -54,9 +54,10 @@ RUN gem install debugger
 # TODO: speed this up somehow (e.g. find a way to not attempt to start daemons)
 RUN mv /usr/share/foreman-installer/checks/hostname.rb /usr/share/foreman-installer/checks_hostname.rb.BAK
 ADD foreman-installer-answers-stub.yaml /etc/foreman/foreman-installer-answers.yaml
-RUN env FACTER_fqdn=$(hostname)."$(sed -n 's/search //p' < /etc/resolv.conf)" foreman-installer -v \
+RUN env FACTER_fqdn=$(hostname) FACTER_domain="local" foreman-installer -v \
     --enable-foreman-cli \
     --enable-foreman-proxy \
+    --foreman-proxy-register-in-foreman=false \
     --enable-foreman-plugin-setup \
     --enable-foreman-plugin-discovery \
     --foreman-plugin-discovery-install-images
