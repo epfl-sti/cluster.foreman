@@ -293,6 +293,18 @@ our source tree here instead).
 
 sub puppet__server_environments : ToYaml { [] }
 
+=head2 puppetdb
+
+Enabled, and set to share the same PostgreSQL as Foreman.
+
+=cut
+
+sub puppet__server_puppetdb_host : ToYaml { "localhost" }
+
+sub puppetdb : ToYaml {
+  return { manage_dbserver => "false" }
+}
+
 =head2 foreman_proxy → dns_interface
 
 =head2 foreman_proxy → dhcp_interface

@@ -29,7 +29,7 @@ RUN apt-get -q update && \
                        ruby-foreman-discovery ruby-foreman-column-view \
                        ruby-foreman-templates \
                        ruby-hammer-cli-foreman \
-                       ruby-puppetdb-foreman \
+                       puppetdb puppetdb-terminus ruby-puppetdb-foreman \
                        tftp tftpd-hpa xinetd git \
                        supervisor iptables \
                        ruby-rubyipmi
