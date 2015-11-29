@@ -17,9 +17,10 @@ RUN apt-get -qy install vim strace tcpdump lsof
 RUN echo 'export "LANG=C.UTF-8"' >> /root/.bashrc
 RUN echo "PS1='⚠DOCKER! \u@\h:\w\$ '" >> /root/.bashrc
 
-# http://theforeman.org/manuals/1.9/index.html#3.InstallingForeman
-RUN wget -q https://apt.puppetlabs.com/puppetlabs-release-trusty.deb
-RUN dpkg -i puppetlabs-release-trusty.deb
+# https://puppetlabs.com/blog/welcome-puppet-collections
+RUN set -e -x; wget -q http://apt.puppetlabs.com/puppetlabs-release-trusty.deb ; dpkg -i puppetlabs-release-trusty.deb; rm puppetlabs-release-trusty.deb
+
+# http://theforeman.org/manuals/1.10/index.html#3.InstallingForeman
 RUN echo "deb http://deb.theforeman.org/ trusty 1.10" > /etc/apt/sources.list.d/foreman.list
 RUN echo "deb http://deb.theforeman.org/ plugins 1.10" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
@@ -28,14 +29,16 @@ RUN apt-get -q update && \
                        ruby-foreman-discovery ruby-foreman-column-view \
                        ruby-foreman-templates \
                        ruby-hammer-cli-foreman \
-                       tftp tftpd-hpa xinetd git
+                       tftp tftpd-hpa xinetd git \
+                       supervisor iptables \
+                       ruby-rubyipmi
 
-# enable => true doesn't work in an Ubuntu-based container:
-RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
-   /usr/share/foreman-installer/modules/tftp/manifests/service.pp \
-   /usr/share/foreman-installer/modules/dhcp/manifests/init.pp \
-   /usr/share/foreman-installer/modules/puppet/manifests/agent/service.pp \
-   /usr/share/foreman-installer/modules/puppet/manifests/server/service.pp
+# Install networking stuff:
+ADD pipework/pipework /usr/local/bin/pipework
+RUN chmod +x /usr/local/bin/pipework
+
+# Configure supervisord for the "run" phase:
+ADD supervisord.conf /etc/supervisor/
 
 # Hack so that "foreman-rake console -- --sandbox" works.
 RUN perl -i -pe 's/(\[ -f Gemfile \] &&)/$1 . q( [ $1 != 'console' ] &&)/e' /usr/sbin/foreman-rake
@@ -100,20 +103,6 @@ RUN find / -xdev \
      -print0 | \
     xargs -0 grep -l $(cat /etc/hostname) | \
     perl -ne 'if ($. == 1) { warn "Still some files containing the forbidden hostname:\n"}; print STDERR $_; END { die if $. }'
-
-# Install networking stuff:
-RUN apt-get -qy install iptables
-
-ADD pipework/pipework /usr/local/bin/pipework
-RUN chmod +x /usr/local/bin/pipework
-
-# Install supervisord for the "run" phase:
-RUN apt-get -y install supervisor
-ADD supervisord.conf /etc/supervisor/
-
-# Add dependencies for IPMI (foreman-installer only takes care of them
-# in part)
-RUN apt-get -qy install ruby-rubyipmi
 
 # EPFLSTI-specific customizations
 ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
