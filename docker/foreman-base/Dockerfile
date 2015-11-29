@@ -29,9 +29,20 @@ RUN apt-get -q update && \
                        ruby-foreman-discovery ruby-foreman-column-view \
                        ruby-foreman-templates \
                        ruby-hammer-cli-foreman \
+                       ruby-puppetdb-foreman \
                        tftp tftpd-hpa xinetd git \
                        supervisor iptables \
                        ruby-rubyipmi
+
+# http://librarian-puppet.com/
+RUN gem install librarian-puppet
+
+# Moar debugging tools
+RUN gem install debugger
+
+# Ensure we get a reasonable locale setup (wanted by PostgreSQL DB creation)
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
 
 # Install networking stuff:
 ADD pipework/pipework /usr/local/bin/pipework
@@ -44,16 +55,12 @@ ADD supervisord.conf /etc/supervisor/
 RUN perl -i -pe 's/(\[ -f Gemfile \] &&)/$1 . q( [ $1 != 'console' ] &&)/e' /usr/sbin/foreman-rake
 # Hack so that veth interfaces don't clog up the "interfaces" view
 RUN perl -i -ne 'if (m/^(.*)def ignored_interfaces/) { <>; <>; print $1, qq(def ignored_interfaces\n), $1, q{  /\A(lo(?!cal_area_connection)|usb|vnet|veth|docker|br)/}, qq(\n), $1, qq(end\n) } else { print }' /usr/share/foreman/app/services/fact_parser.rb
-
-# http://librarian-puppet.com/
-RUN gem install librarian-puppet
-
-# Moar debugging tools
-RUN gem install debugger
-
-# Ensure we get a reasonable locale setup (wanted by PostgreSQL DB creation)
-RUN locale-gen en_US.UTF-8
-ENV LANG en_US.UTF-8
+# enable => true doesn't work in an Ubuntu-based container:
+RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
+   /usr/share/foreman-installer/modules/tftp/manifests/service.pp \
+   /usr/share/foreman-installer/modules/dhcp/manifests/init.pp \
+   /usr/share/foreman-installer/modules/puppet/manifests/agent/service.pp \
+   /usr/share/foreman-installer/modules/puppet/manifests/server/service.pp
 
 # Run foreman-installer a first time, just to drag in as many packages as possible
 # With tricks from
