@@ -123,6 +123,10 @@ RUN ln -s /cluster.foreman/puppet/environments/production/modules/epflsti .
 # Add puppet-ipmi module with our own patch to autodetect IPMI interfaces:
 RUN set -e -x; git clone https://github.com/epfl-sti/puppet-ipmi.git ipmi; cd ipmi; ln -s .. modules; librarian-puppet install --verbose
 
+# In order for foreman-installer's puppetdb module to work properly, it
+# has to be loaded before puppet:
+RUN if ! grep -e '- puppetdb' /etc/foreman/foreman-installer.yaml; then perl -i -pe 'm/^( *)- puppet/ && print "$1- puppetdb\n";' /etc/foreman/foreman-installer.yaml; fi
+
 WORKDIR /
 RUN mkdir /cluster.foreman
 # Keep this list in sync with dockerer and ../scripts/build
