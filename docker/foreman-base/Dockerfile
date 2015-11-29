@@ -79,7 +79,7 @@ RUN mv /usr/share/foreman-installer/checks_hostname.rb.BAK /usr/share/foreman-in
 
 # Remove all traces of the random hostname that was in use during the build;
 # and then double-check that they are all gone.
-RUN service postgresql start && echo "drop database foreman" | sudo -u foreman psql template1 && service postgresql stop
+RUN set -e -x; service postgresql start; for i in $(seq 1 3); do echo "drop database foreman" | sudo -u foreman psql template1 && break; sleep 20; done;  service postgresql stop
 RUN sudo -u postgres /usr/lib/postgresql/*/bin/pg_resetxlog /var/lib/postgresql/*/main/
 RUN find /var/lib/puppet \
     /var/cache/foreman \
