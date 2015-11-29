@@ -274,6 +274,15 @@ including its CA.
 
 sub puppet__server : ToYaml { "true" }
 
+=head2 puppet → server_parser
+
+Set to "future", to enable the future parser (see
+L<https://puppetlabs.com/blog/puppet-3-2-introduces-an-experimental-parser-and-new-iteration-features>)
+
+=cut
+
+sub puppet__server_parser : ToYaml { "future" }
+
 =head2 puppet → server_environments
 
 Set to the empty list so that foreman-installer doesn't try to create
