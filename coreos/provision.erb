@@ -29,7 +29,7 @@ coreos:
         ExecStart=/home/core/cluster.coreos.install/install.sh <%= @host.params['coreos_install_args'] || 'install-auto' %>
 <% if @host.params['ssh_authorized_keys'] -%>
 ssh_authorized_keys:
-<% @host.params['ssh_authorized_keys'].split(',').map(&:strip).each do |ssh_key| -%>
+<% @host.params['ssh_authorized_keys'].split(/\r?\n/).map(&:strip).each do |ssh_key| -%>
   - "<%= ssh_key %>"
 <% end -%>
 <% else -%>
