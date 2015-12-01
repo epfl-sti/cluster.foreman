@@ -54,6 +54,7 @@ ADD supervisord.conf /etc/supervisor/
 # Hack so that "foreman-rake console -- --sandbox" works.
 RUN perl -i -pe 's/(\[ -f Gemfile \] &&)/$1 . q( [ $1 != 'console' ] &&)/e' /usr/sbin/foreman-rake
 # Hack so that veth interfaces don't clog up the "interfaces" view
+# TODO: do this with additional Ruby code, instead of patching
 RUN perl -i -ne 'if (m/^(.*)def ignored_interfaces/) { <>; <>; print $1, qq(def ignored_interfaces\n), $1, q{  /\A(lo(?!cal_area_connection)|usb|vnet|veth|docker|br|ethbr)/}, qq(\n), $1, qq(end\n) } else { print }' /usr/share/foreman/app/services/fact_parser.rb
 # enable => true doesn't work in an Ubuntu-based container:
 RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
@@ -111,21 +112,22 @@ RUN find / -xdev \
     xargs -0 grep -l $(cat /etc/hostname) | \
     perl -ne 'if ($. == 1) { warn "Still some files containing the forbidden hostname:\n"}; print STDERR $_; END { die if $. }'
 
-# EPFLSTI-specific customizations
+# In order for foreman-installer's puppetdb module to work properly, it
+# has to be loaded before puppet:
+RUN if ! grep -e '- puppetdb' /etc/foreman/foreman-installer.yaml; then perl -i -pe 'm/^( *)- puppet/ && print "$1- puppetdb\n";' /etc/foreman/foreman-installer.yaml; fi
+
+# EPFLSTI-specific code and customizations
 ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
 ADD ignored_environments.yml /usr/share/foreman/config/ignored_environments.yml
 RUN mkdir -p /usr/share/foreman-installer/modules/interactive_configure/manifests
 ADD interactive_configure.pp /usr/share/foreman-installer/modules/interactive_configure/manifests/init.pp
 RUN rm -rf /etc/puppet/environments/*
+RUN cd /usr/share/foreman-installer/modules; mv puppetdb puppetdb.dist; git clone https://github.com/epfl-sti/puppetlabs-puppetdb.git puppetdb
 RUN mkdir -p /etc/puppet/environments/production/modules
 WORKDIR /etc/puppet/environments/production/modules
-RUN ln -s /cluster.foreman/puppet/environments/production/modules/epflsti .
+RUN git clone https://github.com/epfl-sti/cluster.coreos.puppet.git epflsti_coreos; cd epflsti_coreos; ln -s .. modules; librarian-puppet install --verbose
 # Add puppet-ipmi module with our own patch to autodetect IPMI interfaces:
 RUN set -e -x; git clone https://github.com/epfl-sti/puppet-ipmi.git ipmi; cd ipmi; ln -s .. modules; librarian-puppet install --verbose
-
-# In order for foreman-installer's puppetdb module to work properly, it
-# has to be loaded before puppet:
-RUN if ! grep -e '- puppetdb' /etc/foreman/foreman-installer.yaml; then perl -i -pe 'm/^( *)- puppet/ && print "$1- puppetdb\n";' /etc/foreman/foreman-installer.yaml; fi
 
 WORKDIR /
 RUN mkdir /cluster.foreman

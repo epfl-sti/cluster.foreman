@@ -182,7 +182,6 @@ set -e -x
 docker run -it --volumes-from=$container_name-INITIAL \\
     --name=$container_name -h $container_name \\
     --dns=127.0.0.1 \\
-    -v "$Bin/..":/cluster.foreman \\
     $image_name
 BRIDGE_AND_DOCKER_RUN
 }

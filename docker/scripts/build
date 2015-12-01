@@ -16,7 +16,6 @@ if [ -n "$tarname" ]; then
         var/lib/dhcp/ \
         var/lib/tftpboot/ \
         var/cache/bind/ \
-        etc/puppet/environments/production/ \
         etc/foreman/foreman-installer-answers.yaml \
         root/ || true
     # For some reason, dockerer backup forgets to record user and group names?
