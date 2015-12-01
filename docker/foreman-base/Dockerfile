@@ -119,8 +119,8 @@ RUN if ! grep -e '- puppetdb' /etc/foreman/foreman-installer.yaml; then perl -i 
 # EPFLSTI-specific code and customizations
 ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
 ADD ignored_environments.yml /usr/share/foreman/config/ignored_environments.yml
-RUN mkdir -p /usr/share/foreman-installer/modules/interactive_configure/manifests
-ADD interactive_configure.pp /usr/share/foreman-installer/modules/interactive_configure/manifests/init.pp
+RUN mkdir -p /usr/share/foreman-installer/modules/epflsti/manifests
+ADD epflsti.pp /usr/share/foreman-installer/modules/epflsti/manifests/init.pp
 RUN rm -rf /etc/puppet/environments/*
 RUN cd /usr/share/foreman-installer/modules; mv puppetdb puppetdb.dist; git clone https://github.com/epfl-sti/puppetlabs-puppetdb.git puppetdb
 RUN mkdir -p /etc/puppet/environments/production/modules
