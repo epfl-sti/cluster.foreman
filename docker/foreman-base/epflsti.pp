@@ -10,4 +10,10 @@
 class epflsti(
   $interactive_answers = {}
 ) {
+  exec { "copy Puppet keys for puppetdb":
+    command => "puppetdb-ssl-setup",
+    path => $::path,
+    creates => $::puppetdb::params::ssl_key_path,
+    require => File[$::puppet::server::ssl_cert_key]
+  } -> Service[$::puppetdb::params::puppet_service_name]
 }
