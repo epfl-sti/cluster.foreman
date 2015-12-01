@@ -130,7 +130,6 @@ RUN git clone https://github.com/epfl-sti/cluster.coreos.puppet.git epflsti_core
 RUN set -e -x; git clone https://github.com/epfl-sti/puppet-ipmi.git ipmi; cd ipmi; ln -s .. modules; librarian-puppet install --verbose
 
 WORKDIR /
-RUN mkdir /cluster.foreman
 # Keep this list in sync with dockerer and ../scripts/build
 VOLUME /var/lib/puppet
 VOLUME /var/lib/postgresql
