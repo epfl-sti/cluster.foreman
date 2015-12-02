@@ -321,7 +321,7 @@ sub _load_yaml_config {
 
 sub _configure_answer {
   my ($self, $key) = @_;
-  return $self->yaml_config->{interactive_configure}->{answers}->{$key};
+  return $self->yaml_config->{epflsti}->{interactive_answers}->{$key};
 }
 
 sub vip { shift->_configure_answer("puppetmaster_vip") }
