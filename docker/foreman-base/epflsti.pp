@@ -10,10 +10,13 @@
 class epflsti(
   $interactive_answers = {}
 ) {
+
+  # Copy certificate, private key and CA from Puppet to puppetdb
+  File[$::puppet::server::ssl_cert_key] ->
   exec { "copy Puppet keys for puppetdb":
     command => "puppetdb-ssl-setup",
     path => $::path,
     creates => $::puppetdb::params::ssl_key_path,
-    require => File[$::puppet::server::ssl_cert_key]
-  } -> Service[$::puppetdb::params::puppet_service_name]
+  } ->
+  Service[$::puppetdb::params::puppet_service_name]
 }
