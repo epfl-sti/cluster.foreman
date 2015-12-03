@@ -324,9 +324,12 @@ sub puppet__server_environments : ToYaml { [] }
 
 =head2 puppetdb
 
-Enabled, and set to share the same PostgreSQL as Foreman.
+Enabled with exported resources ("storeconfigs"), sharing the same
+PostgreSQL database as Foreman.
 
 =cut
+
+sub puppet__server_soreconfigs_backend : ToYaml { "puppetdb" }
 
 sub puppet__server_puppetdb_host : ToYaml { puppetmaster_fqdn() }
 
