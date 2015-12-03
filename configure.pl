@@ -274,6 +274,14 @@ including its CA.
 
 sub puppet__server : ToYaml { "true" }
 
+=head2 puppet → agent
+
+Set to false. We don't want the Puppetmaster-in-Docker to manage itself.
+
+=cut
+
+sub puppet__agent : ToYaml { "false" }
+
 =head2 puppet → server_parser
 
 Set to "future", to enable the future parser (see
