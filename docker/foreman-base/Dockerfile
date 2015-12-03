@@ -129,6 +129,10 @@ WORKDIR /etc/puppet/environments/production/modules
 RUN git clone https://github.com/epfl-sti/cluster.coreos.puppet.git epflsti_coreos; cd epflsti_coreos; ln -s .. modules; librarian-puppet install --verbose
 # Add puppet-ipmi module with our own patch to autodetect IPMI interfaces:
 RUN set -e -x; git clone https://github.com/epfl-sti/puppet-ipmi.git ipmi; cd ipmi; ln -s .. modules; librarian-puppet install --verbose
+# Replace the puppetdb_conn_validator type with our own define() (see epflsti.pp)
+RUN rm -rf /usr/share/foreman-installer/modules/puppetdb/lib/puppet/provider/puppetdb_conn_validator \
+  /usr/share/foreman-installer/modules/puppetdb/lib/puppet/type/puppetdb_conn_validator.rb
+
 
 WORKDIR /
 # Keep this list in sync with dockerer and ../scripts/build

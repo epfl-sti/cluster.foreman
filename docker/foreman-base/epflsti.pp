@@ -20,3 +20,22 @@ class epflsti(
   } ->
   Service[$::puppetdb::params::puppet_service_name]
 }
+
+# Override puppetdb's puppetdb_conn_validator with our own version
+# that doesn't insist on using the agent code paths (which we can't,
+# since the Puppetmaster-in-Docker doesn't run the agent)
+define puppetdb_conn_validator (
+  $puppetdb_server = $::fqdn,
+  $puppetdb_port   = 8081,
+  $use_ssl         = true,
+  $timeout         = 120,
+  $test_url        = "/v3/version") {
+    $_proto = $use_ssl ? {
+      false    => "http",
+      default => "https"
+    }
+    exec { "puppetdb_conn_validator curl ${name}":
+      path => $::path,
+      command => "timeout ${timeout} bash -c 'set -x; while ! curl -k -v --cert /var/lib/puppet/ssl/certs/${::fqdn}.pem --key /var/lib/puppet/ssl/private_keys/${::fqdn}.pem ${_proto}://${puppetdb_server}:${puppetdb_port}${test_url}; do sleep 10; done'"
+    }
+}
