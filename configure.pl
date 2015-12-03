@@ -307,8 +307,6 @@ Enabled, and set to share the same PostgreSQL as Foreman.
 
 =cut
 
-sub puppet__server_puppetdb_host : ToYaml { "localhost" }
-
 sub puppetdb : ToYaml {
   return {
     ssl_listen_address => '0.0.0.0',
