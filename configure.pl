@@ -108,14 +108,13 @@ C<configure.pl> will also take care of setting up an IPv4 address plan.
 
 sub physical_internal_bridge :
   ToYaml : PromptUser(validate => \&maybe_configure_internal_bridge) {
-  my %network_configs = network_configs();
   my @phybridges = grep {
-    my $iface = $network_configs{$_};
+    my $iface = $_;
     (@{$iface->{ips} || []} >= 1) &&
       (grep {interface_type($_) eq "physical"} (@{$iface->{bridged} || []}));
-  } (keys %network_configs);
+  } (network_configs());
   if (@phybridges) {
-    return $phybridges[0];
+    return $phybridges[0]->{name};
   } else {
     return "ethbr4";
   }
@@ -124,7 +123,7 @@ sub physical_internal_bridge :
 sub maybe_configure_internal_bridge {
   my ($bridgenameref) = @_;
   my $bridgename = $$bridgenameref;
-  my %network_configs = network_configs();
+  my %network_configs = map { $_->{name} => $_ } network_configs();
   return if exists $network_configs{$bridgename};
 
   my $internal_iface = physical_internal_interface();
@@ -164,22 +163,18 @@ GRIPE
 }
 
 sub physical_internal_interface : PromptUser {
-  my %network_configs = network_configs();
-  my $rfc1918_score_of_interface = sub {
-    my ($iface) = @_;
-    my $score = max(map {rfc1918_score($_)} @{$iface->{ips}}) // -1;
-    warn("$iface->{name} has score $score");
-    return $score;
-  };
-  my @physical_interfaces = sort {
-    $rfc1918_score_of_interface->($b) <=> $rfc1918_score_of_interface->($a)
-  } (grep {interface_type($_->{name}) eq "physical"} (values %network_configs));
-  return if ! @physical_interfaces;
+  my @physical_interfaces = grep {interface_type($_->{name}) eq "physical"} network_configs();
   return $physical_interfaces[0]->{name};
 }
 
+sub internal_ip : PromptUser {
+  my @network_configs = network_configs();
+
+  return $network_configs[0]->{ips}->[0]->addr();
+}
+
 sub gateway_vip : PromptUser {
-  my @quad = split m/\./, physical_internal_ip();
+  my @quad = split m/\./, internal_ip();
   $quad[3] = 254;
   return join(".", @quad);
 }
@@ -216,6 +211,7 @@ sub ipmi_vip : ToYaml : PromptUser { "192.168.10.253" }
 sub ipmi_netmask : ToYaml : PromptUser { 24 }
 
 
+# Return interface descriptors ordered by decreasing "RFC1918-ness."
 memoize('network_configs');
 sub network_configs {
   my %network_configs;
@@ -235,7 +231,15 @@ sub network_configs {
     }
   }
 
-  return %network_configs;
+  my $rfc1918_score_of_interface = sub {
+    my ($iface) = @_;
+    my $score = max(map {rfc1918_score($_)} @{$iface->{ips}}) // -1;
+    debug("$iface->{name} has RFC1918 score $score");
+    return $score;
+  };
+  return sort {
+    $rfc1918_score_of_interface->($b) <=> $rfc1918_score_of_interface->($a)
+  } (values %network_configs);
 }
 
 sub interface_type {
@@ -361,6 +365,10 @@ A number of helper functions are available for calling from the magic
 functions with attributes.
 
 =cut
+
+sub debug {
+  warn(@_) if $ENV{DEBUG};
+}
 
 =pod
 
