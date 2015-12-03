@@ -75,6 +75,23 @@ sub foreman_proxy__dns_forwarders : ToYaml {
   [qw(128.178.15.227 128.178.15.228)]
 }
 
+=head1 NETWORK NAMES
+
+Foreman runs a DNS server as part of the foreman-proxy rig, that
+serves a DNS domain that should be dedicated to the cluster – For
+instance C<mycluster.mydomain.com>. If you can secure DNS delegation
+for that subdomain, great! Your host names will be visible from
+outside the cluster. But this is not mandatory.
+
+=cut
+
+sub cluster_domain_name : ToYaml: PromptUser {
+  use Net::Domain qw(hostdomain);
+  hostdomain();
+}
+
+sub puppetmaster_fqdn { "puppetmaster." . cluster_domain_name }
+
 =head1 NETWORK ADDRESS PLANNING AND VIP CONFIGURATION
 
 B<configure.pl> reserves a number of so-called Virtual IPs (VIPs),
@@ -306,6 +323,8 @@ sub puppet__server_environments : ToYaml { [] }
 Enabled, and set to share the same PostgreSQL as Foreman.
 
 =cut
+
+sub puppet__server_puppetdb_host : ToYaml { puppetmaster_fqdn() }
 
 sub puppetdb : ToYaml {
   return {
