@@ -97,9 +97,6 @@ RUN rm -rf /var/lib/puppet/concat/* \
     /etc/foreman-proxy/settings.d/dns_nsupdate_gss.yml      \
     /etc/puppet/foreman.yaml \
     /etc/puppet/hiera.yaml
-
-# In case you were idly tampering with the container while it was being built:
-RUN rm -f /root/.bash_history
     
 RUN find / -xdev \
      -path /var/log -prune -false -o -type f \
@@ -109,9 +106,16 @@ RUN find / -xdev \
     xargs -0 grep -l $(cat /etc/hostname) | \
     perl -ne 'if ($. == 1) { warn "Still some files containing the forbidden hostname:\n"}; print STDERR $_; END { die if $. }'
 
+# In case you were idly tampering with the container while it was being built:
+RUN rm -f /root/.bash_history
+
 # In order for foreman-installer's puppetdb module to work properly, it
 # has to be loaded before puppet:
 RUN if ! grep -e '- puppetdb' /etc/foreman/foreman-installer.yaml; then perl -i -pe 'm/^( *)- puppet/ && print "$1- puppetdb\n";' /etc/foreman/foreman-installer.yaml; fi
+
+# Make "puppet query" work against the puppetdb
+RUN cd /etc/puppet/environments/production/modules; \
+  puppet module install dalen-puppetdbquery
 
 # EPFLSTI-specific code and customizations
 ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
