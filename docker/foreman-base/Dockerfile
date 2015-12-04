@@ -77,6 +77,14 @@ RUN env FACTER_fqdn=$(hostname) FACTER_domain="local" foreman-installer -v \
     --foreman-plugin-discovery-install-images
 RUN mv /usr/share/foreman-installer/checks_hostname.rb.BAK /usr/share/foreman-installer/checks/hostname.rb
 
+# In order for foreman-installer's puppetdb module to work properly, it
+# has to be loaded before puppet:
+RUN if ! grep -e '- puppetdb' /etc/foreman/foreman-installer.yaml; then perl -i -pe 'm/^( *)- puppet/ && print "$1- puppetdb\n";' /etc/foreman/foreman-installer.yaml; fi
+
+# Make "puppet query" work against the puppetdb
+RUN cd /etc/puppet/environments/production/modules; \
+  puppet module install dalen-puppetdbquery
+
 # Remove all traces of the random hostname that was in use during the build;
 # and then double-check that they are all gone.
 RUN set -e -x; service postgresql start; for i in $(seq 1 3); do echo "drop database foreman" | sudo -u foreman psql template1 && break; sleep 20; done;  service postgresql stop
@@ -111,15 +119,6 @@ RUN find / -xdev \
 # In case you were idly tampering with the container while it was being built:
 RUN rm -f /root/.bash_history
 
-# In order for foreman-installer's puppetdb module to work properly, it
-# has to be loaded before puppet:
-RUN if ! grep -e '- puppetdb' /etc/foreman/foreman-installer.yaml; then perl -i -pe 'm/^( *)- puppet/ && print "$1- puppetdb\n";' /etc/foreman/foreman-installer.yaml; fi
-
-# Make "puppet query" work against the puppetdb
-RUN cd /etc/puppet/environments/production/modules; \
-  puppet module install dalen-puppetdbquery
-
-WORKDIR /
 # Keep this list in sync with dockerer and ../scripts/build
 VOLUME /var/lib/puppet
 VOLUME /var/lib/postgresql
@@ -149,4 +148,4 @@ RUN set -e -x; git clone https://github.com/epfl-sti/puppet-ipmi.git ipmi; cd ip
 # Replace the puppetdb_conn_validator type with our own define() (see epflsti.pp)
 RUN rm -rf /usr/share/foreman-installer/modules/puppetdb/lib/puppet/provider/puppetdb_conn_validator \
   /usr/share/foreman-installer/modules/puppetdb/lib/puppet/type/puppetdb_conn_validator.rb
-
+WORKDIR /
