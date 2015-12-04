@@ -117,7 +117,21 @@ RUN if ! grep -e '- puppetdb' /etc/foreman/foreman-installer.yaml; then perl -i 
 RUN cd /etc/puppet/environments/production/modules; \
   puppet module install dalen-puppetdbquery
 
+WORKDIR /
+# Keep this list in sync with dockerer and ../scripts/build
+VOLUME /var/lib/puppet
+VOLUME /var/lib/postgresql
+VOLUME /var/lib/dhcp
+VOLUME /var/lib/tftpboot
+VOLUME /var/cache/bind
+VOLUME /etc/puppet
+VOLUME /etc/foreman
+VOLUME /etc/foreman-proxy
+VOLUME /root
+
 # EPFLSTI-specific code and customizations
+# We keep these at the bottom so that if you don't want these, you
+# still benefit from intermediate layers built up to here.
 ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
 ADD ignored_environments.yml /usr/share/foreman/config/ignored_environments.yml
 RUN mkdir -p /usr/share/foreman-installer/modules/epflsti/manifests
@@ -134,15 +148,3 @@ RUN set -e -x; git clone https://github.com/epfl-sti/puppet-ipmi.git ipmi; cd ip
 RUN rm -rf /usr/share/foreman-installer/modules/puppetdb/lib/puppet/provider/puppetdb_conn_validator \
   /usr/share/foreman-installer/modules/puppetdb/lib/puppet/type/puppetdb_conn_validator.rb
 
-
-WORKDIR /
-# Keep this list in sync with dockerer and ../scripts/build
-VOLUME /var/lib/puppet
-VOLUME /var/lib/postgresql
-VOLUME /var/lib/dhcp
-VOLUME /var/lib/tftpboot
-VOLUME /var/cache/bind
-VOLUME /etc/puppet
-VOLUME /etc/foreman
-VOLUME /etc/foreman-proxy
-VOLUME /root
