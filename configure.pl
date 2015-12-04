@@ -106,7 +106,7 @@ C<configure.pl> will also take care of setting up an IPv4 address plan.
 
 =cut
 
-sub physical_internal_bridge :
+sub internal_bridge :
   ToYaml : PromptUser(validate => \&maybe_configure_internal_bridge) {
   my @phybridges = grep {
     my $iface = $_;
