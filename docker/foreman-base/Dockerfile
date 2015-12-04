@@ -25,14 +25,16 @@ RUN echo "deb http://deb.theforeman.org/ trusty 1.10" > /etc/apt/sources.list.d/
 RUN echo "deb http://deb.theforeman.org/ plugins 1.10" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt-get -q update && \
-    apt-get -qy install foreman foreman-installer ruby \
-                       ruby-foreman-discovery ruby-foreman-column-view \
-                       ruby-foreman-templates \
-                       ruby-hammer-cli-foreman \
-                       puppetdb puppetdb-terminus ruby-puppetdb-foreman \
-                       tftp tftpd-hpa xinetd git \
-                       supervisor iptables \
-                       ruby-rubyipmi
+    apt-get -qy install supervisor iptables tftp tftpd-hpa xinetd git \
+                foreman foreman-installer ruby \
+                ruby-rubyipmi \
+                ruby-foreman-discovery \
+                ruby-foreman-column-view \
+                ruby-foreman-templates \
+                ruby-hammer-cli-foreman \
+                ruby-foreman-cockpit \
+                ruby-foreman-dhcp-browser \
+                puppetdb puppetdb-terminus ruby-puppetdb-foreman
 
 # http://librarian-puppet.com/
 RUN gem install librarian-puppet
