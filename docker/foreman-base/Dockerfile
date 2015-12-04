@@ -112,6 +112,7 @@ RUN find / -xdev \
      -path /var/log -prune -false -o -type f \
      -not -path /etc/hostname \
      -not -path /etc/hosts \
+     -not -path "*/.git/*" \
      -print0 | \
     xargs -0 grep -l $(cat /etc/hostname) | \
     perl -ne 'if ($. == 1) { warn "Still some files containing the forbidden hostname:\n"}; print STDERR $_; END { die if $. }'
