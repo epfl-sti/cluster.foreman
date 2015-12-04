@@ -82,8 +82,7 @@ RUN mv /usr/share/foreman-installer/checks_hostname.rb.BAK /usr/share/foreman-in
 RUN if ! grep -e '- puppetdb' /etc/foreman/foreman-installer.yaml; then perl -i -pe 'm/^( *)- puppet/ && print "$1- puppetdb\n";' /etc/foreman/foreman-installer.yaml; fi
 
 # Make "puppet query" work against the puppetdb
-RUN cd /etc/puppet/environments/production/modules; \
-  puppet module install dalen-puppetdbquery
+RUN puppet module install --version 1.6.1 dalen-puppetdbquery
 
 # Fashion spotify/puppetexplorer as a foreman-installer plugin
 RUN cd /usr/share/foreman-installer/modules; git clone https://github.com/spotify/puppet-puppetexplorer.git puppetexplorer
