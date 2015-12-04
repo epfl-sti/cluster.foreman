@@ -122,7 +122,7 @@ RUN rm -rf /etc/puppet/environments/*
 RUN mkdir -p /etc/puppet/environments/production/modules
 WORKDIR /etc/puppet/environments/production/modules
 # Hack: put all "git clone"s *after* epflsti.pp above; this makes it easier
-# to invalidate and re-clone the Docker image.
+# to invalidate the Docker image and re-clone.
 RUN git clone https://github.com/epfl-sti/cluster.coreos.puppet.git epflsti_coreos; cd epflsti_coreos; ln -s .. modules; librarian-puppet install --verbose
 # Add puppet-ipmi module with our own patch to autodetect IPMI interfaces:
 RUN set -e -x; git clone https://github.com/epfl-sti/puppet-ipmi.git ipmi; cd ipmi; ln -s .. modules; librarian-puppet install --verbose
