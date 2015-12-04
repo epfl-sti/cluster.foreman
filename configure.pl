@@ -340,6 +340,18 @@ sub puppetdb : ToYaml {
   }
 }
 
+=head2 puppetexplorer
+
+Uses port 8000, no SSL. (Also uses a fixed, old version of the package for compatibility
+with Puppet 3.x)
+
+=cut
+
+sub puppetexplorer__ensure_package : ToYaml { "1.5.0-59" }
+sub puppetexplorer__manage_apt : ToYaml { "true" }
+sub puppetexplorer__port : ToYaml { 8000 }
+sub puppetexplorer__ssl : ToYaml { "false" }
+
 =head2 foreman_proxy → dns_interface
 
 =head2 foreman_proxy → dhcp_interface
