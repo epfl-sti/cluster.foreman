@@ -77,6 +77,10 @@ RUN env FACTER_fqdn=$(hostname) FACTER_domain="local" foreman-installer -v \
     --foreman-plugin-discovery-install-images
 RUN mv /usr/share/foreman-installer/checks_hostname.rb.BAK /usr/share/foreman-installer/checks/hostname.rb
 
+# Purge all default environments; keep only production
+RUN rm -rf /etc/puppet/environments/*
+RUN mkdir -p /etc/puppet/environments/production/modules
+
 # In order for foreman-installer's puppetdb module to work properly, it
 # has to be loaded before puppet:
 RUN if ! grep -e '- puppetdb' /etc/foreman/foreman-installer.yaml; then perl -i -pe 'm/^( *)- puppet/ && print "$1- puppetdb\n";' /etc/foreman/foreman-installer.yaml; fi
@@ -122,6 +126,25 @@ RUN find / -xdev \
 # In case you were idly tampering with the container while it was being built:
 RUN rm -f /root/.bash_history
 
+# EPFLSTI-specific code and customizations
+# We keep these at the bottom so that if you don't want these, you
+# still benefit from intermediate layers built up to here.
+ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
+ADD ignored_environments.yml /usr/share/foreman/config/ignored_environments.yml
+RUN mkdir -p /usr/share/foreman-installer/modules/epflsti/manifests
+ADD epflsti.pp /usr/share/foreman-installer/modules/epflsti/manifests/init.pp
+WORKDIR /etc/puppet/environments/production/modules
+# Hack: put all "git clone"s *after* epflsti.pp above; this makes it easier
+# to invalidate the Docker image and re-clone.
+RUN git clone https://github.com/epfl-sti/cluster.coreos.puppet.git epflsti_coreos; cd epflsti_coreos; ln -s .. modules; librarian-puppet install --verbose
+# Add puppet-ipmi module with our own patch to autodetect IPMI interfaces:
+RUN set -e -x; git clone https://github.com/epfl-sti/puppet-ipmi.git ipmi; cd ipmi; ln -s .. modules; librarian-puppet install --verbose
+# Replace the puppetdb_conn_validator type with our own define() (see epflsti.pp)
+RUN rm -rf /usr/share/foreman-installer/modules/puppetdb/lib/puppet/provider/puppetdb_conn_validator \
+  /usr/share/foreman-installer/modules/puppetdb/lib/puppet/type/puppetdb_conn_validator.rb
+WORKDIR /
+
+# Volumes must be declared last (after we are done mutating them).
 # Keep this list in sync with dockerer and ../scripts/build
 VOLUME /var/lib/puppet
 VOLUME /var/lib/postgresql
@@ -133,22 +156,3 @@ VOLUME /etc/foreman
 VOLUME /etc/foreman-proxy
 VOLUME /root
 
-# EPFLSTI-specific code and customizations
-# We keep these at the bottom so that if you don't want these, you
-# still benefit from intermediate layers built up to here.
-ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
-ADD ignored_environments.yml /usr/share/foreman/config/ignored_environments.yml
-RUN mkdir -p /usr/share/foreman-installer/modules/epflsti/manifests
-ADD epflsti.pp /usr/share/foreman-installer/modules/epflsti/manifests/init.pp
-RUN rm -rf /etc/puppet/environments/*
-RUN mkdir -p /etc/puppet/environments/production/modules
-WORKDIR /etc/puppet/environments/production/modules
-# Hack: put all "git clone"s *after* epflsti.pp above; this makes it easier
-# to invalidate the Docker image and re-clone.
-RUN git clone https://github.com/epfl-sti/cluster.coreos.puppet.git epflsti_coreos; cd epflsti_coreos; ln -s .. modules; librarian-puppet install --verbose
-# Add puppet-ipmi module with our own patch to autodetect IPMI interfaces:
-RUN set -e -x; git clone https://github.com/epfl-sti/puppet-ipmi.git ipmi; cd ipmi; ln -s .. modules; librarian-puppet install --verbose
-# Replace the puppetdb_conn_validator type with our own define() (see epflsti.pp)
-RUN rm -rf /usr/share/foreman-installer/modules/puppetdb/lib/puppet/provider/puppetdb_conn_validator \
-  /usr/share/foreman-installer/modules/puppetdb/lib/puppet/type/puppetdb_conn_validator.rb
-WORKDIR /
