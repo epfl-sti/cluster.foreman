@@ -347,7 +347,7 @@ with Puppet 3.x)
 
 =cut
 
-sub puppetexplorer__ensure_package : ToYaml { "1.5.0-59" }
+sub puppetexplorer__package_ensure : ToYaml { "1.5.0-59" }
 sub puppetexplorer__manage_apt : ToYaml { "true" }
 sub puppetexplorer__port : ToYaml { 8000 }
 sub puppetexplorer__ssl : ToYaml { "false" }
