@@ -39,6 +39,9 @@ RUN apt-get -q update && \
 # http://librarian-puppet.com/
 RUN gem install librarian-puppet
 
+# Requirement of "puppet query events"
+RUN gem install chronic
+
 # Moar debugging tools
 RUN gem install debugger
 
