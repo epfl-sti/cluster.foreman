@@ -6,6 +6,18 @@ oses:
 - CoreOS
 %>
 hostname: <%= @host.name %>
+write_files:
+  - path: /etc/bootstrap-environment
+    content: |
+        COREOS_FQDN=<%= @host.name %>
+        COREOS_PRIVATE_IPV4=<%= @host.ip %>
+        COREOS_INSTALL_TO_DISK=<%= @host.params['install-disk'] %>
+        COREOS_INSTALL_URL=<%= @mediapath %>
+        COREOS_HASHED_CORE_PASSWORD=<%= root_pass %>
+        PROVISIONING_DONE_URL=<%= foreman_url %>
+        PUPPET_CONF_CA_SERVER=<%= @host.params['puppet_conf_ca_server'] %>
+        PUPPET_CONF_SERVER=<%= @host.params['puppet_conf_server'] %>
+        PROVISION_GIT_ID=$Id$
 coreos:
   units:
     - name: coreos-bootstrap.service
@@ -15,15 +27,7 @@ coreos:
         [Unit]
         Description=Install coreos to disk
         [Service]
-        Environment="COREOS_FQDN=<%= @host.name %>"
-        Environment="COREOS_PRIVATE_IPV4=<%= @host.ip %>"
-        Environment="COREOS_INSTALL_TO_DISK=<%= @host.params['install-disk'] %>"
-        Environment="COREOS_INSTALL_URL=<%= @mediapath %>"
-        Environment="COREOS_HASHED_CORE_PASSWORD=<%= root_pass %>"
-        Environment="PROVISIONING_DONE_URL=<%= foreman_url %>"
-        Environment="PUPPET_CONF_CA_SERVER=<%= @host.params['puppet_conf_ca_server'] %>"
-        Environment="PUPPET_CONF_SERVER=<%= @host.params['puppet_conf_server'] %>"
-        Environment="PROVISION_GIT_ID=$Id$"
+        EnvironmentFile=/etc/bootstrap-environment
         WorkingDirectory=/home/core
         ExecStartPre=/bin/bash -c 'if [ -d cluster.coreos.install ] ; then (cd cluster.coreos.install && git pull); else /usr/bin/git clone https://github.com/epfl-sti/cluster.coreos.install.git; fi'
         ExecStart=/home/core/cluster.coreos.install/install.sh <%= @host.params['coreos_install_args'] || 'install-auto' %>
