@@ -375,10 +375,10 @@ sub yaml_key {
 
 sub _PromptUser_yaml_key {
   my ($self) = @_;
-  # We can't pick our own top-level name, lest foreman-installer believe
-  # that it references a module. Hide our data under a dud foreman-installer
-  # module (see docker/foreman-base/interactive_configure.pp).
-  return ("interactive_configure", "answers", $self->{name});
+  # All the data we want to persist must belong to a foreman-installer
+  # module; use the one we add to hide the interactive answers to
+  # configure.pl (see docker/foreman-base/epflsti.pp).
+  return ("epflsti", "interactive_answers", $self->{name});
 }
 
 sub flag_name {

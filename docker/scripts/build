@@ -11,12 +11,11 @@ if [ -n "$tarname" ]; then
     # Untar the contents of all volumes.
     # Keep this list in sync with Dockerfile and dockerer
     tar xvf /cluster.foreman/$tarname \
-        var/lib/puppet/ \
+        var/lib/puppet/ssl \
         var/lib/postgresql/ \
         var/lib/dhcp/ \
         var/lib/tftpboot/ \
         var/cache/bind/ \
-        etc/puppet/environments/production/ \
         etc/foreman/foreman-installer-answers.yaml \
         root/ || true
     # For some reason, dockerer backup forgets to record user and group names?

@@ -75,6 +75,23 @@ sub foreman_proxy__dns_forwarders : ToYaml {
   [qw(128.178.15.227 128.178.15.228)]
 }
 
+=head1 NETWORK NAMES
+
+Foreman runs a DNS server as part of the foreman-proxy rig, that
+serves a DNS domain that should be dedicated to the cluster – For
+instance C<mycluster.mydomain.com>. If you can secure DNS delegation
+for that subdomain, great! Your host names will be visible from
+outside the cluster. But this is not mandatory.
+
+=cut
+
+sub cluster_domain_name : ToYaml: PromptUser {
+  use Net::Domain qw(hostdomain);
+  hostdomain();
+}
+
+sub puppetmaster_fqdn { "puppetmaster." . cluster_domain_name }
+
 =head1 NETWORK ADDRESS PLANNING AND VIP CONFIGURATION
 
 B<configure.pl> reserves a number of so-called Virtual IPs (VIPs),
@@ -89,16 +106,15 @@ C<configure.pl> will also take care of setting up an IPv4 address plan.
 
 =cut
 
-sub physical_internal_bridge :
+sub internal_bridge :
   ToYaml : PromptUser(validate => \&maybe_configure_internal_bridge) {
-  my %network_configs = network_configs();
   my @phybridges = grep {
-    my $iface = $network_configs{$_};
+    my $iface = $_;
     (@{$iface->{ips} || []} >= 1) &&
       (grep {interface_type($_) eq "physical"} (@{$iface->{bridged} || []}));
-  } (keys %network_configs);
+  } (network_configs());
   if (@phybridges) {
-    return $phybridges[0];
+    return $phybridges[0]->{name};
   } else {
     return "ethbr4";
   }
@@ -107,7 +123,7 @@ sub physical_internal_bridge :
 sub maybe_configure_internal_bridge {
   my ($bridgenameref) = @_;
   my $bridgename = $$bridgenameref;
-  my %network_configs = network_configs();
+  my %network_configs = map { $_->{name} => $_ } network_configs();
   return if exists $network_configs{$bridgename};
 
   my $internal_iface = physical_internal_interface();
@@ -147,22 +163,18 @@ GRIPE
 }
 
 sub physical_internal_interface : PromptUser {
-  my %network_configs = network_configs();
-  my $rfc1918_score_of_interface = sub {
-    my ($iface) = @_;
-    my $score = max(map {rfc1918_score($_)} @{$iface->{ips}}) // -1;
-    warn("$iface->{name} has score $score");
-    return $score;
-  };
-  my @physical_interfaces = sort {
-    $rfc1918_score_of_interface->($b) <=> $rfc1918_score_of_interface->($a)
-  } (grep {interface_type($_->{name}) eq "physical"} (values %network_configs));
-  return if ! @physical_interfaces;
+  my @physical_interfaces = grep {interface_type($_->{name}) eq "physical"} network_configs();
   return $physical_interfaces[0]->{name};
 }
 
+sub internal_ip : PromptUser {
+  my @network_configs = network_configs();
+
+  return $network_configs[0]->{ips}->[0]->addr();
+}
+
 sub gateway_vip : PromptUser {
-  my @quad = split m/\./, physical_internal_ip();
+  my @quad = split m/\./, internal_ip();
   $quad[3] = 254;
   return join(".", @quad);
 }
@@ -199,6 +211,7 @@ sub ipmi_vip : ToYaml : PromptUser { "192.168.10.253" }
 sub ipmi_netmask : ToYaml : PromptUser { 24 }
 
 
+# Return interface descriptors ordered by decreasing "RFC1918-ness."
 memoize('network_configs');
 sub network_configs {
   my %network_configs;
@@ -218,7 +231,15 @@ sub network_configs {
     }
   }
 
-  return %network_configs;
+  my $rfc1918_score_of_interface = sub {
+    my ($iface) = @_;
+    my $score = max(map {rfc1918_score($_)} @{$iface->{ips}}) // -1;
+    debug("$iface->{name} has RFC1918 score $score");
+    return $score;
+  };
+  return sort {
+    $rfc1918_score_of_interface->($b) <=> $rfc1918_score_of_interface->($a)
+  } (values %network_configs);
 }
 
 sub interface_type {
@@ -274,6 +295,14 @@ including its CA.
 
 sub puppet__server : ToYaml { "true" }
 
+=head2 puppet → agent
+
+Set to false. We don't want the Puppetmaster-in-Docker to manage itself.
+
+=cut
+
+sub puppet__agent : ToYaml { "false" }
+
 =head2 puppet → server_parser
 
 Set to "future", to enable the future parser (see
@@ -295,19 +324,33 @@ sub puppet__server_environments : ToYaml { [] }
 
 =head2 puppetdb
 
-Enabled, and set to share the same PostgreSQL as Foreman.
+Enabled with exported resources ("storeconfigs"), sharing the same
+PostgreSQL database as Foreman.
 
 =cut
 
-sub puppet__server_puppetdb_host : ToYaml { "localhost" }
-sub puppet__server_puppetdb_port : ToYaml { 8080 }
+sub puppet__server_soreconfigs_backend : ToYaml { "puppetdb" }
+
+sub puppet__server_puppetdb_host : ToYaml { puppetmaster_fqdn() }
 
 sub puppetdb : ToYaml {
   return {
-    manage_dbserver => "false",
-    disable_ssl => "true"
+    ssl_listen_address => '0.0.0.0',
+    manage_dbserver => "false"
   }
 }
+
+=head2 puppetexplorer
+
+Uses port 8000, no SSL. (Also uses a fixed, old version of the package for compatibility
+with Puppet 3.x)
+
+=cut
+
+sub puppetexplorer__package_ensure : ToYaml { "1.5.0-59" }
+sub puppetexplorer__manage_apt : ToYaml { "true" }
+sub puppetexplorer__port : ToYaml { 8000 }
+sub puppetexplorer__ssl : ToYaml { "false" }
 
 =head2 foreman_proxy → dns_interface
 
@@ -337,6 +380,10 @@ A number of helper functions are available for calling from the magic
 functions with attributes.
 
 =cut
+
+sub debug {
+  warn(@_) if $ENV{DEBUG};
+}
 
 =pod
 

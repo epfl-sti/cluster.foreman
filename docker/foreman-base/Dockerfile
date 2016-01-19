@@ -25,14 +25,16 @@ RUN echo "deb http://deb.theforeman.org/ trusty 1.10" > /etc/apt/sources.list.d/
 RUN echo "deb http://deb.theforeman.org/ plugins 1.10" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt-get -q update && \
-    apt-get -qy install foreman foreman-installer ruby \
-                       ruby-foreman-discovery ruby-foreman-column-view \
-                       ruby-foreman-templates \
-                       ruby-hammer-cli-foreman \
-                       puppetdb puppetdb-terminus ruby-puppetdb-foreman \
-                       tftp tftpd-hpa xinetd git \
-                       supervisor iptables \
-                       ruby-rubyipmi
+    apt-get -qy install supervisor iptables tftp tftpd-hpa xinetd git \
+                foreman foreman-installer ruby \
+                ruby-rubyipmi \
+                ruby-foreman-discovery \
+                ruby-foreman-column-view \
+                ruby-foreman-templates \
+                ruby-hammer-cli-foreman \
+                ruby-foreman-cockpit \
+                ruby-foreman-dhcp-browser \
+                puppetdb puppetdb-terminus ruby-puppetdb-foreman
 
 # http://librarian-puppet.com/
 RUN gem install librarian-puppet
@@ -53,9 +55,7 @@ ADD supervisord.conf /etc/supervisor/
 
 # Hack so that "foreman-rake console -- --sandbox" works.
 RUN perl -i -pe 's/(\[ -f Gemfile \] &&)/$1 . q( [ $1 != 'console' ] &&)/e' /usr/sbin/foreman-rake
-# Hack so that veth interfaces don't clog up the "interfaces" view
-RUN perl -i -ne 'if (m/^(.*)def ignored_interfaces/) { <>; <>; print $1, qq(def ignored_interfaces\n), $1, q{  /\A(lo(?!cal_area_connection)|usb|vnet|veth|docker|br)/}, qq(\n), $1, qq(end\n) } else { print }' /usr/share/foreman/app/services/fact_parser.rb
-# enable => true doesn't work in an Ubuntu-based container:
+# Hack: enable => true doesn't work in an Ubuntu-based container
 RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
    /usr/share/foreman-installer/modules/tftp/manifests/service.pp \
    /usr/share/foreman-installer/modules/dhcp/manifests/init.pp \
@@ -76,6 +76,20 @@ RUN env FACTER_fqdn=$(hostname) FACTER_domain="local" foreman-installer -v \
     --enable-foreman-plugin-discovery \
     --foreman-plugin-discovery-install-images
 RUN mv /usr/share/foreman-installer/checks_hostname.rb.BAK /usr/share/foreman-installer/checks/hostname.rb
+
+# Purge all default environments; keep only production
+RUN rm -rf /etc/puppet/environments/*
+RUN mkdir -p /etc/puppet/environments/production/modules
+
+# In order for foreman-installer's puppetdb module to work properly, it
+# has to be loaded before puppet:
+RUN if ! grep -e '- puppetdb' /etc/foreman/foreman-installer.yaml; then perl -i -pe 'm/^( *)- puppet/ && print "$1- puppetdb\n";' /etc/foreman/foreman-installer.yaml; fi
+
+# Make "puppet query" work against the puppetdb
+RUN puppet module install --version 1.6.1 dalen-puppetdbquery
+
+# Fashion spotify/puppetexplorer as a foreman-installer plugin
+RUN cd /usr/share/foreman-installer/modules; git clone https://github.com/spotify/puppet-puppetexplorer.git puppetexplorer
 
 # Remove all traces of the random hostname that was in use during the build;
 # and then double-check that they are all gone.
@@ -99,36 +113,38 @@ RUN rm -rf /var/lib/puppet/concat/* \
     /etc/foreman-proxy/settings.d/dns_nsupdate_gss.yml      \
     /etc/puppet/foreman.yaml \
     /etc/puppet/hiera.yaml
-
-# In case you were idly tampering with the container while it was being built:
-RUN rm -f /root/.bash_history
     
 RUN find / -xdev \
      -path /var/log -prune -false -o -type f \
      -not -path /etc/hostname \
      -not -path /etc/hosts \
+     -not -path "*/.git/*" \
      -print0 | \
     xargs -0 grep -l $(cat /etc/hostname) | \
     perl -ne 'if ($. == 1) { warn "Still some files containing the forbidden hostname:\n"}; print STDERR $_; END { die if $. }'
 
-# EPFLSTI-specific customizations
+# In case you were idly tampering with the container while it was being built:
+RUN rm -f /root/.bash_history
+
+# EPFLSTI-specific code and customizations
+# We keep these at the bottom so that if you don't want these, you
+# still benefit from intermediate layers built up to here.
 ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
 ADD ignored_environments.yml /usr/share/foreman/config/ignored_environments.yml
-RUN mkdir -p /usr/share/foreman-installer/modules/interactive_configure/manifests
-ADD interactive_configure.pp /usr/share/foreman-installer/modules/interactive_configure/manifests/init.pp
-RUN rm -rf /etc/puppet/environments/*
-RUN mkdir -p /etc/puppet/environments/production/modules
+RUN mkdir -p /usr/share/foreman-installer/modules/epflsti/manifests
+ADD epflsti.pp /usr/share/foreman-installer/modules/epflsti/manifests/init.pp
 WORKDIR /etc/puppet/environments/production/modules
-RUN ln -s /cluster.foreman/puppet/environments/production/modules/epflsti .
+# Hack: put all "git clone"s *after* epflsti.pp above; this makes it easier
+# to invalidate the Docker image and re-clone.
+RUN git clone https://github.com/epfl-sti/cluster.coreos.puppet.git epflsti_coreos; cd epflsti_coreos; ln -s .. modules; librarian-puppet install --verbose
 # Add puppet-ipmi module with our own patch to autodetect IPMI interfaces:
 RUN set -e -x; git clone https://github.com/epfl-sti/puppet-ipmi.git ipmi; cd ipmi; ln -s .. modules; librarian-puppet install --verbose
-
-# In order for foreman-installer's puppetdb module to work properly, it
-# has to be loaded before puppet:
-RUN if ! grep -e '- puppetdb' /etc/foreman/foreman-installer.yaml; then perl -i -pe 'm/^( *)- puppet/ && print "$1- puppetdb\n";' /etc/foreman/foreman-installer.yaml; fi
-
+# Replace the puppetdb_conn_validator type with our own define() (see epflsti.pp)
+RUN rm -rf /usr/share/foreman-installer/modules/puppetdb/lib/puppet/provider/puppetdb_conn_validator \
+  /usr/share/foreman-installer/modules/puppetdb/lib/puppet/type/puppetdb_conn_validator.rb
 WORKDIR /
-RUN mkdir /cluster.foreman
+
+# Volumes must be declared last (after we are done mutating them).
 # Keep this list in sync with dockerer and ../scripts/build
 VOLUME /var/lib/puppet
 VOLUME /var/lib/postgresql
@@ -139,3 +155,4 @@ VOLUME /etc/puppet
 VOLUME /etc/foreman
 VOLUME /etc/foreman-proxy
 VOLUME /root
+

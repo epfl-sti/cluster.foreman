@@ -9,7 +9,7 @@ dockerer - Build and run the things under docker/
 =head1 SYNOPSIS
 
    dockerer plan
-   dockerer build [--scratch|--saved=<tarname>] <clustername>
+   dockerer build [--scratch|--saved=<tarname>]
    dockerer run <clustername>
    dockerer backup <clustername>
 
@@ -71,7 +71,7 @@ try {
 if ($opts->{plan}) {
   plan();
 } elsif ($opts->{build}) {
-  build(Foreman->load($opts->{'<clustername>'}));
+  build(Foreman->load());
 } elsif ($opts->{run}) {
   run(Foreman->load($opts->{'<clustername>'}));
 } elsif ($opts->{backup}) {
@@ -182,7 +182,6 @@ set -e -x
 docker run -it --volumes-from=$container_name-INITIAL \\
     --name=$container_name -h $container_name \\
     --dns=127.0.0.1 \\
-    -v "$Bin/..":/cluster.foreman \\
     $image_name
 BRIDGE_AND_DOCKER_RUN
 }
@@ -259,7 +258,23 @@ use YAML::Tiny;
 
 sub load {
   my ($class, $clustername) = @_;
-  return bless { clustername => $clustername }, $class;
+  my $self = bless {}, $class;
+  if (! $clustername) {
+    $clustername = $self->_configure_answer("cluster_domain_name");
+    if (! $clustername) {
+      system("./configure.pl");
+      delete $self->{yaml_config};
+      $clustername = $self->_configure_answer("cluster_domain_name");
+    }
+  }
+  if (! $clustername) {
+    die "Unable to figure out cluster name!";
+  }
+  if ($clustername !~ m/\./) {
+    $clustername .= "." . hostdomain;
+  }
+  $self->{clustername} = $clustername;
+  return $self;
 }
 
 sub cluster_name { shift->{clustername} }
@@ -267,9 +282,6 @@ sub cluster_name { shift->{clustername} }
 sub container_name {
   my ($self) = @_;
   my $clustername = $self->cluster_name();
-  if ($clustername !~ m/\./) {
-    $clustername .= "." . hostdomain;
-  }
   return "puppetmaster.$clustername";
 }
 
@@ -322,7 +334,7 @@ sub _load_yaml_config {
 
 sub _configure_answer {
   my ($self, $key) = @_;
-  return $self->yaml_config->{interactive_configure}->{answers}->{$key};
+  return $self->yaml_config->{epflsti}->{interactive_answers}->{$key};
 }
 
 sub vip { shift->_configure_answer("puppetmaster_vip") }
