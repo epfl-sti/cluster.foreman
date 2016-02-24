@@ -199,6 +199,12 @@ sub backup {
             tar cf - /var/lib/puppet /var/lib/postgresql \\
                    /var/lib/dhcp /var/lib/tftpboot \\
                    /var/cache/bind /etc/puppet /etc/foreman /etc/foreman-proxy \\
+                   /usr/share/foreman/config \\
+                   /usr/share/foreman/app/helpers/ipmi_helper.rb \\
+                   /usr/share/foreman/app/views/ipmi \\
+                   /usr/share/foreman/app/controllers/ipmi_controller.rb \\
+                   /usr/share/foreman/app/assets/stylesheets/ipmi.css \\
+                   /usr/share/foreman/app/assets/javascripts/ipmi.js \\
                    /root/.bash_history > $tarname ||true");
   warn("Backup saved as " . getcwd() . "/$tarname\n");
   return $tarname;
