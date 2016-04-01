@@ -1,6 +1,10 @@
 # Default foreman column view plugin configuration for an EPFL-STI cluster
 # For more information see https://github.com/GregSutcliffe/foreman_column_view 
 :column_view:
+  :switch_address:
+    :title: Switch Address
+    :after: name
+    :content: facts_hash['switch_address']
   :architecture:
     :title: Arch
     :after: model
