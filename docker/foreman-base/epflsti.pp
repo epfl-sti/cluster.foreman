@@ -14,7 +14,7 @@ class epflsti(
   # Copy certificate, private key and CA from Puppet to puppetdb
   File[$::puppet::server::ssl_cert_key] ->
   exec { "copy Puppet keys for puppetdb":
-    command => "puppetdb-ssl-setup",
+    command => "puppetdb ssl-setup",
     path => $::path,
     creates => $::puppetdb::params::ssl_key_path,
   } ->
