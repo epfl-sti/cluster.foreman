@@ -152,6 +152,7 @@ VOLUME /var/lib/tftpboot
 VOLUME /var/cache/bind
 VOLUME /etc/puppet
 VOLUME /etc/foreman
+VOLUME /etc/foreman-installer
 VOLUME /etc/foreman-proxy
 VOLUME /root
 
