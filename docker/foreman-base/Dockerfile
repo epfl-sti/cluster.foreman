@@ -144,7 +144,6 @@ RUN rm -rf /usr/share/foreman-installer/modules/puppetdb/lib/puppet/provider/pup
 WORKDIR /
 
 # Volumes must be declared last (after we are done mutating them).
-# Keep this list in sync with dockerer and ../scripts/build
 VOLUME /var/lib/puppet
 VOLUME /var/lib/postgresql
 VOLUME /var/lib/dhcp
