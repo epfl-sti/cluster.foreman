@@ -16,7 +16,7 @@ if [ -n "$tarname" ]; then
         var/lib/dhcp/ \
         var/lib/tftpboot/ \
         var/cache/bind/ \
-        etc/foreman/foreman-installer-answers.yaml \
+        etc/foreman-installer/scenarios.d/foreman-answers.yaml \
         root/ || true
     # For some reason, dockerer backup forgets to record user and group names?
     chown -R postgres:postgres var/lib/postgresql
@@ -27,7 +27,7 @@ if [ -n "$tarname" ]; then
 fi
 
 # -u means update only (if newer):
-cp -u /cluster.foreman/foreman-installer-answers.yaml /etc/foreman/
+cp -u /cluster.foreman/foreman-installer-answers.yaml /etc/foreman-installer/scenarios.d/foreman-answers.yaml
 
 foreman-installer --ignore-undocumented || bash
 

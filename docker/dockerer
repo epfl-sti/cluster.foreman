@@ -97,7 +97,7 @@ sub build {
     die "File does not exist: $tarname_to_restore" unless (-f $tarname_to_restore);
   } elsif ($foreman->container_exists) {
     $tarname_to_restore = backup($foreman);
-    system("set -x; tar --to-stdout -xvf $tarname_to_restore etc/foreman/foreman-installer-answers.yaml > foreman-installer-answers.yaml");
+    system("set -x; tar --to-stdout -xvf $tarname_to_restore etc/foreman-installer/scenarios.d/foreman-answers.yaml > foreman-installer-answers.yaml");
     system("./configure.pl");
   } elsif (! -f $answers_yaml) {
     system("./configure.pl");

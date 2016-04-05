@@ -70,7 +70,7 @@ RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
 # https://github.com/riskable/docker-foreman/blob/master/install_foreman.sh
 # TODO: speed this up somehow (e.g. find a way to not attempt to start daemons)
 RUN mv /usr/share/foreman-installer/checks/hostname.rb /usr/share/foreman-installer/checks_hostname.rb.BAK
-ADD foreman-installer-answers-stub.yaml /etc/foreman/foreman-installer-answers.yaml
+ADD foreman-installer-answers-stub.yaml /etc/foreman-installer/scenarios.d/foreman-answers.yaml
 RUN env FACTER_fqdn=$(hostname) FACTER_domain="local" foreman-installer -v \
     --enable-foreman-cli \
     --enable-foreman-proxy \
@@ -86,7 +86,7 @@ RUN mkdir -p /etc/puppet/environments/production/modules
 
 # In order for foreman-installer's puppetdb module to work properly, it
 # has to be loaded before puppet:
-RUN if ! grep -e '- puppetdb' /etc/foreman/foreman-installer.yaml; then perl -i -pe 'm/^( *)- puppet/ && print "$1- puppetdb\n";' /etc/foreman/foreman-installer.yaml; fi
+RUN if ! grep -e '- puppetdb' /etc/foreman-installer/scenarios.d/foreman.yaml; then perl -i -pe 'm/^( *)- puppet/ && print "$1- puppetdb\n";' /etc/foreman-installer/scenarios.d/foreman.yaml; fi
 
 # Make "puppet query" work against the puppetdb
 RUN puppet module install --version 1.6.1 dalen-puppetdbquery
@@ -106,7 +106,7 @@ RUN find /etc -type f | xargs grep -l 'File managed with puppet' | xargs rm
 RUN rm -rf /var/lib/puppet/concat/* \
     /etc/puppet/puppet.conf \
     /etc/hammer/cli.modules.d/foreman.yml \
-    /etc/foreman/foreman-installer-answers.yaml             \
+    /etc/foreman-installer/scenarios.d/foreman-answers.yaml \
     /etc/apache2/apache2.conf                               \
     /etc/apache2/sites-available/25-puppet.conf             \
     /etc/apache2/sites-available/05-foreman.conf            \

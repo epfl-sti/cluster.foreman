@@ -19,7 +19,7 @@
 # /usr/share/foreman-installer/modules/foreman/manifests/cli.pp)
 #
 # The reason is that foreman-installer somehow copies the admin
-# password from /etc/foreman/foreman-installer-answers.yaml into
+# password from /etc/foreman-installer/scenarios.d/foreman-answers.yaml into
 # /root/.hammer/cli.modules.d/foreman.yml
 #
 # But it's so much more fun to re-do everything ourselves :)
