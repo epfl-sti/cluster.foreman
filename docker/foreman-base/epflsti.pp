@@ -12,11 +12,12 @@ class epflsti(
 ) {
 
   # Copy certificate, private key and CA from Puppet to puppetdb
-  File[$::puppet::server::ssl_cert_key] ->
   exec { "copy Puppet keys for puppetdb":
     command => "puppetdb ssl-setup",
     path => $::path,
     creates => $::puppetdb::params::ssl_key_path,
+    require =>   [File[$::puppet::server::ssl_cert_key],
+                  Class["::puppet::server::config"]]
   } ->
   Service[$::puppetdb::params::puppet_service_name]
 }
@@ -34,6 +35,9 @@ define puppetdb_conn_validator (
       false    => "http",
       default => "https"
     }
+
+    Exec["copy Puppet keys for puppetdb"] ->
+    Service["puppetdb"] ->
     exec { "puppetdb_conn_validator curl ${name}":
       path => $::path,
       command => "timeout ${timeout} bash -c 'set -x; while ! curl -k -v --cert /var/lib/puppet/ssl/certs/${::fqdn}.pem --key /var/lib/puppet/ssl/private_keys/${::fqdn}.pem ${_proto}://${puppetdb_server}:${puppetdb_port}${test_url}; do sleep 10; done'"
