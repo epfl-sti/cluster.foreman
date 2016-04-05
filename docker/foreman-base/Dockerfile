@@ -20,9 +20,9 @@ RUN echo "PS1='⚠DOCKER! \u@\h:\w\$ '" >> /root/.bashrc
 # https://puppetlabs.com/blog/welcome-puppet-collections
 RUN set -e -x; wget -q http://apt.puppetlabs.com/puppetlabs-release-trusty.deb ; dpkg -i puppetlabs-release-trusty.deb; rm puppetlabs-release-trusty.deb
 
-# http://theforeman.org/manuals/1.10/index.html#3.InstallingForeman
-RUN echo "deb http://deb.theforeman.org/ trusty 1.10" > /etc/apt/sources.list.d/foreman.list
-RUN echo "deb http://deb.theforeman.org/ plugins 1.10" >> /etc/apt/sources.list.d/foreman.list
+# http://theforeman.org/manuals/1.11/index.html#3.InstallingForeman
+RUN echo "deb http://deb.theforeman.org/ trusty 1.11" > /etc/apt/sources.list.d/foreman.list
+RUN echo "deb http://deb.theforeman.org/ plugins 1.11" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt-get -q update && \
     apt-get -qy install supervisor iptables tftp tftpd-hpa xinetd git \
