@@ -84,10 +84,6 @@ RUN mv /usr/share/foreman-installer/checks_hostname.rb.BAK /usr/share/foreman-in
 RUN rm -rf /etc/puppet/environments/*
 RUN mkdir -p /etc/puppet/environments/production/modules
 
-# In order for foreman-installer's puppetdb module to work properly, it
-# has to be loaded before puppet:
-RUN if ! grep -e '- puppetdb' /etc/foreman-installer/scenarios.d/foreman.yaml; then perl -i -pe 'm/^( *)- puppet/ && print "$1- puppetdb\n";' /etc/foreman-installer/scenarios.d/foreman.yaml; fi
-
 # Make "puppet query" work against the puppetdb
 RUN puppet module install --version 1.6.1 dalen-puppetdbquery
 
