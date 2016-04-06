@@ -56,6 +56,9 @@ RUN chmod +x /usr/local/bin/pipework
 # Configure supervisord for the "run" phase:
 ADD supervisord.conf /etc/supervisor/
 
+# https://github.com/theforeman/foreman/pull/3398
+RUN wget -q -O/usr/share/foreman/lib/tasks/console.rake https://raw.githubusercontent.com/epfl-sti/foreman/develop/lib/tasks/console.rake
+
 # Hack: enable => true doesn't work in an Ubuntu-based container
 RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
    /usr/share/foreman-installer/modules/tftp/manifests/service.pp \
