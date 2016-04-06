@@ -56,8 +56,6 @@ RUN chmod +x /usr/local/bin/pipework
 # Configure supervisord for the "run" phase:
 ADD supervisord.conf /etc/supervisor/
 
-# Hack so that "foreman-rake console -- --sandbox" works.
-RUN perl -i -pe 's/(\[ -f Gemfile \] &&)/$1 . q( [ $1 != 'console' ] &&)/e' /usr/sbin/foreman-rake
 # Hack: enable => true doesn't work in an Ubuntu-based container
 RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
    /usr/share/foreman-installer/modules/tftp/manifests/service.pp \
