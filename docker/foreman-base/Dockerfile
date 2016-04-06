@@ -12,7 +12,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -q update && apt-get -qy dist-upgrade && apt-get -qy install wget ca-certificates
 
 # Comfort items for debugging
-RUN apt-get -qy install vim strace tcpdump lsof
+RUN apt-get -qy install vim strace tcpdump lsof silversearcher-ag
 # Get a "docker" PS1 prompt
 RUN echo 'export "LANG=C.UTF-8"' >> /root/.bashrc
 RUN echo "PS1='⚠DOCKER! \u@\h:\w\$ '" >> /root/.bashrc
@@ -145,14 +145,7 @@ RUN rm -rf /usr/share/foreman-installer/modules/puppetdb/lib/puppet/provider/pup
 WORKDIR /
 
 # Volumes must be declared last (after we are done mutating them).
-VOLUME /var/lib/puppet
-VOLUME /var/lib/postgresql
-VOLUME /var/lib/dhcp
-VOLUME /var/lib/tftpboot
-VOLUME /var/cache/bind
-VOLUME /etc/puppet
-VOLUME /etc/foreman
-VOLUME /etc/foreman-installer
-VOLUME /etc/foreman-proxy
-VOLUME /root
+VOLUME [ "/var/lib/puppet", "/var/lib/postgresql", "/var/lib/dhcp", \
+         "/var/lib/tftpboot", "/var/cache/bind", "/etc/puppet", "/etc/foreman", \
+         "/etc/foreman-installer", "/etc/foreman-proxy", "/root" ]
 
