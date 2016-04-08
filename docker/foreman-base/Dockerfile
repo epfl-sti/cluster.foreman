@@ -89,7 +89,7 @@ RUN mkdir -p /etc/puppet/environments/production/modules
 RUN puppet module install --version 1.6.1 dalen-puppetdbquery
 
 # https://github.com/theforeman/puppetdb_foreman/pull/22
-RUN wget -q -O/usr/share/foreman/lib/tasks/console.rake https://raw.githubusercontent.com/sathieu/puppetdb_foreman/patch-1/app/controllers/puppetdb_foreman/puppetdb_controller.rb
+RUN wget -q -O/usr/share/foreman/vendor/ruby/2.0.0/gems/puppetdb_foreman-1.0.2/app/controllers/puppetdb_foreman/puppetdb_controller.rb https://raw.githubusercontent.com/sathieu/puppetdb_foreman/patch-1/app/controllers/puppetdb_foreman/puppetdb_controller.rb
 
 # Fashion spotify/puppetexplorer as a foreman-installer plugin
 RUN cd /usr/share/foreman-installer/modules; git clone https://github.com/spotify/puppet-puppetexplorer.git puppetexplorer
