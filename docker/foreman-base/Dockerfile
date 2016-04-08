@@ -88,6 +88,9 @@ RUN mkdir -p /etc/puppet/environments/production/modules
 # Make "puppet query" work against the puppetdb
 RUN puppet module install --version 1.6.1 dalen-puppetdbquery
 
+# https://github.com/theforeman/puppetdb_foreman/pull/22
+RUN wget -q -O/usr/share/foreman/lib/tasks/console.rake https://raw.githubusercontent.com/sathieu/puppetdb_foreman/patch-1/app/controllers/puppetdb_foreman/puppetdb_controller.rb
+
 # Fashion spotify/puppetexplorer as a foreman-installer plugin
 RUN cd /usr/share/foreman-installer/modules; git clone https://github.com/spotify/puppet-puppetexplorer.git puppetexplorer
 
