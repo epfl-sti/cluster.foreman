@@ -64,6 +64,7 @@ chdir("$Bin/..");
 
 our $opts;
 try {
+  local $SIG{__WARN__} = sub {};
   $opts = docopt();
 } catch {
   pod2usage();
