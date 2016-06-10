@@ -17,12 +17,12 @@ RUN apt-get -qy install vim strace tcpdump lsof
 RUN echo 'export "LANG=C.UTF-8"' >> /root/.bashrc
 RUN echo "PS1='⚠DOCKER! \u@\h:\w\$ '" >> /root/.bashrc
 
-# https://puppetlabs.com/blog/welcome-puppet-collections
-RUN set -e -x; wget -q http://apt.puppetlabs.com/puppetlabs-release-trusty.deb ; dpkg -i puppetlabs-release-trusty.deb; rm puppetlabs-release-trusty.deb
+# https://theforeman.org/manuals/1.12/quickstart_guide.html
+RUN set -e -x; wget -q http://apt.puppetlabs.com/puppetlabs-release-pc1-xenial.deb ; dpkg -i puppetlabs-release-pc1-xenial.deb; rm puppetlabs-release-pc1-xenial.deb
 
 # http://theforeman.org/manuals/1.11/index.html#3.InstallingForeman
-RUN echo "deb http://deb.theforeman.org/ trusty 1.11" > /etc/apt/sources.list.d/foreman.list
-RUN echo "deb http://deb.theforeman.org/ plugins 1.11" >> /etc/apt/sources.list.d/foreman.list
+RUN echo "deb http://deb.theforeman.org/ xenial 1.12" > /etc/apt/sources.list.d/foreman.list
+RUN echo "deb http://deb.theforeman.org/ plugins 1.12" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt-get -q update && \
     apt-get -qy install supervisor iptables tftp tftpd-hpa xinetd git \
