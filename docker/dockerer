@@ -50,9 +50,9 @@ Docker container.
 
 =cut
 
+use autodie qw(:all);
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
-use autodie qw(:all);
 use Try::Tiny;
 use Docopt;
 use Pod::Usage;
