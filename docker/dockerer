@@ -52,7 +52,7 @@ Docker container.
 
 use autodie qw(:all);
 use FindBin qw($Bin);
-use lib "$Bin/../lib";
+BEGIN { push @INC, "$Bin/../lib"; }
 use Try::Tiny;
 use Docopt;
 use Pod::Usage;
