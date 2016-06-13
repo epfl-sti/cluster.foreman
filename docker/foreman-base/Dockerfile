@@ -76,14 +76,12 @@ RUN env FACTER_fqdn="$(hostname).local" FACTER_domain="local" foreman-installer 
 RUN mv /usr/share/foreman-installer/checks_hostname.rb.BAK /usr/share/foreman-installer/checks/hostname.rb
 
 # Purge all default environments; keep only production
-RUN rm -rf /etc/puppet/environments/*
-RUN mkdir -p /etc/puppet/environments/production/modules
+RUN rm -rf /etc/puppetlabs/code/environments/*
+RUN mkdir -p /etc/puppetlabs/code/environments/production/modules
 
 # Make "puppet query" work against the puppetdb
+ENV PATH=/opt/puppetlabs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 RUN puppet module install --version 1.6.1 dalen-puppetdbquery
-
-# https://github.com/theforeman/puppetdb_foreman/pull/22
-RUN wget -q -O/usr/share/foreman/vendor/ruby/2.0.0/gems/puppetdb_foreman-1.0.2/app/controllers/puppetdb_foreman/puppetdb_controller.rb https://raw.githubusercontent.com/sathieu/puppetdb_foreman/patch-1/app/controllers/puppetdb_foreman/puppetdb_controller.rb
 
 # Fashion spotify/puppetexplorer as a foreman-installer plugin
 RUN cd /usr/share/foreman-installer/modules; git clone https://github.com/spotify/puppet-puppetexplorer.git puppetexplorer
@@ -92,7 +90,8 @@ RUN cd /usr/share/foreman-installer/modules; git clone https://github.com/spotif
 # and then double-check that they are all gone.
 RUN set -e -x; service postgresql start; for i in $(seq 1 3); do echo "drop database foreman" | sudo -u foreman psql template1 && break; sleep 20; done;  service postgresql stop
 RUN sudo -u postgres /usr/lib/postgresql/*/bin/pg_resetxlog /var/lib/postgresql/*/main/
-RUN find /var/lib/puppet \
+RUN find \
+    /opt/puppetlabs/puppet/cache \
     /var/cache/foreman \
     /var/cache/bind/zones \
     -type f -delete
@@ -100,14 +99,19 @@ RUN find /etc -type f | xargs grep -l 'File managed with puppet' | xargs rm
 RUN rm -rf /var/lib/puppet/concat/* \
     /etc/puppet/puppet.conf \
     /etc/hammer/cli.modules.d/foreman.yml \
-    /etc/foreman-installer/scenarios.d/foreman-answers.yaml \
-    /etc/apache2/apache2.conf                               \
-    /etc/apache2/sites-available/25-puppet.conf             \
-    /etc/apache2/sites-available/05-foreman.conf            \
-    /etc/apache2/sites-available/05-foreman-ssl.conf        \
-    /etc/foreman-proxy/settings.d/templates.yml             \
-    /etc/foreman-proxy/settings.d/puppet.yml                \  
-    /etc/foreman-proxy/settings.d/dns_nsupdate_gss.yml      \
+    /etc/foreman-installer/scenarios.d/foreman-answers.yaml    \
+    /etc/foreman-proxy/settings.d/puppet_proxy_puppet_api.yml  \
+    /etc/foreman-proxy/settings.d/puppet_proxy_legacy.yml      \
+    /etc/puppetlabs/puppet/ssl/ca/inventory.txt                \
+    /etc/puppetlabs/puppet/foreman.yaml                        \
+    /etc/puppetlabs/puppetserver/conf.d/webserver.conf         \
+    /etc/apache2/apache2.conf                                  \
+    /etc/apache2/sites-available/25-puppet.conf                \
+    /etc/apache2/sites-available/05-foreman.conf               \
+    /etc/apache2/sites-available/05-foreman-ssl.conf           \
+    /etc/foreman-proxy/settings.d/templates.yml                \
+    /etc/foreman-proxy/settings.d/puppet.yml                   \  
+    /etc/foreman-proxy/settings.d/dns_nsupdate_gss.yml         \
     /etc/puppet/foreman.yaml \
     /etc/puppet/hiera.yaml
     
@@ -130,7 +134,7 @@ ADD foreman_column_view.yaml /etc/foreman/plugins/foreman_column_view.yaml
 ADD ignored_environments.yml /usr/share/foreman/config/ignored_environments.yml
 RUN mkdir -p /usr/share/foreman-installer/modules/epflsti/manifests
 ADD epflsti.pp /usr/share/foreman-installer/modules/epflsti/manifests/init.pp
-WORKDIR /etc/puppet/environments/production/modules
+WORKDIR /etc/puppetlabs/code/environments/production/modules
 # Hack: put all "git clone"s *after* epflsti.pp above; this makes it easier
 # to invalidate the Docker image and re-clone.
 RUN git clone https://github.com/epfl-sti/cluster.coreos.puppet.git epflsti_coreos; cd epflsti_coreos; ln -s .. modules; librarian-puppet install --verbose
