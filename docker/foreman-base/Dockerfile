@@ -43,7 +43,7 @@ RUN gem install librarian-puppet
 RUN gem install chronic
 
 # Moar debugging tools
-RUN gem install debugger
+RUN gem install byebug
 
 # Ensure we get a reasonable locale setup (wanted by PostgreSQL DB creation)
 RUN locale-gen en_US.UTF-8
