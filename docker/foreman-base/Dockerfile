@@ -50,7 +50,7 @@ RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
 
 # Install networking stuff:
-ADD pipework/pipework /usr/local/bin/pipework
+RUN wget -O /usr/local/bin/pipework https://raw.githubusercontent.com/jpetazzo/pipework/master/pipework
 RUN chmod +x /usr/local/bin/pipework
 
 # Configure supervisord for the "run" phase:
