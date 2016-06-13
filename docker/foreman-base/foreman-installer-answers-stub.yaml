@@ -9,6 +9,7 @@
     tftp_root: /var/lib/tftpboot
   foreman:
     custom_repo: true
+    admin_email: foremanadmin@example.com
   puppet:
     server: true
     custom_repo: true
