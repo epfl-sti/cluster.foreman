@@ -134,8 +134,8 @@ WORKDIR /etc/puppet/environments/production/modules
 # Hack: put all "git clone"s *after* epflsti.pp above; this makes it easier
 # to invalidate the Docker image and re-clone.
 RUN git clone https://github.com/epfl-sti/cluster.coreos.puppet.git epflsti_coreos; cd epflsti_coreos; ln -s .. modules; librarian-puppet install --verbose
-# Add puppet-ipmi module with our own patch to autodetect IPMI interfaces:
-RUN set -e -x; git clone https://github.com/epfl-sti/puppet-ipmi.git ipmi; cd ipmi; ln -s .. modules; librarian-puppet install --verbose
+# Add puppet-ipmi module patch to autodetect IPMI interfaces:
+RUN set -e -x; git clone https://github.com/jhoblitt/puppet-ipmi.git ipmi; cd ipmi; ln -s .. modules; librarian-puppet install --verbose
 # Replace the puppetdb_conn_validator type with our own define() (see epflsti.pp)
 RUN rm -rf /usr/share/foreman-installer/modules/puppetdb/lib/puppet/provider/puppetdb_conn_validator \
   /usr/share/foreman-installer/modules/puppetdb/lib/puppet/type/puppetdb_conn_validator.rb
