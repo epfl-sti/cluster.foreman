@@ -57,17 +57,13 @@ ADD supervisord.conf /etc/supervisor/
 # https://github.com/theforeman/foreman/pull/3398
 RUN wget -q -O/usr/share/foreman/lib/tasks/console.rake https://raw.githubusercontent.com/epfl-sti/foreman/develop/lib/tasks/console.rake
 
-# Hack: enable => true doesn't work in an Ubuntu-based container
-RUN perl -i.ORIG -pe 's/(^\s*enable\s*=>\s*(true|\$))/# $1/g'  \
-   /usr/share/foreman-installer/modules/tftp/manifests/service.pp \
-   /usr/share/foreman-installer/modules/dhcp/manifests/init.pp \
-   /usr/share/foreman-installer/modules/puppet/manifests/agent/service.pp \
-   /usr/share/foreman-installer/modules/puppet/manifests/server/service.pp
+# Hack: services cannot actually run in a Docker container
+RUN find /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/service -type f -not -name service.rb -not -name init.rb -not -name base.rb -delete
+ADD service-mocks.rb /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/service/service-mocks.rb
 
 # Run foreman-installer a first time, just to drag in as many packages as possible
 # With tricks from
 # https://github.com/riskable/docker-foreman/blob/master/install_foreman.sh
-# TODO: speed this up somehow (e.g. find a way to not attempt to start daemons)
 RUN mv /usr/share/foreman-installer/checks/hostname.rb /usr/share/foreman-installer/checks_hostname.rb.BAK
 ADD foreman-installer-answers-stub.yaml /etc/foreman-installer/scenarios.d/foreman-answers.yaml
 RUN env FACTER_fqdn=$(hostname) FACTER_domain="local" foreman-installer -v \
