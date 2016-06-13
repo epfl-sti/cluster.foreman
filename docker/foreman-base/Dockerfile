@@ -17,12 +17,12 @@ RUN apt-get -qy install vim strace tcpdump lsof silversearcher-ag
 RUN echo 'export "LANG=C.UTF-8"' >> /root/.bashrc
 RUN echo "PS1='⚠DOCKER! \u@\h:\w\$ '" >> /root/.bashrc
 
-# https://puppetlabs.com/blog/welcome-puppet-collections
-RUN set -e -x; wget -q http://apt.puppetlabs.com/puppetlabs-release-trusty.deb ; dpkg -i puppetlabs-release-trusty.deb; rm puppetlabs-release-trusty.deb
+# https://theforeman.org/manuals/1.12/quickstart_guide.html
+RUN set -e -x; wget -q http://apt.puppetlabs.com/puppetlabs-release-pc1-xenial.deb ; dpkg -i puppetlabs-release-pc1-xenial.deb; rm puppetlabs-release-pc1-xenial.deb
 
 # http://theforeman.org/manuals/1.11/index.html#3.InstallingForeman
-RUN echo "deb http://deb.theforeman.org/ trusty 1.11" > /etc/apt/sources.list.d/foreman.list
-RUN echo "deb http://deb.theforeman.org/ plugins 1.11" >> /etc/apt/sources.list.d/foreman.list
+RUN echo "deb http://deb.theforeman.org/ xenial 1.12" > /etc/apt/sources.list.d/foreman.list
+RUN echo "deb http://deb.theforeman.org/ plugins 1.12" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt-get -q update && \
     apt-get -qy install supervisor iptables tftp tftpd-hpa xinetd git \
@@ -43,14 +43,14 @@ RUN gem install librarian-puppet
 RUN gem install chronic
 
 # Moar debugging tools
-RUN gem install debugger
+RUN gem install byebug
 
 # Ensure we get a reasonable locale setup (wanted by PostgreSQL DB creation)
 RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
 
 # Install networking stuff:
-ADD pipework/pipework /usr/local/bin/pipework
+RUN wget -O /usr/local/bin/pipework https://raw.githubusercontent.com/jpetazzo/pipework/master/pipework
 RUN chmod +x /usr/local/bin/pipework
 
 # Configure supervisord for the "run" phase:
@@ -87,6 +87,9 @@ RUN mkdir -p /etc/puppet/environments/production/modules
 
 # Make "puppet query" work against the puppetdb
 RUN puppet module install --version 1.6.1 dalen-puppetdbquery
+
+# https://github.com/theforeman/puppetdb_foreman/pull/22
+RUN wget -q -O/usr/share/foreman/vendor/ruby/2.0.0/gems/puppetdb_foreman-1.0.2/app/controllers/puppetdb_foreman/puppetdb_controller.rb https://raw.githubusercontent.com/sathieu/puppetdb_foreman/patch-1/app/controllers/puppetdb_foreman/puppetdb_controller.rb
 
 # Fashion spotify/puppetexplorer as a foreman-installer plugin
 RUN cd /usr/share/foreman-installer/modules; git clone https://github.com/spotify/puppet-puppetexplorer.git puppetexplorer

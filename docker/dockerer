@@ -50,19 +50,21 @@ Docker container.
 
 =cut
 
-use FindBin qw($Bin);
-use lib "$Bin/../lib";
 use autodie qw(:all);
+use FindBin qw($Bin $RealScript);
+BEGIN { push @INC, "$Bin/../lib"; }
 use Try::Tiny;
 use Docopt;
 use Pod::Usage;
 use POSIX qw(strftime getcwd);
 use EPFLSTI::Interactive;
 
+use File::Spec; $0 = File::Spec->rel2abs($RealScript);
 chdir("$Bin/..");
 
 our $opts;
 try {
+  local $SIG{__WARN__} = sub {};
   $opts = docopt();
 } catch {
   pod2usage();
