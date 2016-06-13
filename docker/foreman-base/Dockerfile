@@ -66,7 +66,7 @@ ADD service-mocks.rb /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider
 # https://github.com/riskable/docker-foreman/blob/master/install_foreman.sh
 RUN mv /usr/share/foreman-installer/checks/hostname.rb /usr/share/foreman-installer/checks_hostname.rb.BAK
 ADD foreman-installer-answers-stub.yaml /etc/foreman-installer/scenarios.d/foreman-answers.yaml
-RUN env FACTER_fqdn=$(hostname) FACTER_domain="local" foreman-installer -v \
+RUN env FACTER_fqdn="$(hostname).local" FACTER_domain="local" foreman-installer -v \
     --enable-foreman-cli \
     --enable-foreman-proxy \
     --foreman-proxy-register-in-foreman=false \
