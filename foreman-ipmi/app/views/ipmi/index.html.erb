@@ -1,0 +1,73 @@
+<h1>Ipmi#index</h1>
+<p>Find me in puppetmaster.ne.cloud.epfl.ch /usr/share/foreman/app/views/ipmi/index.html.erb</p>
+
+<style>
+/* Note that this css should be /usr/share/foreman/app/assets/stylsheets/ipmi.css but it doesn't work out of the box so... */
+table, td, th {
+  border: 1px solid black;
+  border-collapse: collapse;
+  padding: 2px 10px;
+}
+tr.correct {
+  background-color: lightgreen;
+}
+th {
+  cursor: n-resize;
+  background-color: lightgrey;
+}
+</style>
+<%
+def correct(ipmi)
+  main_ip = ipmi[:main_ip]
+  if ! main_ip
+   return false
+  end
+  ipmi_ip = ipmi[:ipmi_ip]
+  if ! ipmi_ip
+   return false
+  end
+  return (main_ip.split(".")[3] == ipmi_ip.split(".")[3])
+end
+%>
+<table class="justatable">
+  <tr>
+    <th>Hostname</th>
+    <th>IPv4</th>
+    <th>IPMI IP</th>
+  </tr>
+<% @ipmis.each do |ipmi| %>
+  <tr <%=raw correct(ipmi) ? 'class="correct"' : '' %> >
+    <td>
+       <a href="/hosts/<%= ipmi[:name] %>" target="_blank"><%= ipmi[:name] %></a>
+    </td>
+    <td><%= ipmi[:main_ip] %></td>
+    <td><%= ipmi[:ipmi_ip] %></td>
+  </tr>
+<% end %>
+</table>
+
+<script>
+$( document ).ready(function() {
+  
+  $('th').click(function(){
+    var table = $(this).parents('table').eq(0);
+    var rows = table.find('tr:gt(0)').toArray().sort(compare($(this).index()))
+    this.asc = !this.asc;
+    if (!this.asc){rows = rows.reverse();}
+    for (var i = 0; i < rows.length; i++){table.append(rows[i]);}
+  });
+
+  function compare(index) {
+    return function(a, b) {
+      var valA = getCellValue(a, index),
+          valB = getCellValue(b, index);
+      return $.isNumeric(valA) && $.isNumeric(valB) ? valA - valB : valA.localeCompare(valB);
+    }
+  }
+
+  function getCellValue(row, index){
+    //console.log("row: "+row+" index: "+index);
+    return $(row).children('td').eq(index).html();
+  }
+});
+</script>

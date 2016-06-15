@@ -1,0 +1,18 @@
+/*
+  Place all the styles related to the matching controller here.
+  They will automatically be included in application.css.
+*/
+
+table, td, th {
+  border: 1px solid black;
+  border-collapse: collapse;
+  padding: 2px 10px;
+}
+tr.correct {
+  background-color: lightgreen;
+}
+th {
+  cursor: n-resize;
+  background-color: lightgrey;
+}
+
