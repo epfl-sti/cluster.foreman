@@ -9,10 +9,10 @@ MAINTAINER STIIT Dev <stiitdev@groupes.epfl.ch>
 # http://askubuntu.com/questions/506158/unable-to-initialize-frontend-dialog-when-using-ssh
 ENV DEBIAN_FRONTEND=noninteractive 
 
-RUN apt-get -q update && apt-get -qy dist-upgrade && apt-get -qy install wget ca-certificates
+RUN apt -q update && apt -qy dist-upgrade && apt -qy install wget ca-certificates
 
 # Comfort items for debugging
-RUN apt-get -qy install vim strace tcpdump lsof silversearcher-ag
+RUN apt -qy install vim strace tcpdump lsof silversearcher-ag
 # Get a "docker" PS1 prompt
 RUN echo 'export "LANG=C.UTF-8"' >> /root/.bashrc
 RUN echo "PS1='⚠DOCKER! \u@\h:\w\$ '" >> /root/.bashrc
@@ -22,8 +22,8 @@ RUN set -e -x; wget -q http://apt.puppetlabs.com/puppetlabs-release-pc1-xenial.d
 RUN echo "deb http://deb.theforeman.org/ xenial 1.12" > /etc/apt/sources.list.d/foreman.list
 RUN echo "deb http://deb.theforeman.org/ plugins 1.12" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
-RUN apt-get -q update && \
-    apt-get -qy install supervisor iptables tftp tftpd-hpa xinetd git \
+RUN apt -q update && \
+    apt -qy install supervisor iptables tftp tftpd-hpa xinetd git \
                 foreman foreman-installer ruby \
                 ruby-rubyipmi \
                 ruby-foreman-discovery \
