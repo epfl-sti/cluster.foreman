@@ -51,7 +51,7 @@ Docker container.
 =cut
 
 use autodie qw(:all);
-use FindBin qw($Bin $RealScript);
+use FindBin qw($Bin $RealBin $RealScript);
 BEGIN { push @INC, "$Bin/../lib"; }
 use Try::Tiny;
 use Docopt;
@@ -59,7 +59,7 @@ use Pod::Usage;
 use POSIX qw(strftime getcwd);
 use EPFLSTI::Interactive;
 
-use File::Spec; $0 = File::Spec->rel2abs($RealScript);
+use File::Spec; $0 = File::Spec->rel2abs("$RealBin/$RealScript");
 chdir("$Bin/..");
 
 our $opts;
