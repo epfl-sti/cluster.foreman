@@ -2,7 +2,7 @@
 #
 # See also ../foreman/Dockerfile for the useable version
 # Built on top of Ubuntu, because why the hell not.
-FROM ubuntu:latest
+FROM ubuntu:16.04
 MAINTAINER STIIT Dev <stiitdev@groupes.epfl.ch>
 
 # DEBIAN_FRONTEND=noninteractive avoids debconf trying to ask questions and erroring out:
