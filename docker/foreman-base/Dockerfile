@@ -143,9 +143,16 @@ RUN set -e -x; git clone https://github.com/jhoblitt/puppet-ipmi.git ipmi; cd ip
 # Replace the puppetdb_conn_validator type with our own define() (see epflsti.pp)
 RUN rm -rf /usr/share/foreman-installer/modules/puppetdb/lib/puppet/provider/puppetdb_conn_validator \
   /usr/share/foreman-installer/modules/puppetdb/lib/puppet/type/puppetdb_conn_validator.rb
-WORKDIR /
+# Add our own /ipmi/index mini-app
+WORKDIR /usr/share/foreman
+RUN perl -i -pe 'm/Foreman::Application\.routes\.draw/ || next; \
+  print; $seen = 1; $_ = qq{  get "ipmi/index"\n\n}; END { die unless $seen }' config/routes.rb
+  
+ADD foreman-ipmi/ /usr/share/foreman
 
+# Finalize the image.
 # Volumes must be declared last (after we are done mutating them).
+WORKDIR /
 VOLUME [ "/var/lib/puppet", "/var/lib/postgresql", "/var/lib/dhcp", \
          "/var/lib/tftpboot", "/var/cache/bind", "/etc/puppet", "/etc/foreman", \
          "/etc/foreman-installer", "/etc/foreman-proxy", "/root" ]
