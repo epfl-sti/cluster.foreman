@@ -9,7 +9,7 @@ services:
   puppetmaster:
     image: epflsti/cluster-puppet-master
     build: docker/puppetmaster
-    hostname: "${HOSTNAME}"
+    hostname: clusterforeman_puppetmaster_1.docker
     volumes:
       - "/etc/puppet/modules:/etc/puppet/modules"
     ports:
