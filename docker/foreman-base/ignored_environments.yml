@@ -1,4 +1,5 @@
 :filters:
+  - !ruby/regexp '/^(?!epflsti_coreos)/'
   - !ruby/regexp '/params$/'
   - !ruby/regexp '/base$/'
   - !ruby/regexp '/private($|::)/'
