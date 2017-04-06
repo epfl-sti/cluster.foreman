@@ -1,0 +1,21 @@
+version: "2"
+services:
+#  foreman:
+#    image: epflsti/cluster-foreman
+#    build: docker/foreman-base
+#  foreman-proxy:
+#    image: epflsti/cluster-foreman-proxy
+#    build: docker/foreman-base
+  puppetmaster:
+    image: epflsti/cluster-puppet-master
+    build: docker/puppetmaster
+    hostname: puppet
+    domainname: docker
+    volumes:
+      - "/etc/puppet/modules:/etc/puppet/modules"
+    ports:
+      - "8140:8140"
+#  puppetdb:
+#    image: epflsti/cluster-puppet-db
+#  postgresql:
+#    image: XXX
