@@ -12,13 +12,13 @@ RUN apt -q update && apt -qy dist-upgrade && apt-get -qy remove --purge systemd 
 RUN set -e -x; wget -q http://apt.puppetlabs.com/puppetlabs-release-pc1-xenial.deb ; dpkg -i puppetlabs-release-pc1-xenial.deb; rm puppetlabs-release-pc1-xenial.deb
 RUN apt -q update && apt -qy install puppet puppetdb 
 
-# There's no systemd here, but rather supervisord.
-RUN puppet module install dskad/supervisor_provider
-RUN find /usr/lib/ruby/vendor_ruby/puppet/provider/service/ -type f \( -not -name base.rb -not -name service.rb \) -delete
-
-# Install PuppetDB as per https://docs.puppet.com/puppetdb/4.4/install_via_module.html and plumb down all moving parts with supervisor
+# Finish the installation and preliminary setup using Puppet itself
+RUN mkdir /etc/puppet/install
+COPY docker_install.pp /etc/puppet/install
+RUN puppet module install puppetlabs/dummy_service
 RUN puppet module install puppetlabs/puppetdb
-RUN puppet apply -e 'class { "puppetdb": database => "embedded" }'
+RUN puppet module install theforeman/foreman_proxy
+RUN puppet apply /etc/puppet/install/docker_install.pp
 
 # Comfort items for debugging
 RUN apt -qy install vim strace tcpdump lsof silversearcher-ag
@@ -27,5 +27,7 @@ VOLUME /etc/puppet/modules
 VOLUME /var/lib/puppet/ssl
 EXPOSE 8140
 
-ENTRYPOINT ["/usr/bin/puppet"]
-CMD ["master", "--no-daemonize"]
+# The rest of the customization is achieved with environment variables
+COPY entrypoint /entrypoint
+RUN chmod 0755 /entrypoint
+CMD ["/entrypoint"]
