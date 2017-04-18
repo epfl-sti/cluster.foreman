@@ -35,7 +35,7 @@ EOF
 
 register_proxy_in_foreman() {
     puppet apply -e \
-           'class {"::foreman_proxy"}: 
+           'class {"::foreman_proxy": 
                 puppet   => true,
                 puppetca => true,
                 tftp     => false,
@@ -51,5 +51,5 @@ set -e -x
 configure_foreman_enc
 register_proxy_in_foreman
 
-exec /usr/sbin/supervisord -n -c /etc/supervisor/supervisord.conf
+exec /usr/local/bin/supervisord -n -c /etc/supervisor/supervisord.conf
 
