@@ -27,6 +27,58 @@ class { "puppetdb":
   database => "embedded"
 }
 
+# Supervisor logs go to "docker logs", thanks to
+# https://pypi.python.org/pypi/supervisor-stdout
+
+
+file { ["/etc/supervisor", "/etc/supervisor/conf.d"]:
+  ensure => "directory"
+}
+
+file { "/etc/supervisor/supervisord.conf":
+  content => "
+; supervisor config file
+
+[unix_http_server]
+file=/var/run/supervisor.sock   ; (the path to the socket file)
+chmod=0700                       ; sockef file mode (default 0700)
+
+[supervisord]
+logfile=/dev/stdout
+pidfile=/var/run/supervisord.pid ; (supervisord pidfile;default supervisord.pid)
+childlogdir=/var/log/supervisor            ; ('AUTO' child log dir, default $TEMP)
+
+; the below section must remain in the config file for RPC
+; (supervisorctl/web interface) to work, additional interfaces may be
+; added by defining them in separate rpcinterface: sections
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+[supervisorctl]
+serverurl=unix:///var/run/supervisor.sock ; use a unix:// URL  for a unix socket
+
+; The [include] section can just contain the 'files' setting.  This
+; setting can list multiple files (separated by whitespace or
+; newlines).  It can also contain wildcards.  The filenames are
+; interpreted as relative to this file.  Included files *cannot*
+; include files themselves.
+
+[include]
+files = /etc/supervisor/conf.d/*.conf
+"
+}
+
+file { "/etc/supervisor/conf.d/eventlistener.conf":
+  content => "
+[eventlistener:stdout]
+command = supervisor_stdout
+buffer_size = 100
+events = PROCESS_LOG
+result_handler = supervisor_stdout:event_handler
+"
+}
+
+
 ##################### No user-serviceable parts below ###################
 
 # As per https://forge.puppet.com/puppetlabs/dummy_service
