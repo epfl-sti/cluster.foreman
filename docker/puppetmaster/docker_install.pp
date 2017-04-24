@@ -31,7 +31,7 @@ class { "puppetdb":
 # https://pypi.python.org/pypi/supervisor-stdout
 
 
-file { ["/etc/supervisor", "/etc/supervisor/conf.d"]:
+file { ["/etc/supervisor", "/etc/supervisor/conf.d", "/var/log/supervisor" ]:
   ensure => "directory"
 }
 
