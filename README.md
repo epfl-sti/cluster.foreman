@@ -57,6 +57,10 @@ A couple of Foreman templates are provided under `coreos/` to help install CoreO
     - Puppet CA auto-generates if not existing yet
     - Initiating arrows between Foreman and the smart proxies is the most involved part
       - Everyone can pick up the CA cert easily, and send in their CSRs
+        1. `puppet certificate generate --ca-location remote whatever.name`
+        2. go to Foreman → Infrastructure → Smart proxies → your smart proxy → Actions drop down (right-hand side) → Certificates
+        3. Find the certificate request and click Sign
+        4. `puppet certificate find --ca-location remote whatever.name` 
       - Probably want to tell Puppet CA autosign for a number of well-known cert names - So far so good
       - And then, somehow authority to operate the Foreman UI must flow to the administrator...
       - And finally, administrator locks down the whole thing by disabling the autosign entries.
