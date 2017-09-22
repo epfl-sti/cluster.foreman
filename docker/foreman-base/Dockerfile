@@ -2,7 +2,7 @@
 #
 # See also ../foreman/Dockerfile for the useable version
 # Built on top of Ubuntu, because why the hell not.
-FROM ubuntu:16.04
+FROM ubuntu:17.10
 MAINTAINER STIIT Dev <stiitdev@groupes.epfl.ch>
 
 # DEBIAN_FRONTEND=noninteractive avoids debconf trying to ask questions and erroring out:
@@ -17,13 +17,14 @@ RUN apt -qy install vim strace tcpdump lsof silversearcher-ag
 RUN echo 'export "LANG=C.UTF-8"' >> /root/.bashrc
 RUN echo "PS1='⚠DOCKER! \u@\h:\w\$ '" >> /root/.bashrc
 
-# https://theforeman.org/manuals/1.12/quickstart_guide.html
-RUN set -e -x; wget -q http://apt.puppetlabs.com/puppetlabs-release-pc1-xenial.deb ; dpkg -i puppetlabs-release-pc1-xenial.deb; rm puppetlabs-release-pc1-xenial.deb
-RUN echo "deb http://deb.theforeman.org/ xenial 1.12" > /etc/apt/sources.list.d/foreman.list
-RUN echo "deb http://deb.theforeman.org/ plugins 1.12" >> /etc/apt/sources.list.d/foreman.list
+RUN set -e -x; wget -q https://apt.puppetlabs.com/puppet5-release-xenial.deb ; dpkg -i puppet5-release-xenial.deb; rm puppet5-release-xenial.deb
+
+# https://theforeman.org/manuals/1.15/quickstart_guide.html
+RUN echo "deb http://deb.theforeman.org/ xenial 1.15" > /etc/apt/sources.list.d/foreman.list
+RUN echo "deb http://deb.theforeman.org/ plugins 1.15" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt -q update && \
-    apt -qy install supervisor iptables tftp tftpd-hpa xinetd git \
+    apt -qy install locales supervisor iptables tftp tftpd-hpa xinetd git postgresql \
                 foreman foreman-installer ruby \
                 ruby-rubyipmi \
                 ruby-foreman-discovery \
@@ -32,7 +33,8 @@ RUN apt -q update && \
                 ruby-hammer-cli-foreman \
                 ruby-foreman-cockpit \
                 ruby-foreman-dhcp-browser \
-                puppetdb puppetdb-terminus ruby-puppetdb-foreman
+                puppetserver puppet-agent puppetdb puppetdb-termini \
+                ruby-puppetdb-foreman
 
 # http://librarian-puppet.com/
 RUN gem install librarian-puppet
@@ -58,8 +60,8 @@ ADD supervisord.conf /etc/supervisor/
 RUN wget -q -O/usr/share/foreman/lib/tasks/console.rake https://raw.githubusercontent.com/epfl-sti/foreman/develop/lib/tasks/console.rake
 
 # Hack: services cannot actually run in a Docker container
-RUN find /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/service -type f -not -name service.rb -not -name init.rb -not -name base.rb -delete
-ADD service-mocks.rb /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/service/service-mocks.rb
+RUN find /usr/lib/ruby/vendor_ruby/puppet/provider/service -type f -not -name service.rb -not -name init.rb -not -name base.rb -delete
+ADD service-mocks.rb /usr/lib/ruby/vendor_ruby/puppet/provider/service/service-mocks.rb
 
 # Run foreman-installer a first time, just to drag in as many packages as possible
 # With tricks from
@@ -91,7 +93,7 @@ RUN cd /usr/share/foreman-installer/modules; git clone https://github.com/spotif
 RUN set -e -x; service postgresql start; for i in $(seq 1 3); do echo "drop database foreman" | sudo -u foreman psql template1 && break; sleep 20; done;  service postgresql stop
 RUN sudo -u postgres /usr/lib/postgresql/*/bin/pg_resetxlog /var/lib/postgresql/*/main/
 RUN find \
-    /opt/puppetlabs/puppet/cache \
+    /var/lib/puppet/puppet-module/cache \
     /var/cache/foreman \
     /var/cache/bind/zones \
     -type f -delete
