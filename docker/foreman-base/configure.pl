@@ -5,7 +5,7 @@ use warnings;
 
 =head1 NAME
 
-configure.pl - Your friendly configure script
+configure.pl - Your friendly(er) foreman-installer configure script
 
 =head1 SYNOPSIS
 
@@ -13,8 +13,13 @@ configure.pl - Your friendly configure script
 
 =head1 DESCRIPTION
 
-This script computes key configuration values for Foreman, and uses
-them to prepare a foreman-installer-answers.yaml file.
+This script computes key configuration values for foreman-installer,
+and uses them to prepare the
+C</etc/foreman-installer/scenarios.d/foreman-answers.yaml> file.
+
+The configuration is C<lazy> in the sense that it asks as few
+questions as possible, and creates a C<foreman-answers.yaml> file as
+small as possible, to get foreman-installer to do its thing.
 
 =head1 OPTIONS
 
@@ -27,7 +32,6 @@ To see the list of all options, try
 use autodie;
 use Memoize;
 use List::Util qw(max);
-use FindBin; use lib "$FindBin::Bin/lib";
 use EPFLSTI::Foreman::Configure;
 use NetAddr::IP::Lite;
 
@@ -99,68 +103,9 @@ which belong to a service, rather than a physical host; in case of a
 failover, services and their VIPs are allowed to move about in the
 cluster.
 
-In the case of a VIP for a Docker container, the way to do that is
-to set up a bridge, which C<configure.pl> offers to take care of for you.
-
 C<configure.pl> will also take care of setting up an IPv4 address plan.
 
 =cut
-
-sub internal_bridge :
-  ToYaml : PromptUser(validate => \&maybe_configure_internal_bridge) {
-  my @phybridges = grep {
-    my $iface = $_;
-    (@{$iface->{ips} || []} >= 1) &&
-      (grep {interface_type($_) eq "physical"} (@{$iface->{bridged} || []}));
-  } (network_configs());
-  if (@phybridges) {
-    return $phybridges[0]->{name};
-  } else {
-    return "ethbr4";
-  }
-}
-
-sub maybe_configure_internal_bridge {
-  my ($bridgenameref) = @_;
-  my $bridgename = $$bridgenameref;
-  my %network_configs = map { $_->{name} => $_ } network_configs();
-  return if exists $network_configs{$bridgename};
-
-  my $internal_iface = physical_internal_interface();
-  warn <<"GRIPE";
-WARNING: $bridgename is not configured.
-
-In order for Docker VIPs to be reachable, we need to bridge them to
-the physical interface for the internal network.
-
-Shall I set up $bridgename and bridge it with $internal_iface now?
-
-GRIPE
-
-  sub auto_setup_bridge : PromptUser(question => "Set up bridge automatically?") {
-    return "y";
-  }
-  return if (auto_setup_bridge =~ m/^n/i);
-
-  system("set -x; brctl addbr $bridgename");
-  system("set -x; brctl addif $bridgename $internal_iface");
-  # Move over all IP and aliases from pysical to bridge:
-  # https://unix.stackexchange.com/questions/86056/
-  foreach my $ip (@{$network_configs{$internal_iface}->{ips}}) {
-    system("set -x; ip addr del $ip dev $internal_iface");
-    system("set -x; ip addr add $ip dev $bridgename");
-  }
-  # Also move over the routes:
-  local *ROUTES;
-  open(ROUTES, "ip route show dev $internal_iface |");
-  while(<ROUTES>) {
-    next if m/169.254/;
-    next unless my ($route) = m|^(\d+\.\d+\.\d+\.\d+/\d+)|;
-    system("set -x; ip route del $route dev $internal_iface");
-    system("set -x; ip route add $route dev $bridgename");
-  }
-  close(ROUTES);
-}
 
 sub physical_internal_interface : PromptUser {
   my @physical_interfaces = grep {interface_type($_->{name}) eq "physical"} network_configs();
@@ -215,8 +160,13 @@ sub ipmi_netmask : ToYaml : PromptUser { 24 }
 memoize('network_configs');
 sub network_configs {
   my %network_configs;
+
+  my $docker_cmd_prefix = (-e "/var/run/docker.sock") ?
+    "docker run --rm --net=host busybox" : "";
+
   local *IP_ADDR;
-  open(IP_ADDR, "ip addr |");
+  open(IP_ADDR, "${docker_cmd_prefix} ip a |");
+
   my ($current_interface, $current_interface_name);
   while(<IP_ADDR>) {
     if (m/^\d+: (\S+):/) {

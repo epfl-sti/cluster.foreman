@@ -1,0 +1,42 @@
+#!/bin/sh
+
+set -e
+
+FOREMAN_ANSWERS=/etc/foreman-installer/scenarios.d/foreman-answers.yaml
+
+get_foreman_interactive_answer() {
+    perl -MYAML::Tiny -e 'print YAML::Tiny->read("'"$FOREMAN_ANSWERS"'")->[0]->{epflsti}->{interactive_answers}->{"'"$1"'"}'
+}
+
+check_have_ip() {
+    perl -MIO::Socket \
+         -e 'IO::Socket::INET->new(LocalAddr => "'"$1"'") or die' \
+         >/dev/null 2>&1
+}
+
+check_networking_is_up() {
+    for vip_name in puppetmaster_vip dns_vip ipmi_vip; do
+        local vip=$(get_foreman_interactive_answer $vip_name)
+        if [ -z "$vip" ]; then
+            echo >&2 "$vip_name not found in $FOREMAN_ANSWERS"
+            exit 1
+        fi
+        if ! check_have_ip $vip; then
+            echo >&2 "Cannot assign $vip_name address ($vip)"
+            return 1
+        fi
+    done
+    return 0
+}
+
+if ! [ -e /var/run/docker.sock ]; then
+   echo >&2 "No docker access - Waiting for network to turn up by magic."
+   for wait in $(seq 1 12); do
+       if check_networking_is_up; then break; fi
+       echo >&2 "Still waiting... (1 min timeout)"
+       sleep 5
+   done
+fi
+
+echo "Exiting"
+

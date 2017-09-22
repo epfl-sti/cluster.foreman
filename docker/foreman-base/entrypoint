@@ -1,0 +1,74 @@
+#!/bin/sh
+
+FOREMAN_ANSWERS=/etc/foreman-installer/scenarios.d/foreman-answers.yaml
+FOREMAN_INSTALLER_STAMP=/etc/foreman-installer/last-run-stamp
+
+if tty > /dev/null 2>&1; then
+    is_interactive=t
+    set -e
+else
+    is_interactive=
+    set -e -x
+fi
+
+validate_hostname() {
+    case "$(hostname)" in
+        *.*) : ;;
+        *) cat >&2 <<ERROR
+Hostname is not set properly; Puppet CA is unlikely to operate properly.
+
+Consult README.md to find out how to run this Docker image.
+ERROR
+           exit 2;;
+    esac
+}
+
+# "Plan" phase: determine configuration
+plan_phase() {
+    local warned_answers=
+    # "Plan" phase: ensure $FOREMAN_ANSWERS is created
+    for retry in $(seq 1 60); do
+        [ -f "$FOREMAN_ANSWERS" ] && break
+        if [ -n "$is_interactive" ]; then
+            /scripts/configure.pl
+        else
+            if [ -z "$warned_answers" ]; then
+                echo >&2 "Please run /scripts/configure.pl or provide"
+                echo >&2 "$FOREMAN_ANSWERS by any other means."
+                echo >&2 "Waiting 2 minutes..."
+                warned_answers=t
+            fi
+            sleep 2
+        fi
+    done
+    if [ ! -f "$FOREMAN_ANSWERS" ]; then
+        echo >&2 "No $FOREMAN_ANSWERS - Giving up"
+        exit 1
+    fi
+}
+
+# "Build" phase: run foreman-installer from a properly configured
+# Docker (incl. networking)
+build_phase() {
+    /scripts/setup-networking
+    if ! grep -q server_ssl_cert "$FOREMAN_ANSWERS" || \
+       ! test -f "$FOREMAN_INSTALLER_STAMP" || \
+       test "$FOREMAN_ANSWERS" -nt "$FOREMAN_INSTALLER_STAMP"; then
+        foreman-installer --ignore-undocumented
+        touch "$FOREMAN_INSTALLER_STAMP"
+        [ -f /var/run/docker.sock ] && docker commit $(hostname)
+        /etc/init.d/postgresql stop || true
+    fi
+}
+
+# "Run" phase: run supervisord
+run_phase() {
+    exec /usr/bin/supervisord
+}
+
+
+validate_hostname
+plan_phase
+build_phase
+run_phase
+echo >&2 "run_phase should not return!"; exit 1

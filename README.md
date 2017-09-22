@@ -1,31 +1,52 @@
-# EPFL-STI-style clusters with Foreman
+# Foreman and Puppet in a Docker box
 
-This depot contains a Dockerized version of
-[foreman-installer](http://theforeman.org/manuals/1.8/index.html#3.InstallingForeman)
-and some [Puppet](https://puppetlabs.com/) code to ensure that
-that Docker image can later be moved around in your cluster.
+This depot contains a Dockerized version
+of
+[Foreman](http://theforeman.org/manuals/1.15/index.html#3.InstallingForeman) and
+[Puppet](https://puppet.com/) version 5, and all the bells and
+whistles to go with both (see below) — This image does **not** strive
+for minimal size.
+
+## What's In The Box
+
++ Foreman 1.15
++ Complete discovery and provisioning stack:
+    + TFTP + DHCP + DNS servers
+    + [Foreman discovery plugin](https://theforeman.org/plugins/foreman_discovery/index.html) and its diskless boot image
++ [Puppet](https://puppet.com/) version 5, with PuppetDB and Hiera, [librarian-puppet](http://librarian-puppet.com/)
 
 ## Quick Start
 
-1. Select a machine to run the first few containers; it needs not run
-CoreOS or any particular operating system, but you should be able to
-ssh into it as root.
-2. Run `./configure.pl`
-3. Run <pre>./docker/dockerer build mysubdomain.mydomain.com</pre> where
-  `mysubdomain.mydomain.com` is an as-of-yet nonexistent domain
-3. Run <pre>./docker/dockerer run mysubdomain.mydomain.com</pre>
+You need to understand how to run a Docker container on your platform
+("bare" server with Docker, or Kubernetes), and what Docker volumes
+are and how to use them.
 
-For further information, see the [wiki](https://github.com/epfl-sti/cluster.foreman/wiki).
+For instance, assuming that you have your Puppet code living in
+`/etc/puppet` on the host, and you want to take advantage of the
+network configuration automation, run something like this:
+
+```
+docker run --rm --hostname puppetmaster.my.subdomain.example.com \
+  -e /etc/puppet:/etc/puppetlabs/code/environments/production/modules \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -it epflsti/foreman-base
+```
+
+
+💡 It is up to you to ensure continuity of the data between upgrades of this Docker image, for instance by using the `--volumes-from` flag.
 
 ## Hacking
 
 You can enter the running Docker by typing `docker exec -it puppetmaster.mysubdomain.mydomain.com /bin/bash`
 
-## CoreOS Install Templates
+You can run this Docker image *without* the automation and with all
+scripts mounted from the host filesystem like this:
 
-A couple of Foreman templates are provided under `coreos/` to help install CoreOS and Puppet on your nodes (using [epfl-sti/cluster.coreos.puppet](https://github.com/epfl-sti/cluster.coreos.puppet)).
-
-1. <pre>docker exec -it puppetmaster.mysubdomain.mydomain.com /bin/bash</pre>
-2. Install the [foreman_templates plugin](https://github.com/theforeman/foreman_templates) (TODO: should be provided as part of the Docker image)
-3. <pre>foreman-rake templates:sync prefix="STI-IT " \
-          repo=https://github.com/epfl-sti/cluster.foreman.git filter=CoreOS</pre>
+```
+docker run --rm --hostname puppetmaster.my.subdomain.example.com \
+   -e /etc/puppet:/etc/puppetlabs/code/environments/production/modules \
+   -v /var/run/docker.sock:/var/run/docker.sock \
+   -v $PWD/docker/foreman-base/lib:/usr/local/lib/site_perl \
+   -v $PWD/docker/foreman-base:/scripts \
+   -it epflsti/foreman-base bash
+```

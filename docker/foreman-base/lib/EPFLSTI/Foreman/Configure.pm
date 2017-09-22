@@ -38,7 +38,7 @@ use EPFLSTI::Interactive qw(prompt_yn);
 
 # Both of these can be changed with L</parse_argv>.
 
-our $target_file = "$Bin/foreman-installer-answers.yaml";
+our $target_file = "/etc/foreman-installer/scenarios.d/foreman-answers.yaml";
 
 sub debug {
   warn @_ if $ENV{DEBUG};

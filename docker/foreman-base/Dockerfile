@@ -1,6 +1,5 @@
-# Dockerfile for Foreman-in-Docker, part one: the prerequisites
+# Dockerfile for Foreman-in-Docker
 #
-# See also ../foreman/Dockerfile for the useable version
 # Built on top of Ubuntu, because why the hell not.
 FROM ubuntu:17.10
 MAINTAINER STIIT Dev <stiitdev@groupes.epfl.ch>
@@ -24,7 +23,10 @@ RUN echo "deb http://deb.theforeman.org/ xenial 1.15" > /etc/apt/sources.list.d/
 RUN echo "deb http://deb.theforeman.org/ plugins 1.15" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt -q update && \
-    apt -qy install locales supervisor iptables tftp tftpd-hpa xinetd git postgresql \
+    apt -qy install locales supervisor \
+                tftp tftpd-hpa xinetd git postgresql \
+                docker.io \
+                perl libipc-system-simple-perl libnetaddr-ip-perl libyaml-tiny-perl \
                 foreman foreman-installer ruby \
                 ruby-rubyipmi \
                 ruby-foreman-discovery \
@@ -50,19 +52,12 @@ RUN gem install byebug
 RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
 
-# Install networking stuff:
-RUN wget -O /usr/local/bin/pipework https://raw.githubusercontent.com/jpetazzo/pipework/master/pipework
-RUN chmod +x /usr/local/bin/pipework
-
-# Configure supervisord for the "run" phase:
-ADD supervisord.conf /etc/supervisor/
-
 # https://github.com/theforeman/foreman/pull/3398
 RUN wget -q -O/usr/share/foreman/lib/tasks/console.rake https://raw.githubusercontent.com/epfl-sti/foreman/develop/lib/tasks/console.rake
 
 # Hack: services cannot actually run in a Docker container (except PostgreSQL, which must)
-RUN find /usr/lib/ruby/vendor_ruby/puppet/provider/service -type f -not -name service.rb -not -name init.rb -not -name base.rb -delete
-ADD service-mocks.rb /usr/lib/ruby/vendor_ruby/puppet/provider/service/service-mocks.rb
+RUN find /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/service -type f -not -name service.rb -not -name init.rb -not -name base.rb -delete
+ADD service-mocks.rb /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/service/service-mocks.rb
 
 # Run foreman-installer a first time, just to drag in as many packages as possible
 # With tricks from
@@ -159,6 +154,16 @@ RUN perl -i -pe 'm/Foreman::Application\.routes\.draw/ || next; \
   
 ADD foreman-ipmi/ /usr/share/foreman
 
+# Initialization scripts
+ADD supervisord.conf /etc/supervisor/
+ADD entrypoint /entrypoint
+RUN chmod 755 /entrypoint
+RUN mkdir /scripts
+ADD configure.pl /scripts
+ADD setup-networking /scripts
+RUN chmod 755 /scripts/*
+ADD lib /usr/local/lib/site_perl
+
 # Finalize the image.
 # Volumes must be declared last (after we are done mutating them).
 WORKDIR /
@@ -166,3 +171,4 @@ VOLUME [ "/var/lib/puppet", "/var/lib/postgresql", "/var/lib/dhcp", \
          "/var/lib/tftpboot", "/var/cache/bind", "/etc/puppet", "/etc/foreman", \
          "/etc/foreman-installer", "/etc/foreman-proxy", "/root" ]
 
+CMD /entrypoint
