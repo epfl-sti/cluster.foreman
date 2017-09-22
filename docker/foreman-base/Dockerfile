@@ -71,13 +71,14 @@ ADD service-mocks.rb /usr/lib/ruby/vendor_ruby/puppet/provider/service/service-m
 ADD foreman-installer-custom-hiera.yaml /etc/foreman-installer/custom-hiera.yaml
 RUN mv /usr/share/foreman-installer/checks/hostname.rb /usr/share/foreman-installer/checks_hostname.rb.BAK
 ADD foreman-installer-answers-stub.yaml /etc/foreman-installer/scenarios.d/foreman-answers.yaml
-RUN env FACTER_fqdn="$(hostname).local" FACTER_domain="local" foreman-installer -v \
+RUN bash -c 'if ! env FACTER_fqdn="$(hostname).local" FACTER_domain="local" foreman-installer -v \
     --enable-foreman-cli \
     --enable-foreman-proxy \
     --foreman-proxy-register-in-foreman=false \
     --enable-foreman-plugin-setup \
     --enable-foreman-plugin-discovery \
-    --foreman-plugin-discovery-install-images
+    --foreman-plugin-discovery-install-images ;  \
+    then cat /var/log/foreman-installer/foreman.log; exit 1 ; fi'
 RUN mv /usr/share/foreman-installer/checks_hostname.rb.BAK /usr/share/foreman-installer/checks/hostname.rb
 
 # Purge all default environments; keep only production
