@@ -71,6 +71,8 @@ ADD service-mocks.rb /usr/lib/ruby/vendor_ruby/puppet/provider/service/service-m
 ADD foreman-installer-custom-hiera.yaml /etc/foreman-installer/custom-hiera.yaml
 RUN mv /usr/share/foreman-installer/checks/hostname.rb /usr/share/foreman-installer/checks_hostname.rb.BAK
 ADD foreman-installer-answers-stub.yaml /etc/foreman-installer/scenarios.d/foreman-answers.yaml
+RUN mkdir -p /var/lib/tftpboot/boot  # O_RLY? YA_RLY
+RUN rm /usr/share/foreman-installer/modules/foreman/lib/facter/sssd.rb  # Spurious warning
 RUN bash -c 'if ! env FACTER_fqdn="$(hostname).local" FACTER_domain="local" foreman-installer -v \
     --enable-foreman-cli \
     --enable-foreman-proxy \
