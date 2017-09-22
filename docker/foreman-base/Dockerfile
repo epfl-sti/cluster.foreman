@@ -60,13 +60,15 @@ ADD supervisord.conf /etc/supervisor/
 # https://github.com/theforeman/foreman/pull/3398
 RUN wget -q -O/usr/share/foreman/lib/tasks/console.rake https://raw.githubusercontent.com/epfl-sti/foreman/develop/lib/tasks/console.rake
 
-# Hack: services cannot actually run in a Docker container
+# Hack: services cannot actually run in a Docker container (except PostgreSQL, which must)
 RUN find /usr/lib/ruby/vendor_ruby/puppet/provider/service -type f -not -name service.rb -not -name init.rb -not -name base.rb -delete
 ADD service-mocks.rb /usr/lib/ruby/vendor_ruby/puppet/provider/service/service-mocks.rb
 
 # Run foreman-installer a first time, just to drag in as many packages as possible
 # With tricks from
 # https://github.com/riskable/docker-foreman/blob/master/install_foreman.sh
+# https://groups.google.com/forum/#!topic/foreman-users/8qb2fhtbNEI
+ADD foreman-installer-custom-hiera.yaml /etc/foreman-installer/custom-hiera.yaml
 RUN mv /usr/share/foreman-installer/checks/hostname.rb /usr/share/foreman-installer/checks_hostname.rb.BAK
 ADD foreman-installer-answers-stub.yaml /etc/foreman-installer/scenarios.d/foreman-answers.yaml
 RUN env FACTER_fqdn="$(hostname).local" FACTER_domain="local" foreman-installer -v \

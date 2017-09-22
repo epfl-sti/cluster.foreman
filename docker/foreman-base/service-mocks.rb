@@ -17,8 +17,12 @@ end
 Puppet::Type.type(:service).provide :debian, :parent => :init do
   desc "Mostly-mock `debian` service provider."
 
+  def must_actually_run_during_foreman_installer
+    @resource[:name].match(/postgres/i)
+  end
+
   def status
-    if @resource[:status]   # PostgreSQL
+    if must_actually_run_during_foreman_installer
       super
     else
       return :running
@@ -26,7 +30,7 @@ Puppet::Type.type(:service).provide :debian, :parent => :init do
   end
 
   def startcmd
-    if @resource[:status]   # PostgreSQL
+    if must_actually_run_during_foreman_installer
       super
     else
       ["/bin/true"]
@@ -34,10 +38,19 @@ Puppet::Type.type(:service).provide :debian, :parent => :init do
   end
 
   def stopcmd
-    if @resource[:status]   # PostgreSQL
+    if must_actually_run_during_foreman_installer
       super
     else
       ["/bin/true"]
     end
   end
+
+  def restartcmd
+    if must_actually_run_during_foreman_installer
+      super
+    else
+      nil
+    end
+  end
+
 end

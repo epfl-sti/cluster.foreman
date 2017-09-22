@@ -1,0 +1,4 @@
+# As per https://groups.google.com/forum/#!topic/foreman-users/8qb2fhtbNEI,
+# overrides to Puppet variables in foreman-installer go here.
+postgresql::globals::manage_package_repo: true
+postgresql::globals::version: '9.6'
