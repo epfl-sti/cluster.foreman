@@ -99,7 +99,7 @@ RUN cd /usr/share/foreman-installer/modules; git clone https://github.com/spotif
 RUN set -e -x; service postgresql start; for i in $(seq 1 3); do echo "drop database foreman" | sudo -u foreman psql template1 && break; sleep 20; done;  service postgresql stop
 RUN sudo -u postgres /usr/lib/postgresql/*/bin/pg_resetxlog /var/lib/postgresql/*/main/
 RUN find \
-    /var/lib/puppet/puppet-module/cache \
+    /opt/puppetlabs/puppet/cache/puppet-module/cache \
     /var/cache/foreman \
     /var/cache/bind/zones \
     -type f -delete
