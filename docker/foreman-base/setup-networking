@@ -3,6 +3,7 @@
 set -e
 
 FOREMAN_ANSWERS=/etc/foreman-installer/scenarios.d/foreman-answers.yaml
+: ${DOCKER_TARGET_HOSTNAME:="$(hostname -f)"}
 
 get_foreman_interactive_answer() {
     perl -MYAML::Tiny -e 'print YAML::Tiny->read("'"$FOREMAN_ANSWERS"'")->[0]->{epflsti}->{interactive_answers}->{"'"$1"'"}'
@@ -14,29 +15,134 @@ check_have_ip() {
          >/dev/null 2>&1
 }
 
-check_networking_is_up() {
+check_vip_up() {
+    local vip_name="$1"
+    local vip="$2"
+    [ -z "$vip" ] && vip=$(get_foreman_interactive_answer "$vip_name")
+    if ! check_have_ip $vip; then
+        echo echo >&2 "Cannot assign $vip_name address ($vip)"
+        return 1
+    fi
+    return 0
+}
+
+on_all_vips() {
+    local cb="$1"
     for vip_name in puppetmaster_vip dns_vip ipmi_vip; do
         local vip=$(get_foreman_interactive_answer $vip_name)
         if [ -z "$vip" ]; then
             echo >&2 "$vip_name not found in $FOREMAN_ANSWERS"
             exit 1
         fi
-        if ! check_have_ip $vip; then
-            echo >&2 "Cannot assign $vip_name address ($vip)"
-            return 1
-        fi
+        "$cb" "$vip_name" "$vip" || return 1
     done
     return 0
 }
 
-if ! [ -e /var/run/docker.sock ]; then
-   echo >&2 "No docker access - Waiting for network to turn up by magic."
+ensure_network() {
+    local name="$1"; shift
+
+    docker network inspect "$name" >/dev/null 2>&1 && return 0
+    docker network create "$@" "$name" >/dev/null 2>&1
+}
+
+macvlan_network_name() {
+    local iface="$(get_foreman_interactive_answer physical_internal_interface)"
+    echo "${iface}-macvlan"
+}
+
+setup_networking_docker() {
+    local iface="$(get_foreman_interactive_answer physical_internal_interface)"
+    local main_ip="$(get_foreman_interactive_answer puppetmaster_vip)"
+    local dns_ip="$(get_foreman_interactive_answer dns_vip)"
+    local main_netmask="$(get_foreman_interactive_answer main_netmask)"
+    local ipmi_ip="$(get_foreman_interactive_answer ipmi_vip)"
+    local ipmi_netmask="$(get_foreman_interactive_answer ipmi_netmask)"
+    local target_container="$(find_target_container)"
+    ensure_network "$(macvlan_network_name)" -d macvlan  \
+                   --subnet "$main_ip"/"$main_netmask" \
+                   --subnet "$ipmi_ip"/"$ipmi_netmask" \
+                   -o parent="$iface"
+    if ! check_vip_up "puppetmaster_vip" 2>/dev/null; then
+        # puppetmaster_vip is the container's "main" IP. We set it up in the
+        # "normal" fashion, by asking the Docker daemon to do it for us.
+        docker network connect --ip="$main_ip" "$(macvlan_network_name)" "$target_container"
+        # This will mess up the default route:
+        restoredefaultroute
+
+        check_vip_up "puppetmaster_vip"
+    fi
+    # Unfortunately, there is no way to set more than one IP in this
+    # fashion, despite macvlan, being an L2 thing, permitting it.
+    # There can be only one connection to any given network per Docker
+    # container, and one macvlan network per parent interface. The
+    # other IPs need to be set as aliases
+    # (https://serverfault.com/a/737027/109290), which requires
+    # running a privileged iproute2 into $target_container
+    add_alias_vip "dns_vip" "$dns_ip" "$main_netmask"
+    add_alias_vip "ipmi_vip" "$ipmi_ip" "$ipmi_netmask"
+}
+
+macvlan_dev() {
+    ip -o link list type macvlan|sed -n 's/^[0-9]\+: \([^@]*\).*$/\1/p'
+}
+
+add_alias_vip() {
+    local vipname="$1"
+    local ip="$2"
+    local netmask="$3"
+    local macvlan_dev=$(macvlan_dev)
+    if ! check_vip_up "$vipname" "$ip" 2>/dev/null; then
+        nsenterpriv "$target_container" ip addr add "$ip/$netmask" dev "$macvlan_dev"
+        check_vip_up "$vipname" "$ip"
+    fi
+}
+
+nsenterpriv() {
+    local containerid=$1; shift
+    docker run --rm --privileged --pid=host --net=host jpetazzo/nsenter \
+           nsenter -n -t $(docker inspect --format {{.State.Pid}} "$containerid") \
+           "$@"
+}
+
+restoredefaultroute() {
+    local target_container="$(find_target_container)"
+    nsenterpriv "$target_container" ip route del default
+    nsenterpriv "$target_container" ip route add default via 172.17.0.1
+}
+
+setup_vip_macvlan() {
+    local vip_name="$1"
+    local vip="$2"
+    case "$vip_name" in
+        ipmi*) netmask=$(get_foreman_interactive_answer ipmi_netmask) ;;
+        *)     netmask=$(get_foreman_interactive_answer main_netmask) ;;
+    esac
+    docker network connect --ip="$vip" "$(macvlan_network_name)" "$(find_target_container)"
+}
+
+find_target_container() {
+    docker ps -q --filter status=running | (while read id; do 
+	if [ "$(docker inspect --format "{{.Config.Hostname}}" "$id")" = \
+             "$DOCKER_TARGET_HOSTNAME" ]; then
+            echo "$id"
+            break
+        fi
+    done)
+}
+
+if [ -e /var/run/docker.sock ]; then
+   setup_networking_docker
+else
+   echo >&2 "No access to parent Docker - Waiting for network to turn up by magic."
    for wait in $(seq 1 12); do
-       if check_networking_is_up; then break; fi
+       if on_all_vips "check_vip_up"; then break; fi
        echo >&2 "Still waiting... (1 min timeout)"
        sleep 5
    done
 fi
 
-echo "Exiting"
-
+# All done, show status to stderr
+ip a show dev $(macvlan_dev) || true
+route || true
+echo "Exiting successfully"
