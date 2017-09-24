@@ -180,8 +180,12 @@ sub generate {
     $magicsub->{code_orig}->();
   }
 
+  my $write_operation_desc;
   if (-f $target_file) {
     warn "$target_file already exists.\n\n";
+    $write_operation_desc = "updated";
+  } else {
+    $write_operation_desc = "saved";
   }
   my $state = EPFLSTI::Foreman::Configure::_YamlState->load($target_file);
   $state->compute_all;
@@ -192,7 +196,7 @@ sub generate {
   } or die "Cannot write to $target_file.new: $!";
   rename("$target_file.new", $target_file) or
     die "Cannot rename $target_file.new to $target_file: $!";
-  warn "Configuration updated in $target_file.\n\n";
+  warn "Configuration $write_operation_desc in $target_file.\n\n";
   foreach my $magicsub (EPFLSTI::Foreman::Configure::_MagicSub->all) {
     next unless ($magicsub->has_PostConfigure);
     $magicsub->{code_orig}->();
