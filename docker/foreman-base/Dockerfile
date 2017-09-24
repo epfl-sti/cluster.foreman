@@ -92,9 +92,6 @@ RUN mkdir -p /etc/puppetlabs/code/environments/production/modules
 ENV PATH=/opt/puppetlabs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 RUN puppet module install --version 1.6.1 dalen-puppetdbquery
 
-# Fashion spotify/puppetexplorer as a foreman-installer plugin
-RUN cd /usr/share/foreman-installer/modules; git clone https://github.com/spotify/puppet-puppetexplorer.git puppetexplorer
-
 # Remove all traces of the random hostname that was in use during the build;
 # and then double-check that they are all gone.
 RUN set -e -x; service postgresql start; for i in $(seq 1 3); do echo "drop database foreman" | sudo -u foreman psql template1 && break; sleep 20; done;  service postgresql stop
