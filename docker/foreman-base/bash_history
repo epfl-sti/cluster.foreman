@@ -1,0 +1,3 @@
+rm /etc/foreman-installer/scenarios.d/foreman-answers.yaml ; yes "" | /scripts/configure.pl
+/scripts/setup-networking
+foreman-installer --ignore-undocumented

@@ -128,8 +128,8 @@ RUN find / -xdev \
     xargs -0 grep -l $(cat /etc/hostname) | \
     perl -ne 'if ($. == 1) { warn "Still some files containing the forbidden hostname:\n"}; print STDERR $_; END { die if $. }'
 
-# In case you were idly tampering with the container while it was being built:
-RUN rm -f /root/.bash_history
+# Provide a set of useful debugging commands
+ADD bash_history /root/.bash_history
 
 # EPFLSTI-specific code and customizations
 # We keep these at the bottom so that if you don't want these, you
