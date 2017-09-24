@@ -35,6 +35,7 @@ RUN apt -q update && \
                 ruby-foreman-dhcp-browser \
                 puppetserver puppet-agent puppetdb puppetdb-termini \
                 ruby-puppetdb-foreman
+RUN rm -f /core || true
 
 # http://librarian-puppet.com/
 RUN gem install librarian-puppet
