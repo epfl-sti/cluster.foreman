@@ -301,10 +301,19 @@ sub puppet__server_soreconfigs_backend : ToYaml { "puppetdb" }
 sub puppet__server_puppetdb_host : ToYaml { puppetmaster_fqdn() }
 
 sub puppetdb : ToYaml {
-  return {
-    ssl_listen_address => '0.0.0.0',
-    manage_dbserver => "false"
+  my $puppetdb_config = {
+    ssl_listen_address => '0.0.0.0'
+  };
+
+  local *DPKG_INSTALLED;
+  open(DPKG_INSTALLED, "dpkg --get-selections|");
+
+  while(<DPKG_INSTALLED>) {
+    if (my ($postgres_version) = m/^postgresql-([0-9.]+)/) {
+      $puppetdb_config->{postgres_version} = $postgres_version;
+    }
   }
+  retourn $puppetdb_config;
 }
 
 =head2 foreman_proxy → dns_interface
