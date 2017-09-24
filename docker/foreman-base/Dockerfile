@@ -24,10 +24,11 @@ RUN echo "deb http://deb.theforeman.org/ plugins 1.15" >> /etc/apt/sources.list.
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt -q update && \
     apt -qy install locales supervisor \
-                tftp tftpd-hpa xinetd git postgresql \
+                tftp tftpd-hpa xinetd git postgresql iptables-persistent \
                 docker.io \
                 perl libipc-system-simple-perl libnetaddr-ip-perl libyaml-tiny-perl \
-                foreman foreman-installer ruby \
+                foreman foreman-installer \
+                ruby \
                 ruby-rubyipmi \
                 ruby-foreman-discovery \
                 ruby-foreman-column-view \
@@ -37,7 +38,7 @@ RUN apt -q update && \
                 ruby-foreman-dhcp-browser \
                 puppetserver puppet-agent puppetdb puppetdb-termini \
                 ruby-puppetdb-foreman \
-                puppet-agent-puppet-strings
+                puppet-agent-puppet-strings puppet-agent-oauth
 RUN rm -f /core || true
 
 # http://librarian-puppet.com/
