@@ -329,6 +329,16 @@ Docker's NAT).
 sub foreman_proxy__dns_interface : ToYaml { "eth1" }
 sub foreman_proxy__dhcp_interface : ToYaml { "eth1" }
 
+=head2 foreman_proxy → custom_repo
+
+True, because we control that from the Dockerfile (owing to the fact
+that foreman-installer is not always up-to-date with the latest Ubuntu
+release)
+
+=cut
+
+sub foreman_proxy__custom_repo : ToYaml { "true" }
+
 =head2 foreman::cli
 
 Set to a true value so that foreman-installer sets up hammer
