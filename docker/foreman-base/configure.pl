@@ -226,7 +226,8 @@ sub interface_type {
   } elsif ($iface_name =~ m/^(en|wlan|wifi|eth|bond)/) {
     return "physical";
   } else {
-    die "Unable to guess whether $iface_name is a physical interface";
+    warn "Unable to guess whether $iface_name is a physical interface";
+    return "unknown";
   }
 }
 
