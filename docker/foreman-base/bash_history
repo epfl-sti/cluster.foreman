@@ -1,3 +1,4 @@
 rm /etc/foreman-installer/scenarios.d/foreman-answers.yaml ; yes "" | /scripts/configure.pl
 /scripts/setup-networking
 foreman-installer --ignore-undocumented
+less +/ERROR /var/log/foreman-installer/foreman.log
