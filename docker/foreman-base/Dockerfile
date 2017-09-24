@@ -91,7 +91,7 @@ RUN mkdir -p /etc/puppetlabs/code/environments/production/modules
 
 # Make "puppet query" work against the puppetdb
 ENV PATH=/opt/puppetlabs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-RUN puppet module install --version 1.6.1 dalen-puppetdbquery
+RUN puppet module install dalen-puppetdbquery
 
 # Remove all traces of the random hostname that was in use during the build;
 # and then double-check that they are all gone.
@@ -154,7 +154,7 @@ RUN rm -rf /usr/share/foreman-installer/modules/puppetdb/lib/puppet/provider/pup
 WORKDIR /usr/share/foreman
 RUN perl -i -pe 'm/Foreman::Application\.routes\.draw/ || next; \
   print; $seen = 1; $_ = qq{  get "ipmi/index"\n\n}; END { die unless $seen }' config/routes.rb
-  
+
 ADD foreman-ipmi/ /usr/share/foreman
 
 # Initialization scripts
