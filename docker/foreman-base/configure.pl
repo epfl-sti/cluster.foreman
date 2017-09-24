@@ -58,7 +58,7 @@ about ToYaml and other function decorations.
 =cut
 
 sub foreman_proxy__tftp_servername : ToYaml    { puppetmaster_vip() }
-sub foreman_proxy__dhcp_gateway : ToYaml      { gateway_vip() }
+sub foreman_proxy__dhcp_gateway : ToYaml      { gateway_ip() }
 sub foreman_proxy__dhcp_nameservers : ToYaml  { dns_vip() }
 
 =pod
@@ -107,7 +107,7 @@ C<configure.pl> will also take care of setting up an IPv4 address plan.
 
 =cut
 
-sub physical_internal_interface : PromptUser {
+sub physical_internal_interface : ToYaml : PromptUser {
   my @physical_interfaces = grep {interface_type($_->{name}) eq "physical"} network_configs();
   return $physical_interfaces[0]->{name};
 }
@@ -118,14 +118,14 @@ sub internal_ip : PromptUser {
   return $network_configs[0]->{ips}->[0]->addr();
 }
 
-sub gateway_vip : PromptUser {
+sub gateway_ip : PromptUser {
   my @quad = split m/\./, internal_ip();
   $quad[3] = 254;
   return join(".", @quad);
 }
 
 sub puppetmaster_vip : PromptUser {
-  my @quad = split m/\./, gateway_vip();
+  my @quad = split m/\./, internal_ip();
   $quad[3] = 225;
   return join(".", @quad);
 }
@@ -144,7 +144,7 @@ sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
 
 
 sub dns_vip : PromptUser {
-  my @quad = split m/\./, gateway_vip();
+  my @quad = split m/\./, internal_ip();
   $quad[3] -= 1;
   if ($quad[3] eq 0) {
     $quad[3] = 254;
@@ -203,11 +203,11 @@ sub interface_type {
     } else {
       return "virtual";
     }
-  } elsif ($iface_name =~ m/^(vir|tun|tap|veth)/) {
+  } elsif ($iface_name =~ m/^(vir|tun|tap|veth|dummy)/) {
     return "virtual";
   } elsif ($iface_name =~ m/br|docker/) {
     return "bridge",
-  } elsif ($iface_name =~ m/^(en|wlan|wifi|eth)/) {
+  } elsif ($iface_name =~ m/^(en|wlan|wifi|eth|bond)/) {
     return "physical";
   } else {
     die "Unable to guess whether $iface_name is a physical interface";
