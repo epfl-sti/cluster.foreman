@@ -23,7 +23,7 @@ RUN echo "deb http://deb.theforeman.org/ xenial 1.15" > /etc/apt/sources.list.d/
 RUN echo "deb http://deb.theforeman.org/ plugins 1.15" >> /etc/apt/sources.list.d/foreman.list
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt -q update && \
-    apt -qy install locales supervisor \
+    apt -qy install locales supervisor dirmngr \
                 tftp tftpd-hpa xinetd git postgresql iptables-persistent \
                 docker.io \
                 perl libipc-system-simple-perl libnetaddr-ip-perl libyaml-tiny-perl \
