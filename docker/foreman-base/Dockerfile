@@ -73,6 +73,7 @@ RUN mv /usr/share/foreman-installer/checks/hostname.rb /usr/share/foreman-instal
 ADD foreman-installer-answers-stub.yaml /etc/foreman-installer/scenarios.d/foreman-answers.yaml
 RUN mkdir -p /var/lib/tftpboot/boot  # O_RLY? YA_RLY
 RUN rm /usr/share/foreman-installer/modules/foreman/lib/facter/sssd.rb  # Spurious warning
+ENV STDLIB_LOG_DEPRECATIONS=false
 RUN bash -c 'if ! env FACTER_fqdn="$(hostname).local" FACTER_domain="local" foreman-installer -v \
     --enable-foreman-cli \
     --enable-foreman-proxy \
