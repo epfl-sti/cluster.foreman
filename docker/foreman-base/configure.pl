@@ -147,7 +147,7 @@ sub dns_vip : PromptUser {
   my @quad = split m/\./, internal_ip();
   $quad[3] -= 1;
   if ($quad[3] eq 0) {
-    $quad[3] = 254;
+    $quad[3] = 253;
   }
   return join(".", @quad);
 }
