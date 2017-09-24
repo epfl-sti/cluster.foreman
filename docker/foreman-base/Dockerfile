@@ -36,7 +36,8 @@ RUN apt -q update && \
                 ruby-foreman-cockpit \
                 ruby-foreman-dhcp-browser \
                 puppetserver puppet-agent puppetdb puppetdb-termini \
-                ruby-puppetdb-foreman
+                ruby-puppetdb-foreman \
+                puppet-agent-puppet-strings
 RUN rm -f /core || true
 
 # http://librarian-puppet.com/
@@ -58,6 +59,10 @@ RUN wget -q -O/usr/share/foreman/lib/tasks/console.rake https://raw.githubuserco
 # Hack: services cannot actually run in a Docker container (except PostgreSQL, which must)
 RUN find /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/service -type f -not -name service.rb -not -name init.rb -not -name base.rb -delete
 ADD service-mocks.rb /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/service/service-mocks.rb
+
+# Requirement of puppet-agent-puppet-strings, itself needed to read
+# the flags out of custom foreman-installer modules (such as our epflsti one)
+RUN /opt/puppetlabs/puppet/bin/gem install rgen
 
 # Run foreman-installer a first time, just to drag in as many packages as possible
 # With tricks from
