@@ -143,13 +143,29 @@ sub foreman_proxy__dhcp_range : ToYaml : PromptUser {
 }
 
 
-sub dns_vip : PromptUser {
+sub dns_vip : PromptUser(validate => \&same_subnet_as_puppetmaster_vip) {
   my @quad = split m/\./, internal_ip();
   $quad[3] -= 1;
   if ($quad[3] eq 0) {
     $quad[3] = 253;
   }
   return join(".", @quad);
+}
+
+sub same_subnet_as_puppetmaster_vip {
+  my ($dns_vip_ref) = @_;
+  my $puppetmaster_vip = puppetmaster_vip();
+  my $main_netmask = main_netmask();
+  my ($puppetmaster_net, $dns_net) = map {
+    scalar(NetAddr::IP::Lite->new($_, $main_netmask)->network());
+  } ($puppetmaster_vip, $$dns_vip_ref);
+
+  die <<NET_ERROR unless ($puppetmaster_net eq $dns_net);
+ERROR: $$dns_vip_ref/$main_netmask and
+$puppetmaster_vip/$main_netmask are distinct IP ranges!
+
+NET_ERROR
+  return 1;
 }
 
 sub ipmi_vip : ToYaml : PromptUser { "192.168.10.253" }
