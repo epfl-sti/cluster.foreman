@@ -313,7 +313,7 @@ sub puppetdb : ToYaml {
       $puppetdb_config->{postgres_version} = $postgres_version;
     }
   }
-  retourn $puppetdb_config;
+  return $puppetdb_config;
 }
 
 =head2 foreman_proxy → dns_interface
