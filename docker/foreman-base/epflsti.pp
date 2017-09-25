@@ -40,6 +40,6 @@ define puppetdb_conn_validator (
     Service["puppetdb"] ->
     exec { "puppetdb_conn_validator curl ${name}":
       path => $::path,
-      command => "timeout ${timeout} bash -c 'set -x; while ! curl -k -v --cert /var/lib/puppet/ssl/certs/${::fqdn}.pem --key /var/lib/puppet/ssl/private_keys/${::fqdn}.pem ${_proto}://${puppetdb_server}:${puppetdb_port}${test_url}; do sleep 10; done'"
+      command => "timeout ${timeout} bash -c 'set -x; while ! curl -k -v --cert ${::foreman::params::puppet_ssldir}/certs/${::fqdn}.pem --key ${::foreman::params::puppet_ssldir}/private_keys/${::fqdn}.pem ${_proto}://${puppetdb_server}:${puppetdb_port}${test_url}; do sleep 10; done'"
     }
 }
