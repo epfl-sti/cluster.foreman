@@ -47,28 +47,57 @@ plan_phase() {
     fi
 }
 
+find_target_container() {
+    docker ps -q --format '{{.Names}}' --filter status=running | (while read id; do 
+	if [ "$(docker inspect --format "{{.Config.Hostname}}" "$id")" = \
+             "$DOCKER_TARGET_HOSTNAME" ]; then
+            echo "$id"
+            break
+        fi
+    done)
+}
+this_image="$(find_target_container)"
+built_image="$(hostname -f)"
+docker_commit_cmd="docker commit $built_image $this_image"
+
 # "Build" phase: run foreman-installer from a properly configured
 # Docker (incl. networking)
 build_phase() {
-    /scripts/setup-networking
-    if ! grep -q server_ssl_cert "$FOREMAN_ANSWERS" || \
-       ! test -f "$FOREMAN_INSTALLER_STAMP" || \
-       test "$FOREMAN_ANSWERS" -nt "$FOREMAN_INSTALLER_STAMP"; then
-        foreman-installer --ignore-undocumented
-        touch "$FOREMAN_INSTALLER_STAMP"
-        [ -f /var/run/docker.sock ] && docker commit $(hostname)
-        /etc/init.d/postgresql stop || true
-    fi
-}
+    if grep -q server_ssl_cert "$FOREMAN_ANSWERS" && \
+       test -f "$FOREMAN_INSTALLER_STAMP" && \
+       test "$FOREMAN_ANSWERS" -ot "$FOREMAN_INSTALLER_STAMP"; then return; fi
 
-# "Run" phase: run supervisord
-run_phase() {
-    exec /usr/bin/supervisord
+    foreman-installer --ignore-undocumented
+    touch "$FOREMAN_INSTALLER_STAMP"
+    [ -f /var/run/docker.sock ] && (set -x; $docker_commit_cmd)
+    cat >&2 <<EOF
+
+===== Success! =====
+
+Foreman-in-Docker is up and running, and will remain so for
+24 hours. You may now test it out. Should you wish to make changes in
+$this_image and render them permanent, be sure to issue
+
+$docker_commit_cmd
+
+and then restart from the newly personalized image, e.g.
+
+docker stop $this_image
+
+docker run --name $built_image \
+   --volumes-from $this_image \
+   $built_image
+
+EOF
+
+    sleep 86400
+    exit 0
 }
 
 
 validate_hostname
 plan_phase
+/scripts/setup-networking
 build_phase
-run_phase
-echo >&2 "run_phase should not return!"; exit 1
+# Only if build_phase is a no-op, do we move on to running supervisord:
+exec /usr/bin/supervisord
