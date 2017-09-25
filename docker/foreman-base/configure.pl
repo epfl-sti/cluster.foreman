@@ -253,6 +253,15 @@ sub rfc1918_score {
 Here we document a number of special-purpose settings that oil some
 cogs or others.
 
+=head2 foreman
+
+Configured, with select plugins
+
+=cut
+
+sub foreman__custom_repo : ToYaml { "false" }
+sub foreman__plugin__discovery : ToYaml { "true" }
+
 =head2 puppet → server
 
 Set to true, so that foreman-installer wrangles the puppetmaster,
@@ -301,19 +310,12 @@ sub puppet__server_soreconfigs_backend : ToYaml { "puppetdb" }
 sub puppet__server_puppetdb_host : ToYaml { puppetmaster_fqdn() }
 
 sub puppetdb : ToYaml {
-  my $puppetdb_config = {
-    ssl_listen_address => '0.0.0.0'
-  };
-
-  local *DPKG_INSTALLED;
-  open(DPKG_INSTALLED, "dpkg --get-selections|");
-
-  while(<DPKG_INSTALLED>) {
-    if (my ($postgres_version) = m/^postgresql-([0-9.]+)/) {
-      $puppetdb_config->{postgres_version} = $postgres_version;
-    }
+  return {
+    ssl_listen_address => '0.0.0.0',
+    # If both /usr/share/foreman-installer/modules/{foreman,puppetdb} want to install
+    # PostgreSQL, this will cause a "duplicate class" error:
+    manage_dbserver => "false"
   }
-  return $puppetdb_config;
 }
 
 =head2 foreman_proxy → dns_interface
