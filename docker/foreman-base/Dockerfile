@@ -24,7 +24,9 @@ RUN echo "deb http://deb.theforeman.org/ plugins 1.15" >> /etc/apt/sources.list.
 RUN wget -q http://deb.theforeman.org/pubkey.gpg -O- | apt-key add -
 RUN apt -q update && \
     apt -qy install locales supervisor dirmngr \
-                tftp tftpd-hpa xinetd git postgresql iptables-persistent \
+                tftp tftpd-hpa xinetd git iptables-persistent bind9 \
+                postgresql \
+                apache2 libapache2-mod-passenger \
                 docker.io \
                 perl libipc-system-simple-perl libnetaddr-ip-perl libyaml-tiny-perl \
                 foreman foreman-installer \
@@ -57,13 +59,15 @@ ENV LANG en_US.UTF-8
 # https://github.com/theforeman/foreman/pull/3398
 RUN wget -q -O/usr/share/foreman/lib/tasks/console.rake https://raw.githubusercontent.com/epfl-sti/foreman/develop/lib/tasks/console.rake
 
-# Hack: services cannot actually run in a Docker container (except PostgreSQL, which must)
-RUN find /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/service -type f -not -name service.rb -not -name init.rb -not -name base.rb -delete
-ADD service-mocks.rb /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/service/service-mocks.rb
-
 # Requirement of puppet-agent-puppet-strings, itself needed to read
 # the flags out of custom foreman-installer modules (such as our epflsti one)
 RUN /opt/puppetlabs/puppet/bin/gem install rgen
+
+# Hack: many services cannot actually run in a Docker container (except PostgreSQL, which must)
+RUN set -e -x; cd /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/; \
+    mv service service.ORIG; mkdir service; \
+    cp service.ORIG/service.rb service.ORIG/init.rb service.ORIG/base.rb service/
+ADD service-mocks.rb /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/service/service-mocks.rb
 
 # Run foreman-installer a first time, just to drag in as many packages as possible
 # With tricks from
@@ -83,7 +87,10 @@ RUN bash -c 'if ! env FACTER_fqdn="$(hostname).local" FACTER_domain="local" fore
     --enable-foreman-plugin-discovery \
     --foreman-plugin-discovery-install-images ;  \
     then cat /var/log/foreman-installer/foreman.log; exit 1 ; fi'
+# Undo hacks
 RUN mv /usr/share/foreman-installer/checks_hostname.rb.BAK /usr/share/foreman-installer/checks/hostname.rb
+RUN set -e -x; cd /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/; \
+    rm -rf service; mv service.ORIG service
 
 # Purge all default environments; keep only production
 RUN rm -rf /etc/puppetlabs/code/environments/*
