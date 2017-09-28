@@ -166,9 +166,8 @@ ADD foreman-ipmi/ /usr/share/foreman
 
 # Initialization scripts
 ADD supervisord.conf /etc/supervisor/
-ADD entrypoint /entrypoint
-RUN chmod 755 /entrypoint
 RUN mkdir /scripts
+ADD entrypoint /scripts
 ADD configure.pl /scripts
 ADD setup-networking /scripts
 RUN chmod 755 /scripts/*
@@ -181,4 +180,4 @@ VOLUME [ "/var/lib/puppet", "/var/lib/postgresql", "/var/lib/dhcp", \
          "/var/lib/tftpboot", "/var/cache/bind", "/etc/puppet", "/etc/foreman", \
          "/etc/foreman-installer", "/etc/foreman-proxy", "/root" ]
 
-CMD /entrypoint
+CMD /scripts/entrypoint
