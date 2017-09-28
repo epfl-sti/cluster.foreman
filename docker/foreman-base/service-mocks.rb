@@ -21,8 +21,16 @@ Puppet::Type.type(:service).provide :debian, :parent => :init do
     @resource[:name].match(/postgres/i)
   end
 
+  def must_actually_run
+    if File.exist? "/etc/foreman-installer/MOCKING_OUT_SERVICES"
+      must_actually_run_during_docker_build
+    else
+      true
+    end
+  end
+
   def status
-    if must_actually_run_during_docker_build
+    if must_actually_run
       super
     else
       return :running
@@ -30,7 +38,7 @@ Puppet::Type.type(:service).provide :debian, :parent => :init do
   end
 
   def startcmd
-    if must_actually_run_during_docker_build
+    if must_actually_run
       super
     else
       ["/bin/true"]
@@ -38,7 +46,7 @@ Puppet::Type.type(:service).provide :debian, :parent => :init do
   end
 
   def stopcmd
-    if must_actually_run_during_docker_build
+    if must_actually_run
       super
     else
       ["/bin/true"]
@@ -46,7 +54,7 @@ Puppet::Type.type(:service).provide :debian, :parent => :init do
   end
 
   def restartcmd
-    if must_actually_run_during_docker_build
+    if must_actually_run
       super
     else
       nil

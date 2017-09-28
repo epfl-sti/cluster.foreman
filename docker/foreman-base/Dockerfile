@@ -68,6 +68,7 @@ RUN set -e -x; cd /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/; 
     mv service service.ORIG; mkdir service; \
     cp service.ORIG/service.rb service.ORIG/init.rb service.ORIG/base.rb service/
 ADD service-mocks.rb /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/service/service-mocks.rb
+RUN : > /etc/foreman-installer/MOCKING_OUT_SERVICES
 
 # Run foreman-installer a first time, just to drag in as many packages as possible
 # With tricks from
@@ -89,8 +90,7 @@ RUN bash -c 'if ! env FACTER_fqdn="$(hostname).local" FACTER_domain="local" fore
     then cat /var/log/foreman-installer/foreman.log; exit 1 ; fi'
 # Undo hacks
 RUN mv /usr/share/foreman-installer/checks_hostname.rb.BAK /usr/share/foreman-installer/checks/hostname.rb
-RUN set -e -x; cd /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/provider/; \
-    rm -rf service; mv service.ORIG service
+RUN rm /etc/foreman-installer/MOCKING_OUT_SERVICES
 
 # Purge all default environments; keep only production
 RUN rm -rf /etc/puppetlabs/code/environments/*
